@@ -4,6 +4,12 @@ import { Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api';
 import { useAuthStore } from '../stores';
 
+const DEMO_CREDENTIALS = [
+  { role: 'Admin', email: 'admin@projecthub.com', password: 'admin123', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+  { role: 'Manager', email: 'vikram@projecthub.com', password: 'demo123', color: 'bg-purple-50 border-purple-200 text-purple-700' },
+  { role: 'Member', email: 'rahul@projecthub.com', password: 'demo123', color: 'bg-green-50 border-green-200 text-green-700' },
+];
+
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +23,6 @@ export function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const { data } = await authApi.login(email, password);
       setAuth(data.user as any, data.accessToken);
@@ -29,6 +34,12 @@ export function LoginPage() {
     }
   };
 
+  function fillCredentials(cred: { email: string; password: string }) {
+    setEmail(cred.email);
+    setPassword(cred.password);
+    setError('');
+  }
+
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md">
@@ -39,6 +50,24 @@ export function LoginPage() {
           </div>
           <h1 className="text-2xl font-semibold text-text-primary">Welcome to TaskPilot</h1>
           <p className="text-text-secondary mt-1 text-sm">Sign in to manage your projects</p>
+        </div>
+
+        {/* Demo credentials */}
+        <div className="mb-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-[#64748B] uppercase tracking-wider mb-3">Demo Credentials — click to fill</p>
+          <div className="flex flex-col gap-2">
+            {DEMO_CREDENTIALS.map((cred) => (
+              <button
+                key={cred.role}
+                type="button"
+                onClick={() => fillCredentials(cred)}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left hover:opacity-80 transition-opacity ${cred.color}`}
+              >
+                <span className="text-[12px] font-semibold">{cred.role}</span>
+                <span className="text-[12px] font-mono opacity-75">{cred.email}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Card */}
@@ -86,11 +115,7 @@ export function LoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full mt-2"
-            >
+            <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (

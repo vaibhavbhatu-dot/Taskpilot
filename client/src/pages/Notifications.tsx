@@ -1,7 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { Bell, Check, CheckCheck, UserPlus, MessageSquare, Play, CheckCircle, AlertCircle } from 'lucide-react';
 import { notificationsApi } from '../api';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import type { Notification } from '../types';
+
+function getNotificationIcon(type: string) {
+  switch (type) {
+    case 'TICKET_ASSIGNED': return <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center"><UserPlus className="w-4 h-4 text-blue-500" /></div>;
+    case 'TICKET_COMMENTED': return <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center"><MessageSquare className="w-4 h-4 text-indigo-500" /></div>;
+    case 'SPRINT_STARTED': return <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center"><Play className="w-4 h-4 text-green-500" /></div>;
+    case 'SPRINT_COMPLETED': return <div className="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center"><CheckCircle className="w-4 h-4 text-purple-500" /></div>;
+    case 'OVERDUE': return <div className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center"><AlertCircle className="w-4 h-4 text-red-500" /></div>;
+    default: return <div className="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center"><Bell className="w-4 h-4 text-gray-500" /></div>;
+  }
+}
+
+function timeAgo(dateString: string) {
+  const diff = Date.now() - new Date(dateString).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -32,21 +54,11 @@ export function NotificationsPage() {
     } catch { /* ignore */ }
   }
 
-  const typeIcon = (_type: string) => '🔔';
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
       <div className="page-header">
         <h1 className="page-title">Notifications</h1>
-        {notifications.some((n) => !n.isRead) && (
+        {!loading && notifications.some((n) => !n.isRead) && (
           <button onClick={handleMarkAllRead} className="btn-secondary btn-sm">
             <CheckCheck className="w-4 h-4 mr-1" />
             Mark All Read
@@ -54,35 +66,52 @@ export function NotificationsPage() {
         )}
       </div>
 
-      {notifications.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Bell className="w-10 h-10 text-text-muted mx-auto mb-3" />
-          <p className="text-text-secondary font-medium">No notifications</p>
-          <p className="text-sm text-text-muted mt-1">You're all caught up!</p>
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-start gap-3">
+              <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-64" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="bg-white rounded-xl border border-[#E2E8F0]">
+          <EmptyState
+            icon={Bell}
+            title="You're all caught up!"
+            description="You have no notifications right now. Check back later."
+            className="py-16"
+          />
         </div>
       ) : (
         <div className="space-y-2">
           {notifications.map((notif) => (
             <div
               key={notif.id}
-              className={`card p-4 flex items-start gap-3 transition-colors
-                ${!notif.isRead ? 'bg-primary-50/50 border-primary-100' : ''}`}
+              className={`bg-white rounded-xl border p-4 flex items-start gap-3 transition-colors ${
+                !notif.isRead ? 'border-[#BFDBFE] bg-[#EFF6FF]' : 'border-[#E2E8F0]'
+              }`}
             >
-              <span className="text-lg mt-0.5">{typeIcon(notif.type)}</span>
+              <div className="flex-shrink-0 mt-0.5">{getNotificationIcon(notif.type)}</div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary">{notif.title}</p>
-                <p className="text-sm text-text-secondary mt-0.5">{notif.message}</p>
-                <p className="text-xs text-text-muted mt-1.5">
-                  {new Date(notif.createdAt).toLocaleString()}
+                <p className={`text-[13px] ${!notif.isRead ? 'font-semibold text-[#0F172A]' : 'font-medium text-[#334155]'}`}>
+                  {notif.title}
                 </p>
+                <p className="text-[13px] text-[#64748B] mt-0.5 leading-relaxed">{notif.message}</p>
+                <p className="text-[11px] text-[#94A3B8] mt-1.5 font-medium">{timeAgo(notif.createdAt)}</p>
               </div>
               {!notif.isRead && (
                 <button
                   onClick={() => handleMarkRead(notif.id)}
-                  className="btn-ghost btn-sm flex-shrink-0"
+                  className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors flex-shrink-0"
                   title="Mark as read"
                 >
-                  <Check className="w-4 h-4 text-primary-600" />
+                  <Check className="w-4 h-4 text-[#2563EB]" />
                 </button>
               )}
             </div>

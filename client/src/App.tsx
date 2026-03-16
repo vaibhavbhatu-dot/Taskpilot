@@ -26,6 +26,8 @@ import { ActivityLog } from './pages/admin/ActivityLog';
 import { NotificationsPage } from './pages/Notifications';
 import { MembersPage } from './pages/Members';
 import { ProjectsPage } from './pages/Projects';
+import { NotFoundPage } from './pages/NotFound';
+import { ToastContainer } from './components/ui/Toast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -148,9 +150,10 @@ function App() {
               />
             </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* 404 */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          <ToastContainer />
         </AppInitializer>
       </BrowserRouter>
     </QueryClientProvider>

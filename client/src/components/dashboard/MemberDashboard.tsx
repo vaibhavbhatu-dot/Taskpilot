@@ -3,7 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { ListTodo, Clock, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { dashboardApi, ticketsApi } from '../../api';
 import { useAuthStore } from '../../stores';
+import { Skeleton } from '../ui/Skeleton';
 import type { DashboardData, Ticket } from '../../types';
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-6 space-y-4">
+            <Skeleton className="h-5 w-36" />
+            {Array.from({ length: 3 }).map((_, j) => (
+              <Skeleton key={j} className="h-16 w-full" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function MemberDashboard() {
   const { user } = useAuthStore();
@@ -18,18 +44,11 @@ export function MemberDashboard() {
       try {
         const [dashRes, myTicketsRes] = await Promise.all([
           dashboardApi.getData(),
-          ticketsApi.list({
-            assignedToId: user.id,
-            status: 'IN_PROGRESS,TODO',
-            limit: '4',
-          }),
+          ticketsApi.list({ assignedToId: user.id, status: 'IN_PROGRESS,TODO', limit: '4' }),
         ]);
         setData(dashRes.data);
-        // Ensure tickets exist
         if (myTicketsRes.data?.tickets) {
           setActiveTickets(myTicketsRes.data.tickets.slice(0, 4));
-        } else {
-          setActiveTickets([]);
         }
       } catch (error) {
         console.error('Member dashboard load error:', error);
@@ -40,17 +59,10 @@ export function MemberDashboard() {
     load();
   }, [user]);
 
-  if (loading || !data) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading || !data) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Row 1: KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
@@ -59,7 +71,6 @@ export function MemberDashboard() {
           </div>
           <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.totalTickets}</p>
         </div>
-
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-yellow-600" />
@@ -67,7 +78,6 @@ export function MemberDashboard() {
           </div>
           <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.inProgressTickets}</p>
         </div>
-
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -75,7 +85,6 @@ export function MemberDashboard() {
           </div>
           <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.doneTickets}</p>
         </div>
-
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -87,15 +96,11 @@ export function MemberDashboard() {
         </div>
       </div>
 
-      {/* Row 2: Active Tickets + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-[15px] text-[#0F172A]">My Active Tickets</h3>
-            <button 
-              onClick={() => navigate('/tickets')}
-              className="text-[13px] text-[#2563EB] hover:text-[#1D4ED8] font-medium flex items-center gap-1 transition-colors"
-            >
+            <button onClick={() => navigate('/tickets')} className="text-[13px] text-[#2563EB] hover:text-[#1D4ED8] font-medium flex items-center gap-1 transition-colors">
               View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -107,11 +112,8 @@ export function MemberDashboard() {
               </div>
             ) : (
               activeTickets.map(ticket => (
-                <div 
-                  key={ticket.id} 
-                  onClick={() => navigate(`/tickets/${ticket.id}`)}
-                  className="p-4 rounded-xl border border-[#E2E8F0] hover:border-[#CBD5E1] hover:shadow-sm cursor-pointer transition-all group"
-                >
+                <div key={ticket.id} onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  className="p-4 rounded-xl border border-[#E2E8F0] hover:border-[#CBD5E1] hover:shadow-sm cursor-pointer transition-all group">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-[12px] font-mono font-medium text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-md">
                       {ticket.ticketNumber}
@@ -152,22 +154,16 @@ export function MemberDashboard() {
                   <div key={activity.id || index} className="relative pl-6">
                     <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-[#2563EB]" />
                     <div className="mb-1">
-                      <span className="font-medium text-[13px] text-[#0F172A] mr-1">
-                        {activity.changedBy?.fullName || 'User'}
-                      </span>
+                      <span className="font-medium text-[13px] text-[#0F172A] mr-1">{activity.changedBy?.fullName || 'User'}</span>
                       <span className="text-[13px] text-[#64748B]">updated</span>
-                      <span className="font-medium text-[13px] text-[#0F172A] mx-1">
-                        {activity.fieldChanged}
-                      </span>
+                      <span className="font-medium text-[13px] text-[#0F172A] mx-1">{activity.fieldChanged}</span>
                       <span className="text-[13px] text-[#64748B]">on</span>
                       <span className="text-[13px] font-mono text-[#2563EB] ml-1 bg-blue-50 px-1.5 py-0.5 rounded">
                         {activity.ticket?.ticketNumber || 'Ticket'}
                       </span>
                     </div>
                     <div className="text-[11px] font-medium text-[#94A3B8]">
-                      {new Date(activity.changedAt).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
+                      {new Date(activity.changedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 ))}

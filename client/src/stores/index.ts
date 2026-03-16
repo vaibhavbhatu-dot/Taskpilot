@@ -32,6 +32,29 @@ export const useAuthStore = create<AuthState>((set) => ({
     })),
 }));
 
+// ─── Toast Store ─────────────────────────────────────────
+interface ToastItem {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+}
+
+interface ToastState {
+  toasts: ToastItem[];
+  toast: (message: string, type?: ToastItem['type']) => void;
+  removeToast: (id: string) => void;
+}
+
+export const useToastStore = create<ToastState>((set) => ({
+  toasts: [],
+  toast: (message, type = 'success') => {
+    const id = Math.random().toString(36).slice(2);
+    set((state) => ({ toasts: [...state.toasts, { id, type, message }] }));
+  },
+  removeToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+}));
+
 // ─── UI Store ────────────────────────────────────────────
 interface UIState {
   sidebarOpen: boolean;

@@ -230,8 +230,30 @@ export function BoardPage() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        <div className="flex-1 overflow-auto">
+          <div className="flex gap-4 min-w-max">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-[280px] flex-shrink-0 flex flex-col">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="h-4 w-24 bg-[#E2E8F0] rounded animate-pulse" />
+                  <div className="h-5 w-6 bg-[#E2E8F0] rounded-full animate-pulse" />
+                </div>
+                <div className="flex-1 min-h-[150px] p-2 rounded-[12px] bg-[#F1F5F9] space-y-2">
+                  {Array.from({ length: 3 }).map((_, j) => (
+                    <div key={j} className="bg-white border border-[#E2E8F0] p-[14px] rounded-[10px] animate-pulse space-y-3">
+                      <div className="h-3 w-16 bg-[#E2E8F0] rounded" />
+                      <div className="h-4 w-full bg-[#E2E8F0] rounded" />
+                      <div className="h-3 w-3/4 bg-[#E2E8F0] rounded" />
+                      <div className="flex justify-between">
+                        <div className="h-6 w-6 bg-[#E2E8F0] rounded-full" />
+                        <div className="h-4 w-8 bg-[#E2E8F0] rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
@@ -283,53 +305,59 @@ export function BoardPage() {
                                   snapshot.isDraggingOver ? 'bg-[#EFF6FF] border-[#BFDBFE]' : 'bg-[#F1F5F9] border-transparent'
                                 }`}
                               >
-                                {colTickets.map((ticket, index) => (
-                                  <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        onClick={() => navigate(`/tickets/${ticket.id}`)}
-                                        className={`bg-white border p-[14px] rounded-[10px] mb-2 cursor-pointer transition-all ${
-                                          snapshot.isDragging 
-                                            ? 'border-[#2563EB] shadow-lg rotate-1 scale-105 opacity-90' 
-                                            : 'border-[#E2E8F0] shadow-sm hover:border-[#94A3B8]'
-                                        }`}
-                                      >
-                                        <div className="flex justify-between items-start mb-2">
-                                          <span className="text-[11px] font-mono font-medium text-[#64748B]">{ticket.ticketNumber}</span>
-                                          <span className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[ticket.priority]}`} title={ticket.priority} />
-                                        </div>
-                                        <p className="text-[14px] font-medium text-[#0F172A] leading-snug mb-3 line-clamp-2">
-                                          {ticket.title}
-                                        </p>
-                                        <div className="flex items-center justify-between">
-                                          {ticket.assignedTo ? (
-                                            <div className="w-[24px] h-[24px] rounded-full bg-[#DBEAFE] flex items-center justify-center border border-white relative z-10" title={ticket.assignedTo.fullName}>
-                                              <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(ticket.assignedTo.fullName)}</span>
+                                {colTickets.length === 0 && !snapshot.isDraggingOver ? (
+                                  <div className="flex items-center justify-center h-full min-h-[120px] border-2 border-dashed border-[#CBD5E1] rounded-[10px]">
+                                    <span className="text-[12px] text-[#94A3B8]">No tickets</span>
+                                  </div>
+                                ) : (
+                                  colTickets.map((ticket, index) => (
+                                    <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          onClick={() => navigate(`/tickets/${ticket.id}`)}
+                                          className={`bg-white border p-[14px] rounded-[10px] mb-2 cursor-pointer transition-all ${
+                                            snapshot.isDragging
+                                              ? 'border-[#2563EB] shadow-lg rotate-1 scale-105 opacity-90'
+                                              : 'border-[#E2E8F0] shadow-sm hover:border-[#94A3B8]'
+                                          }`}
+                                        >
+                                          <div className="flex justify-between items-start mb-2">
+                                            <span className="text-[11px] font-mono font-medium text-[#64748B]">{ticket.ticketNumber}</span>
+                                            <span className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[ticket.priority]}`} title={ticket.priority} />
+                                          </div>
+                                          <p className="text-[14px] font-medium text-[#0F172A] leading-snug mb-3 line-clamp-2">
+                                            {ticket.title}
+                                          </p>
+                                          <div className="flex items-center justify-between">
+                                            {ticket.assignedTo ? (
+                                              <div className="w-[24px] h-[24px] rounded-full bg-[#DBEAFE] flex items-center justify-center border border-white relative z-10" title={ticket.assignedTo.fullName}>
+                                                <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(ticket.assignedTo.fullName)}</span>
+                                              </div>
+                                            ) : (
+                                              <div className="w-[24px] h-[24px] rounded-full bg-[#F1F5F9] border border-white border-dashed relative z-10" title="Unassigned" />
+                                            )}
+
+                                            <div className="flex items-center gap-2">
+                                              {ticket.dueDate && (
+                                                <span className={`text-[12px] font-medium ${isOverdue(ticket.dueDate, ticket.status) ? 'text-red-500' : 'text-[#94A3B8]'}`}>
+                                                  {new Date(ticket.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </span>
+                                              )}
+                                              {ticket.storyPoints && (
+                                                <span className="h-[20px] px-1.5 flex items-center justify-center bg-[#F1F5F9] text-[#64748B] text-[11px] font-semibold rounded">
+                                                  {ticket.storyPoints}
+                                                </span>
+                                              )}
                                             </div>
-                                          ) : (
-                                            <div className="w-[24px] h-[24px] rounded-full bg-[#F1F5F9] border border-white border-dashed relative z-10" title="Unassigned" />
-                                          )}
-                                          
-                                          <div className="flex items-center gap-2">
-                                            {ticket.dueDate && (
-                                              <span className={`text-[12px] font-medium ${isOverdue(ticket.dueDate, ticket.status) ? 'text-red-500' : 'text-[#94A3B8]'}`}>
-                                                {new Date(ticket.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                              </span>
-                                            )}
-                                            {ticket.storyPoints && (
-                                              <span className="h-[20px] px-1.5 flex items-center justify-center bg-[#F1F5F9] text-[#64748B] text-[11px] font-semibold rounded">
-                                                {ticket.storyPoints}
-                                              </span>
-                                            )}
                                           </div>
                                         </div>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
+                                      )}
+                                    </Draggable>
+                                  ))
+                                )}
                                 {provided.placeholder}
                               </div>
                             )}

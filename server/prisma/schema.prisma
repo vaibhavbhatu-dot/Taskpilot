@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  PROJECT_MANAGER
+  MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum TicketType {
+  BUG
+  FEATURE
+  TASK
+  IMPROVEMENT
+}
+
+enum TicketPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TicketStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  BLOCKED
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum NotificationType {
+  TICKET_ASSIGNED
+  TICKET_UPDATED
+  TICKET_COMMENTED
+  SPRINT_STARTED
+  SPRINT_COMPLETED
+  INVITATION_SENT
+  MENTION
+  OVERDUE
+}
+
+// ─── MODELS ──────────────────────────────────────────────────────────
+
+model User {
+  id          String     @id @default(uuid())
+  email       String     @unique
+  password    String
+  fullName    String
+  designation String?
+  role        UserRole   @default(MEMBER)
+  managerId   String?
+  teamId      String?
+  avatar      String?
+  status      UserStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  manager       User?          @relation("UserManager", fields: [managerId], references: [id])
+  subordinates  User[]         @relation("UserManager")
+  team          Team?          @relation("TeamMembers", fields: [teamId], references: [id])
+  ledTeams      Team[]         @relation("TeamLead")
+  ledProjects   Project[]      @relation("ProjectLead")
+  createdTickets   Ticket[]    @relation("TicketCreator")
+  assignedTickets  Ticket[]    @relation("TicketAssignee")
+  createdSprints   Sprint[]    @relation("SprintCreator")
+  comments         Comment[]
+  notifications    Notification[]
+  ticketHistoryChanges TicketHistory[]
+  sentInvitations  Invitation[] @relation("InvitationSender")
+
+  @@index([email])
+  @@index([teamId])
+  @@index([managerId])
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  leadId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lead    User?    @relation("TeamLead", fields: [leadId], references: [id])
+  members User[]   @relation("TeamMembers")
+  tickets Ticket[]
+}
+
+model Invitation {
+  id              String           @id @default(uuid())
+  email           String
+  token           String           @unique
+  invitedById     String
+  presetRole      UserRole         @default(MEMBER)
+  presetManagerId String?
+  presetTeamId    String?
+  status          InvitationStatus @default(PENDING)
+  expiresAt       DateTime
+  createdAt       DateTime         @default(now())
+
+  // Relations
+  invitedBy User @relation("InvitationSender", fields: [invitedById], references: [id])
+
+  @@index([token])
+  @@index([email])
+}
+
+model Project {
+  id        String        @id @default(uuid())
+  name      String
+  key       String        @unique
+  leadId    String?
+  status    ProjectStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  lead    User?    @relation("ProjectLead", fields: [leadId], references: [id])
+  tickets Ticket[]
+  sprints Sprint[]
+
+  @@index([key])
+}
+
+model Ticket {
+  id           String         @id @default(uuid())
+  ticketNumber String         @unique
+  projectId    String
+  title        String
+  description  String?
+  type         TicketType     @default(TASK)
+  priority     TicketPriority @default(MEDIUM)
+  status       TicketStatus   @default(BACKLOG)
+  createdById  String
+  assignedToId String?
+  teamId       String?
+  dueDate      DateTime?
+  storyPoints  Int?
+  labels       String[]       @default([])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  project       Project        @relation(fields: [projectId], references: [id])
+  createdBy     User           @relation("TicketCreator", fields: [createdById], references: [id])
+  assignedTo    User?          @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  team          Team?          @relation(fields: [teamId], references: [id])
+  comments      Comment[]
+  history       TicketHistory[]
+  sprintTickets SprintTicket[]
+
+  @@index([projectId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([ticketNumber])
+}
+
+model Sprint {
+  id          String       @id @default(uuid())
+  name        String
+  projectId   String
+  startDate   DateTime?
+  endDate     DateTime?
+  goal        String?
+  status      SprintStatus @default(PLANNED)
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  project       Project        @relation(fields: [projectId], references: [id])
+  createdBy     User           @relation("SprintCreator", fields: [createdById], references: [id])
+  sprintTickets SprintTicket[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model SprintTicket {
+  id             String       @id @default(uuid())
+  sprintId       String
+  ticketId       String
+  statusAtStart  TicketStatus
+  pointsAtStart  Int?
+
+  // Relations
+  sprint Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([sprintId, ticketId])
+}
+
+model TicketHistory {
+  id           String   @id @default(uuid())
+  ticketId     String
+  changedById  String
+  fieldChanged String
+  oldValue     String?
+  newValue     String?
+  changedAt    DateTime @default(now())
+
+  // Relations
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  changedBy User   @relation(fields: [changedById], references: [id])
+
+  @@index([ticketId])
+  @@index([changedAt])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  ticketId  String
+  authorId  String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ticket   Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id])
+  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentThread")
+
+  @@index([ticketId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}

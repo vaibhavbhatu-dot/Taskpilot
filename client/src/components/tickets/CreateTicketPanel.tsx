@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, AlertCircle, Tag as TagIcon, Paperclip, Link as LinkIcon, ExternalLink, Check, Users } from 'lucide-react';
-import { Badge, Button, Input, Textarea, Label, FormField, getInitials } from '@/design-system';
+import { Button, Input, Textarea, Label, FormField, getInitials } from '@/design-system';
 import { ticketsApi } from '../../api';
 import type { Project, User, Sprint, Team } from '../../types';
 

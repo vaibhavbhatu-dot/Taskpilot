@@ -135,7 +135,7 @@ export function MembersPage() {
       <PageHeader
         title="Team Members"
         subtitle={`${users.length} members total`}
-        action={
+        actions={
           <button onClick={() => setShowInviteModal(true)} className="btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             Invite Member

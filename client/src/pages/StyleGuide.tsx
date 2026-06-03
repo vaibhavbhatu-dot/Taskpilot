@@ -4,7 +4,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { SkeletonCard, SkeletonText, SkeletonAvatar } from '@/components/ui/Skeleton';
 import { useToast } from '@/design-system/hooks/useToast';
-import { Modal, ModalFooter } from '@/components/ui/modal';
+import { Modal } from '@/components/ui/modal';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { Drawer } from '@/components/ui/drawer';
 import { useModal } from '@/design-system/hooks/useModal';
@@ -113,8 +113,113 @@ export function StyleGuidePage() {
           </button>
         </div>
 
+        {/* ── Component Index ── */}
+        {(() => {
+          function scrollTo(id: string) {
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          const pillBase =
+            'cursor-pointer rounded-full px-3 py-1 text-[12px] font-medium border transition-colors hover:opacity-80 select-none';
+          const groups: Array<{
+            label: string;
+            count: number;
+            pillClass: string;
+            items: Array<{ name: string; target: string }>;
+          }> = [
+            {
+              label: 'Base UI', count: 10,
+              pillClass: 'bg-primary/10 border-primary/30 text-primary',
+              items: [
+                { name: 'Button',    target: 'buttons' },
+                { name: 'Input',     target: 'forms'   },
+                { name: 'Textarea',  target: 'forms'   },
+                { name: 'Label',     target: 'forms'   },
+                { name: 'FormField', target: 'forms'   },
+                { name: 'Card',      target: 'cards'   },
+                { name: 'Badge',     target: 'badges'  },
+                { name: 'Alert',     target: 'feedback'},
+                { name: 'Spinner',   target: 'feedback'},
+                { name: 'Skeleton',  target: 'feedback'},
+              ],
+            },
+            {
+              label: 'Feedback', count: 6,
+              pillClass: 'bg-[hsl(var(--color-warning)/0.12)] border-[hsl(var(--color-warning)/0.35)] text-[hsl(var(--color-warning))]',
+              items: [
+                { name: 'Toast',          target: 'feedback' },
+                { name: 'Modal',          target: 'modals'   },
+                { name: 'ConfirmModal',   target: 'modals'   },
+                { name: 'Drawer',         target: 'modals'   },
+                { name: 'EmptyState',     target: 'product'  },
+                { name: 'AISuggestionChip', target: 'product'},
+              ],
+            },
+            {
+              label: 'Layout', count: 5,
+              pillClass: 'bg-secondary border-border text-secondary-foreground',
+              items: [
+                { name: 'Container', target: 'layout' },
+                { name: 'Stack',     target: 'layout' },
+                { name: 'Grid',      target: 'layout' },
+                { name: 'Divider',   target: 'layout' },
+                { name: 'PageHeader',target: 'layout' },
+              ],
+            },
+            {
+              label: 'Product', count: 6,
+              pillClass: 'bg-[hsl(var(--color-success)/0.1)] border-[hsl(var(--color-success)/0.3)] text-[hsl(var(--color-success))]',
+              items: [
+                { name: 'ScoreBar',     target: 'product' },
+                { name: 'JobMatchBadge',target: 'product' },
+                { name: 'ResumeCard',   target: 'product' },
+                { name: 'UploadZone',   target: 'product' },
+                { name: 'StatCard',     target: 'product' },
+                { name: 'DropdownMenu', target: 'product' },
+              ],
+            },
+          ];
+          return (
+            <div>
+              <h2 className="text-[18px] font-semibold mb-1">Component Index</h2>
+              <p className="text-[13px] mb-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                {groups.reduce((s, g) => s + g.count, 0)} components across {groups.length} categories.
+                Click any pill to jump to its section.
+              </p>
+              <div
+                className="rounded-xl p-6 space-y-6"
+                style={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border:          '1px solid hsl(var(--border))',
+                }}
+              >
+                {groups.map(({ label, count, pillClass, items }) => (
+                  <div key={label}>
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-widest mb-3"
+                      style={{ color: 'hsl(var(--muted-foreground))' }}
+                    >
+                      {label} · {count}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {items.map(({ name, target }) => (
+                        <button
+                          key={name}
+                          onClick={() => scrollTo(target)}
+                          className={`${pillBase} ${pillClass}`}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── Tokens section ── */}
-        <section>
+        <section id="tokens">
           <h2 className="text-[20px] font-semibold mb-1">Tokens</h2>
           <p
             className="text-[13px] mb-6"
@@ -174,8 +279,102 @@ export function StyleGuidePage() {
           </div>
         </section>
 
+        {/* ── Typography section ── */}
+        <section id="typography">
+          <h2 className="text-[20px] font-semibold mb-1">Typography</h2>
+          <p
+            className="text-[13px] mb-6"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
+            Font scale from <code className="font-mono">tailwind.config.js</code>. Inter for UI, JetBrains Mono for code.
+          </p>
+
+          <div
+            className="rounded-xl p-6 space-y-8"
+            style={{
+              backgroundColor: 'hsl(var(--card))',
+              border:          '1px solid hsl(var(--border))',
+            }}
+          >
+
+            {/* Size scale */}
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-5"
+                style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Size scale
+              </p>
+              <div className="space-y-4">
+                {([
+                  { name: 'xs',   px: '12px', cls: 'text-xs'   },
+                  { name: 'sm',   px: '14px', cls: 'text-sm'   },
+                  { name: 'base', px: '16px', cls: 'text-base' },
+                  { name: 'lg',   px: '18px', cls: 'text-lg'   },
+                  { name: 'xl',   px: '20px', cls: 'text-xl'   },
+                  { name: '2xl',  px: '24px', cls: 'text-2xl'  },
+                  { name: '3xl',  px: '30px', cls: 'text-3xl'  },
+                  { name: '4xl',  px: '36px', cls: 'text-4xl'  },
+                ] as const).map(({ name, px, cls }) => (
+                  <div key={name} className="flex items-baseline gap-4">
+                    <div className="w-16 flex-shrink-0 text-right">
+                      <span className="font-mono text-[11px] font-medium"
+                        style={{ color: 'hsl(var(--foreground))' }}>
+                        {name}
+                      </span>
+                      <span className="block font-mono text-[10px]"
+                        style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        {px}
+                      </span>
+                    </div>
+                    <p className={`${cls} text-foreground leading-tight`}>
+                      The quick brown fox
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Font weights */}
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-5"
+                style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Font weights (text-base)
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                {([
+                  { name: 'Normal',   cls: 'font-normal',   val: '400' },
+                  { name: 'Medium',   cls: 'font-medium',   val: '500' },
+                  { name: 'Semibold', cls: 'font-semibold', val: '600' },
+                  { name: 'Bold',     cls: 'font-bold',     val: '700' },
+                ] as const).map(({ name, cls, val }) => (
+                  <div key={name}>
+                    <p className={`text-base ${cls} text-foreground`}>
+                      The quick brown fox
+                    </p>
+                    <p className="text-[11px] font-mono mt-1"
+                      style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {name} · {val}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mono sample */}
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-4"
+                style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Monospace (JetBrains Mono)
+              </p>
+              <p className="font-mono text-sm text-foreground">
+                const score = calculateMatch(resume, jobDescription);
+              </p>
+            </div>
+
+          </div>
+        </section>
+
         {/* ── Buttons section ── */}
-        <section>
+        <section id="buttons">
           <h2 className="text-[20px] font-semibold mb-1">Buttons</h2>
           <p
             className="text-[13px] mb-6"
@@ -266,7 +465,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Cards section ── */}
-        <section>
+        <section id="cards">
           <h2 className="text-[20px] font-semibold mb-1">Cards</h2>
           <p
             className="text-[13px] mb-6"
@@ -348,7 +547,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Badges section ── */}
-        <section>
+        <section id="badges">
           <h2 className="text-[20px] font-semibold mb-1">Badges</h2>
           <p
             className="text-[13px] mb-6"
@@ -436,7 +635,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Modals & Drawers section ── */}
-        <section>
+        <section id="modals">
           <h2 className="text-[20px] font-semibold mb-1">Modals &amp; Drawers</h2>
           <p
             className="text-[13px] mb-6"
@@ -547,7 +746,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Feedback section ── */}
-        <section>
+        <section id="feedback">
           <h2 className="text-[20px] font-semibold mb-1">Feedback</h2>
           <p
             className="text-[13px] mb-6"
@@ -692,7 +891,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Form Elements section ── */}
-        <section>
+        <section id="forms">
           <h2 className="text-[20px] font-semibold mb-1">Form Elements</h2>
           <p
             className="text-[13px] mb-6"
@@ -831,7 +1030,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Product Components section ── */}
-        <section>
+        <section id="product">
           <h2 className="text-[20px] font-semibold mb-1">Product Components</h2>
           <p
             className="text-[13px] mb-6"
@@ -1044,7 +1243,7 @@ export function StyleGuidePage() {
         </section>
 
         {/* ── Layout section ── */}
-        <section>
+        <section id="layout">
           <h2 className="text-[20px] font-semibold mb-1">Layout</h2>
           <p
             className="text-[13px] mb-6"

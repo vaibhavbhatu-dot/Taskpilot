@@ -57,7 +57,7 @@ export function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
-      <PageHeader title="Notifications" action={
+      <PageHeader title="Notifications" actions={
         !loading && notifications.some((n) => !n.isRead) ? (
           <button onClick={handleMarkAllRead} className="btn-secondary btn-sm">
             <CheckCheck className="w-4 h-4 mr-1" />Mark All Read

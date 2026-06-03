@@ -82,7 +82,7 @@ export function SprintsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader title="Sprints" action={
+      <PageHeader title="Sprints" actions={
         <button onClick={() => setShowCreate(true)} className="btn-primary btn-sm">
           <Plus className="w-4 h-4 mr-1" /> New Sprint
         </button>

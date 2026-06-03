@@ -174,7 +174,7 @@ export function TeamsPage() {
       <PageHeader
         title="Teams"
         subtitle={`${teams.length} teams`}
-        action={canCreate ? (
+        actions={canCreate ? (
           <button onClick={() => setShowModal(true)} className="btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             Create Team

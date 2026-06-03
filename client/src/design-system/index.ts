@@ -1,4 +1,4 @@
-// ── UI primitives ─────────────────────────────────────────────────────────────
+// ── Base UI primitives ────────────────────────────────────────────────────────
 export { Button, buttonVariants } from "@/components/ui/button"
 export type { ButtonProps } from "@/components/ui/button"
 
@@ -46,6 +46,31 @@ export type { ConfirmModalProps } from "@/components/ui/confirm-modal"
 
 export { Drawer } from "@/components/ui/drawer"
 export type { DrawerProps } from "@/components/ui/drawer"
+
+// ── Product components ────────────────────────────────────────────────────────
+export { EmptyState } from "@/components/ui/EmptyState"
+export type { EmptyStateProps } from "@/components/ui/EmptyState"
+
+export { ScoreBar } from "@/components/ui/score-bar"
+export type { ScoreBarProps } from "@/components/ui/score-bar"
+
+export { JobMatchBadge } from "@/components/ui/job-match-badge"
+export type { JobMatchBadgeProps } from "@/components/ui/job-match-badge"
+
+export { ResumeCard } from "@/components/ui/resume-card"
+export type { ResumeCardProps } from "@/components/ui/resume-card"
+
+export { UploadZone } from "@/components/ui/upload-zone"
+export type { UploadZoneProps } from "@/components/ui/upload-zone"
+
+export { AISuggestionChip } from "@/components/ui/ai-suggestion-chip"
+export type { AISuggestionChipProps } from "@/components/ui/ai-suggestion-chip"
+
+export { StatCard } from "@/components/ui/stat-card"
+export type { StatCardProps } from "@/components/ui/stat-card"
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+export { Container, Stack, Grid, Divider, PageHeader } from "@/components/layout"
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 export { useToast } from "@/design-system/hooks/useToast"

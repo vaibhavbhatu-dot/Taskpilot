@@ -136,7 +136,7 @@ export function ProjectsPage() {
       <PageHeader
         title="Projects"
         subtitle={`${projects.length} projects`}
-        action={canCreate ? (
+        actions={canCreate ? (
           <button onClick={() => setShowModal(true)} className="btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             Create Project

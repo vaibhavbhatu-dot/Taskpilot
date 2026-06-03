@@ -5,6 +5,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { teamsApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Team, User } from '../types';
+import { getInitials } from '@/design-system';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },

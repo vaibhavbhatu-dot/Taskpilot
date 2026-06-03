@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Search, Plus, MoreHorizontal, X, ChevronDown, ChevronRight, Mail, Clock, AlertCircle } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { usersApi, invitationsApi, teamsApi } from '../api';
 import type { User, Invitation, Team } from '../types';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -131,17 +132,16 @@ export function MembersPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#0F172A]">Team Members</h1>
-          <p className="text-sm text-[#64748B] mt-1">{users.length} members total</p>
-        </div>
-        <button onClick={() => setShowInviteModal(true)} className="btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Invite Member
-        </button>
-      </div>
+      <PageHeader
+        title="Team Members"
+        subtitle={`${users.length} members total`}
+        action={
+          <button onClick={() => setShowInviteModal(true)} className="btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            Invite Member
+          </button>
+        }
+      />
 
       {/* Search + Filters */}
       <div className="space-y-3">
@@ -246,12 +246,11 @@ export function MembersPage() {
           </tbody>
         </table>
         {filteredUsers.length === 0 && !loading && (
-          <EmptyState 
-            icon={UsersIcon} 
-            title="No members found" 
-            description="Adjust your search filters or invite new team members." 
-            actionLabel="Invite Member" 
-            onAction={() => setShowInviteModal(true)} 
+          <EmptyState
+            icon={<UsersIcon className="w-12 h-12" />}
+            title="No members found"
+            description="Adjust your search filters or invite new team members."
+            action={{ label: 'Invite Member', onClick: () => setShowInviteModal(true) }}
           />
         )}
       </div>

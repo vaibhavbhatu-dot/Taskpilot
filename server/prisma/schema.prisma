@@ -45,11 +45,16 @@ enum TicketPriority {
 
 enum TicketStatus {
   BACKLOG
-  TODO
-  IN_PROGRESS
-  IN_REVIEW
-  DONE
-  BLOCKED
+  REQUIREMENTS
+  DESIGN
+  HTML
+  ON_DEVELOPMENT
+  QA
+  BUGS
+  ENHANCEMENT
+  UAT
+  LIVE
+  NOT_REQUIRED
 }
 
 enum SprintStatus {
@@ -103,6 +108,8 @@ model User {
   notifications    Notification[]
   ticketHistoryChanges TicketHistory[]
   sentInvitations  Invitation[] @relation("InvitationSender")
+  ticketAssignments TicketAssignee[] @relation("TicketAssigneeUser")
+  uploadedAttachments Attachment[] @relation("AttachmentUploader")
 
   @@index([email])
   @@index([teamId])
@@ -171,8 +178,9 @@ model Ticket {
   assignedToId String?
   teamId       String?
   dueDate      DateTime?
-  storyPoints  Int?
+  completedAt  DateTime?
   labels       String[]       @default([])
+  links        String[]       @default([])
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -184,6 +192,8 @@ model Ticket {
   comments      Comment[]
   history       TicketHistory[]
   sprintTickets SprintTicket[]
+  assignees     TicketAssignee[]
+  attachments   Attachment[]
 
   @@index([projectId])
   @@index([assignedToId])
@@ -217,7 +227,6 @@ model SprintTicket {
   sprintId       String
   ticketId       String
   statusAtStart  TicketStatus
-  pointsAtStart  Int?
 
   // Relations
   sprint Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
@@ -253,10 +262,11 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   // Relations
-  ticket   Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  author   User      @relation(fields: [authorId], references: [id])
-  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
-  replies  Comment[] @relation("CommentThread")
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User         @relation(fields: [authorId], references: [id])
+  parent      Comment?     @relation("CommentThread", fields: [parentId], references: [id])
+  replies     Comment[]    @relation("CommentThread")
+  attachments Attachment[] @relation("CommentAttachments")
 
   @@index([ticketId])
 }
@@ -276,4 +286,38 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+}
+
+model TicketAssignee {
+  id        String   @id @default(uuid())
+  ticketId  String
+  userId    String
+  assignedAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation("TicketAssigneeUser", fields: [userId], references: [id])
+
+  @@unique([ticketId, userId])
+  @@index([ticketId])
+  @@index([userId])
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  ticketId     String
+  filename     String
+  originalName String
+  url          String
+  size         Int?
+  mimeType     String?
+  uploadedById String
+  commentId    String?
+  createdAt    DateTime @default(now())
+
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+  comment    Comment? @relation("CommentAttachments", fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([commentId])
 }

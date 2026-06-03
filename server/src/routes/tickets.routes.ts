@@ -1,6 +1,21 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+const uploadDir = path.resolve(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${path.extname(file.originalname)}`);
+  },
+});
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB limit
 
 const router = Router();
 
@@ -82,6 +97,7 @@ router.get('/', async (req: Request, res: Response) => {
         include: {
           project: { select: { id: true, name: true, key: true } },
           assignedTo: { select: { id: true, fullName: true, avatar: true } },
+          assignees: { include: { user: { select: { id: true, fullName: true, avatar: true } } }, orderBy: { assignedAt: 'asc' } },
           createdBy: { select: { id: true, fullName: true } },
           _count: { select: { comments: true } },
         },
@@ -116,6 +132,8 @@ router.get('/:id', async (req: Request, res: Response) => {
       include: {
         project: { select: { id: true, name: true, key: true } },
         assignedTo: { select: { id: true, fullName: true, avatar: true, email: true } },
+        assignees: { include: { user: { select: { id: true, fullName: true, avatar: true, email: true } } }, orderBy: { assignedAt: 'asc' } },
+        attachments: { where: { commentId: null }, include: { uploadedBy: { select: { id: true, fullName: true } } }, orderBy: { createdAt: 'asc' } },
         createdBy: { select: { id: true, fullName: true, avatar: true } },
         team: { select: { id: true, name: true } },
         sprintTickets: {
@@ -139,7 +157,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST /api/tickets
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { title, description, projectId, type, priority, assignedToId, teamId, dueDate, storyPoints, labels } = req.body;
+    const { title, description, projectId, type, priority, assignedToId, assigneeIds, teamId, dueDate, labels, links } = req.body;
 
     if (!title || !projectId) {
       res.status(400).json({ error: 'Title and project are required' });
@@ -167,33 +185,52 @@ router.post('/', async (req: Request, res: Response) => {
         priority: priority || 'MEDIUM',
         status: 'BACKLOG',
         createdById: req.user!.userId,
-        assignedToId: assignedToId || null,
+        assignedToId: (assigneeIds && assigneeIds[0]) || assignedToId || null,
         teamId: teamId || null,
         dueDate: dueDate ? new Date(dueDate) : null,
-        storyPoints: storyPoints || null,
         labels: labels || [],
+        links: links || [],
       },
       include: {
         project: { select: { id: true, name: true, key: true } },
         assignedTo: { select: { id: true, fullName: true, avatar: true } },
+        assignees: { include: { user: { select: { id: true, fullName: true, avatar: true } } } },
         createdBy: { select: { id: true, fullName: true } },
       },
     });
 
-    // Create notification for assignee
-    if (assignedToId) {
-      await prisma.notification.create({
-        data: {
-          userId: assignedToId,
-          type: 'TICKET_ASSIGNED',
+    // Create TicketAssignee records for all assignees
+    const allAssigneeIds: string[] = assigneeIds?.length ? assigneeIds : (assignedToId ? [assignedToId] : []);
+    if (allAssigneeIds.length > 0) {
+      await prisma.ticketAssignee.createMany({
+        data: allAssigneeIds.map((uid: string) => ({ ticketId: ticket.id, userId: uid })),
+        skipDuplicates: true,
+      });
+      // Notify all assignees
+      await prisma.notification.createMany({
+        data: allAssigneeIds.map((uid: string) => ({
+          userId: uid,
+          type: 'TICKET_ASSIGNED' as const,
           title: 'New ticket assigned',
           message: `You have been assigned ticket ${ticketNumber}: ${title}`,
           link: `/tickets/${ticket.id}`,
-        },
+        })),
+        skipDuplicates: true,
       });
     }
 
-    res.status(201).json(ticket);
+    // Re-fetch to include assignees in response
+    const created = await prisma.ticket.findUnique({
+      where: { id: ticket.id },
+      include: {
+        project: { select: { id: true, name: true, key: true } },
+        assignedTo: { select: { id: true, fullName: true, avatar: true } },
+        assignees: { include: { user: { select: { id: true, fullName: true, avatar: true } } }, orderBy: { assignedAt: 'asc' } },
+        createdBy: { select: { id: true, fullName: true } },
+      },
+    });
+
+    res.status(201).json(created);
   } catch (error) {
     console.error('Create ticket error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -219,7 +256,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
     // Track which fields changed for history
     const historyEntries: any[] = [];
-    const fieldsToTrack = ['title', 'description', 'type', 'priority', 'status', 'assignedToId', 'dueDate', 'storyPoints'];
+    const fieldsToTrack = ['title', 'description', 'type', 'priority', 'status', 'assignedToId', 'dueDate'];
 
     for (const field of fieldsToTrack) {
       if (updates[field] !== undefined && updates[field] !== (currentTicket as any)[field]) {
@@ -243,28 +280,49 @@ router.patch('/:id', async (req: Request, res: Response) => {
     if (updates.assignedToId !== undefined) data.assignedToId = updates.assignedToId || null;
     if (updates.teamId !== undefined) data.teamId = updates.teamId || null;
     if (updates.dueDate !== undefined) data.dueDate = updates.dueDate ? new Date(updates.dueDate) : null;
-    if (updates.storyPoints !== undefined) data.storyPoints = updates.storyPoints;
     if (updates.labels !== undefined) data.labels = updates.labels;
+    if (updates.links !== undefined) data.links = updates.links;
+    if (updates.status !== undefined) {
+      const completedStatuses = ['LIVE', 'NOT_REQUIRED'];
+      if (completedStatuses.includes(updates.status) && !completedStatuses.includes(currentTicket.status)) {
+        data.completedAt = new Date();
+      } else if (!completedStatuses.includes(updates.status) && completedStatuses.includes(currentTicket.status)) {
+        data.completedAt = null;
+      }
+    }
 
     const ticket = await prisma.$transaction(async (tx) => {
-      // Create history entries
       if (historyEntries.length > 0) {
         await tx.ticketHistory.createMany({ data: historyEntries });
       }
 
-      // Update ticket
+      // Sync assignees if provided
+      if (updates.assigneeIds !== undefined) {
+        await tx.ticketAssignee.deleteMany({ where: { ticketId } });
+        if (updates.assigneeIds.length > 0) {
+          await tx.ticketAssignee.createMany({
+            data: updates.assigneeIds.map((uid: string) => ({ ticketId, userId: uid })),
+            skipDuplicates: true,
+          });
+          data.assignedToId = updates.assigneeIds[0] || null;
+        } else {
+          data.assignedToId = null;
+        }
+      }
+
       return tx.ticket.update({
         where: { id: ticketId },
         data,
         include: {
           project: { select: { id: true, name: true, key: true } },
           assignedTo: { select: { id: true, fullName: true, avatar: true } },
+          assignees: { include: { user: { select: { id: true, fullName: true, avatar: true } } } },
+          attachments: { where: { commentId: null }, include: { uploadedBy: { select: { id: true, fullName: true } } }, orderBy: { createdAt: 'asc' } },
           createdBy: { select: { id: true, fullName: true } },
         },
       });
     });
 
-    // Notify assignee on status change
     if (updates.status && updates.assignedToId !== userId && currentTicket.assignedToId) {
       await prisma.notification.create({
         data: {
@@ -332,7 +390,7 @@ router.put('/bulk', async (req: Request, res: Response) => {
     });
 
     const historyEntries: any[] = [];
-    const fieldsToTrack = ['type', 'priority', 'status', 'assignedToId', 'dueDate', 'storyPoints', 'teamId'];
+    const fieldsToTrack = ['type', 'priority', 'status', 'assignedToId', 'dueDate', 'teamId'];
 
     currentTickets.forEach(ticket => {
       for (const field of fieldsToTrack) {
@@ -352,11 +410,18 @@ router.put('/bulk', async (req: Request, res: Response) => {
     const data: any = {};
     if (updates.type !== undefined) data.type = updates.type;
     if (updates.priority !== undefined) data.priority = updates.priority;
-    if (updates.status !== undefined) data.status = updates.status;
+    if (updates.status !== undefined) {
+      data.status = updates.status;
+      const completedStatuses = ['LIVE', 'NOT_REQUIRED'];
+      if (completedStatuses.includes(updates.status)) {
+        data.completedAt = new Date();
+      } else {
+        data.completedAt = null;
+      }
+    }
     if (updates.assignedToId !== undefined) data.assignedToId = updates.assignedToId || null;
     if (updates.teamId !== undefined) data.teamId = updates.teamId || null;
     if (updates.dueDate !== undefined) data.dueDate = updates.dueDate ? new Date(updates.dueDate) : null;
-    if (updates.storyPoints !== undefined) data.storyPoints = updates.storyPoints;
 
     await prisma.$transaction(async (tx) => {
       if (historyEntries.length > 0) {
@@ -371,6 +436,59 @@ router.put('/bulk', async (req: Request, res: Response) => {
     res.json({ message: 'Tickets updated successfully' });
   } catch (error) {
     console.error('Bulk update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/tickets/:id/attachments — Upload file attachment
+router.post('/:id/attachments', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+    const ticketId = req.params.id;
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      fs.unlinkSync(req.file.path);
+      res.status(404).json({ error: 'Ticket not found' });
+      return;
+    }
+    const commentId = (req.body?.commentId || req.query?.commentId) as string | undefined;
+    const attachment = await prisma.attachment.create({
+      data: {
+        ticketId,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        url: `/uploads/${req.file.filename}`,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+        uploadedById: req.user!.userId,
+        ...(commentId ? { commentId } : {}),
+      },
+      include: { uploadedBy: { select: { id: true, fullName: true } } },
+    });
+    res.status(201).json(attachment);
+  } catch (error) {
+    console.error('Upload attachment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/tickets/:id/attachments/:attachmentId
+router.delete('/:id/attachments/:attachmentId', async (req: Request, res: Response) => {
+  try {
+    const attachment = await prisma.attachment.findUnique({ where: { id: req.params.attachmentId } });
+    if (!attachment) {
+      res.status(404).json({ error: 'Attachment not found' });
+      return;
+    }
+    const filePath = path.join(uploadDir, attachment.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    await prisma.attachment.delete({ where: { id: req.params.attachmentId } });
+    res.json({ message: 'Attachment deleted' });
+  } catch (error) {
+    console.error('Delete attachment error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

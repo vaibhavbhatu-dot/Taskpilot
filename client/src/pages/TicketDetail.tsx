@@ -1,20 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Tag as TagIcon, Clock } from 'lucide-react';
+import { ArrowLeft, Check, Tag as TagIcon, Clock, Users, Paperclip, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
 import { ticketsApi, commentsApi, usersApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
-import type { Ticket, Comment, TicketHistory, TicketStatus, TicketPriority, User, Team } from '../types';
+import type { Ticket, Comment, TicketHistory, TicketPriority, User, Team } from '../types';
+import { TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
 
-const STATUS_OPTIONS: TicketStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'];
+const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS: TicketPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-const FIBONACCI = [1, 2, 3, 5, 8, 13, 21];
 
 const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
 const isOverdue = (d: string, status: string) =>
-  new Date(d) < new Date() && status !== 'DONE';
+  new Date(d) < new Date() && status !== 'DEPLOYED';
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +40,25 @@ export function TicketDetailPage() {
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [isDescChanged, setIsDescChanged] = useState(false);
+
+  // Assignee multi-select
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+
+  // Links management
+  const [linkInput, setLinkInput] = useState('');
+
+  // Attachment upload
+  const attachFileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Comment attachments
+  const commentFileRef = useRef<HTMLInputElement>(null);
+  const [commentFiles, setCommentFiles] = useState<File[]>([]);
+  const [commentPreviews, setCommentPreviews] = useState<string[]>([]);
+
+  const formatFileSize = (bytes?: number) =>
+    !bytes ? '' : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
   useEffect(() => {
     if (id) {
@@ -119,16 +138,85 @@ export function TicketDetailPage() {
     setIsDescChanged(false);
   }
 
-  async function handleAddComment() {
-    if (!newComment.trim() || !ticket) return;
+  async function toggleAssignee(userId: string) {
+    if (!ticket) return;
+    const current = ticket.assignees?.map(a => a.userId) || [];
+    const next = current.includes(userId) ? current.filter(id => id !== userId) : [...current, userId];
+    const { data } = await ticketsApi.update(ticket.id, { assigneeIds: next } as any);
+    setTicket((prev: any) => ({ ...prev, ...data }));
+  }
+
+  async function addLink() {
+    if (!ticket || !linkInput.trim()) return;
+    const url = linkInput.trim().startsWith('http') ? linkInput.trim() : `https://${linkInput.trim()}`;
+    const newLinks = [...(ticket.links || []), url];
+    await handleFieldChange('links', newLinks);
+    setLinkInput('');
+  }
+
+  async function removeLink(url: string) {
+    if (!ticket) return;
+    await handleFieldChange('links', (ticket.links || []).filter(l => l !== url));
+  }
+
+  async function handleAttachmentUpload(files: FileList | null) {
+    if (!files || !ticket) return;
+    setUploading(true);
     try {
-      await commentsApi.create(ticket.id, { content: newComment });
+      await Promise.allSettled(Array.from(files).map(f => ticketsApi.uploadAttachment(ticket.id, f)));
+      const res = await ticketsApi.get(ticket.id);
+      setTicket(res.data);
+    } finally { setUploading(false); }
+  }
+
+  async function deleteAttachment(attachmentId: string) {
+    if (!ticket) return;
+    await ticketsApi.deleteAttachment(ticket.id, attachmentId);
+    setTicket((prev: any) => prev ? { ...prev, attachments: prev.attachments?.filter((a: any) => a.id !== attachmentId) } : prev);
+  }
+
+  async function handleAddComment() {
+    if ((!newComment.trim() && commentFiles.length === 0) || !ticket) return;
+    try {
+      // Always create a comment (use empty placeholder if text is blank but files exist)
+      const commentContent = newComment.trim() || '📎 Attached files';
+      const { data: newCommentData } = await commentsApi.create(ticket.id, { content: commentContent });
+
+      // Upload files scoped to this comment
+      if (commentFiles.length > 0) {
+        await Promise.allSettled(
+          commentFiles.map(f => ticketsApi.uploadAttachment(ticket.id, f, newCommentData.id))
+        );
+      }
+
       setNewComment('');
+      commentPreviews.forEach(url => URL.revokeObjectURL(url));
+      setCommentFiles([]);
+      setCommentPreviews([]);
       const res = await commentsApi.list(ticket.id);
       setComments(res.data);
     } catch (error) {
       console.error('Failed to add comment:', error);
     }
+  }
+
+  function handleCommentFileSelect(files: FileList | null) {
+    if (!files) return;
+    const arr = Array.from(files);
+    setCommentFiles(prev => {
+      const existing = new Set(prev.map(f => f.name));
+      return [...prev, ...arr.filter(f => !existing.has(f.name))];
+    });
+    setCommentPreviews(prev => [
+      ...prev,
+      ...arr.map(f => (f.type.startsWith('image/') ? URL.createObjectURL(f) : '')),
+    ]);
+  }
+
+  function removeCommentFile(i: number) {
+    if (commentPreviews[i]) URL.revokeObjectURL(commentPreviews[i]);
+    setCommentFiles(prev => prev.filter((_, j) => j !== i));
+    setCommentPreviews(prev => prev.filter((_, j) => j !== i));
   }
 
   if (loading) {
@@ -173,10 +261,13 @@ export function TicketDetailPage() {
           {/* Header Section */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[12px] font-mono text-[#2563EB] font-medium">{ticket.ticketNumber}</span>
-              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-[#F1F5F9] text-[#64748B]">
-                {ticket.type}
-              </span>
+              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-[#F1F5F9] text-[#64748B]">{ticket.type}</span>
+              <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                ticket.priority === 'CRITICAL' ? 'bg-red-50 text-red-600' :
+                ticket.priority === 'HIGH' ? 'bg-orange-50 text-orange-600' :
+                ticket.priority === 'MEDIUM' ? 'bg-yellow-50 text-yellow-700' :
+                'bg-gray-100 text-gray-500'
+              }`}>{ticket.priority}</span>
             </div>
             
             {/* Editable Title */}
@@ -209,14 +300,24 @@ export function TicketDetailPage() {
               <span>on {new Date(ticket.createdAt).toLocaleDateString()}</span>
               <span>•</span>
               <span>Assigned to</span>
-              {ticket.assignedTo ? (
-                <div className="flex items-center gap-1.5 font-medium text-[#0F172A]">
-                  <div className="w-5 h-5 rounded-full bg-[#DBEAFE] flex items-center justify-center">
-                    <span className="text-[9px] text-[#2563EB]">{getInitials(ticket.assignedTo?.fullName || 'U')}</span>
+              {(() => {
+                const assignees = ticket.assignees && ticket.assignees.length > 0
+                  ? ticket.assignees
+                  : ticket.assignedTo ? [{ userId: ticket.assignedTo.id, user: ticket.assignedTo }] : [];
+                if (assignees.length === 0) return <span>Unassigned</span>;
+                return (
+                  <div className="flex items-center gap-1">
+                    {assignees.slice(0, 3).map((a, i) => (
+                      <div key={a.userId} className="w-5 h-5 rounded-full bg-[#DBEAFE] flex items-center justify-center border border-white" style={{ marginLeft: i > 0 ? '-4px' : 0 }} title={a.user.fullName}>
+                        <span className="text-[9px] text-[#2563EB]">{getInitials(a.user.fullName)}</span>
+                      </div>
+                    ))}
+                    <span className="ml-1 font-medium text-[#0F172A]">
+                      {assignees.length === 1 ? assignees[0].user.fullName : `${assignees.length} assignees`}
+                    </span>
                   </div>
-                  {ticket.assignedTo?.fullName}
-                </div>
-              ) : <span>Unassigned</span>}
+                );
+              })()}
             </div>
           </div>
 
@@ -266,19 +367,78 @@ export function TicketDetailPage() {
 
             {activeTab === 'comments' ? (
               <div className="space-y-6">
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0 mt-1">
                     <span className="text-[11px] font-semibold text-[#2563EB]">{getInitials(user?.fullName || 'U')}</span>
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 border border-[#E2E8F0] rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-shadow">
+                    {/* Text area */}
                     <textarea
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Add a comment..."
-                      className="input min-h-[80px] resize-none pb-12"
+                      onKeyDown={e => e.key === 'Enter' && e.metaKey && handleAddComment()}
+                      className="w-full px-4 pt-3 pb-2 text-[14px] text-[#0F172A] outline-none resize-none placeholder:text-[#94A3B8] min-h-[80px] bg-transparent"
                     />
-                    <div className="flex justify-end -mt-10 mr-2 relative z-10">
-                      <button onClick={handleAddComment} disabled={!newComment.trim()} className="btn-primary btn-sm">
+
+                    {/* File previews */}
+                    {commentFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-2 px-4 pb-2">
+                        {commentFiles.map((f, i) => (
+                          <div key={i} className="relative group">
+                            {commentPreviews[i] ? (
+                              /* Image preview */
+                              <div className="w-16 h-16 rounded-lg overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC]">
+                                <img src={commentPreviews[i]} alt={f.name} className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              /* Non-image file */
+                              <div className="flex items-center gap-2 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg max-w-[180px]">
+                                <Paperclip className="w-3.5 h-3.5 text-[#64748B] flex-shrink-0" />
+                                <span className="text-[12px] text-[#0F172A] truncate">{f.name}</span>
+                                <span className="text-[11px] text-[#94A3B8] flex-shrink-0">{formatFileSize(f.size)}</span>
+                              </div>
+                            )}
+                            {/* Remove button */}
+                            <button
+                              onClick={() => removeCommentFile(i)}
+                              className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                            >×</button>
+                            {/* Filename tooltip on image */}
+                            {commentPreviews[i] && (
+                              <p className="text-[10px] text-[#94A3B8] mt-0.5 text-center truncate max-w-[64px]">{f.name}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Toolbar */}
+                    <div className="flex items-center justify-between px-3 py-2 border-t border-[#F1F5F9] bg-[#F8FAFC]">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => commentFileRef.current?.click()}
+                          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[12px] font-medium text-[#64748B] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors"
+                          title="Attach file"
+                        >
+                          <Paperclip className="w-3.5 h-3.5" />
+                          Attach
+                          {commentFiles.length > 0 && (
+                            <span className="ml-0.5 w-4 h-4 rounded-full bg-[#2563EB] text-white text-[10px] flex items-center justify-center">
+                              {commentFiles.length}
+                            </span>
+                          )}
+                        </button>
+                        <input ref={commentFileRef} type="file" multiple className="hidden"
+                          onChange={e => handleCommentFileSelect(e.target.files)} />
+                        <span className="text-[11px] text-[#94A3B8] ml-1">⌘+Enter to post</span>
+                      </div>
+                      <button
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() && commentFiles.length === 0}
+                        className="h-7 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
                         Post
                       </button>
                     </div>
@@ -298,7 +458,29 @@ export function TicketDetailPage() {
                             {new Date(comment.createdAt).toLocaleDateString()} {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <p className="text-[14px] text-[#0F172A] whitespace-pre-wrap">{comment.content}</p>
+                        {comment.content !== '📎 Attached files' && (
+                          <p className="text-[14px] text-[#0F172A] whitespace-pre-wrap">{comment.content}</p>
+                        )}
+                        {comment.attachments && comment.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {comment.attachments.map(a => {
+                              const isImage = a.mimeType?.startsWith('image/');
+                              return isImage ? (
+                                <a key={a.id} href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
+                                  className="block w-24 h-24 rounded-lg overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] hover:opacity-90 transition-opacity flex-shrink-0">
+                                  <img src={`http://localhost:5000${a.url}`} alt={a.originalName} className="w-full h-full object-cover" />
+                                </a>
+                              ) : (
+                                <a key={a.id} href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center gap-2 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg hover:border-[#2563EB] hover:bg-[#EFF6FF] transition-colors max-w-[220px]">
+                                  <Paperclip className="w-3.5 h-3.5 text-[#64748B] flex-shrink-0" />
+                                  <span className="text-[12px] text-[#0F172A] truncate">{a.originalName}</span>
+                                  <span className="text-[11px] text-[#94A3B8] flex-shrink-0">{formatFileSize(a.size)}</span>
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -338,7 +520,7 @@ export function TicketDetailPage() {
             <div>
               <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Status</label>
               <select value={ticket.status} onChange={(e) => handleFieldChange('status', e.target.value)} className="input text-[13px] font-medium h-9">
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
               </select>
             </div>
 
@@ -350,13 +532,54 @@ export function TicketDetailPage() {
               </select>
             </div>
 
-            {/* Assignee */}
-            <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Assignee</label>
-              <select value={ticket.assignedToId || ''} onChange={(e) => handleFieldChange('assignedToId', e.target.value)} className="input text-[13px] h-9">
-                <option value="">Unassigned</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-              </select>
+            {/* Assignees — multi */}
+            <div className="relative">
+              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Users className="w-3 h-3" /> Assignees
+              </label>
+              {(ticket.assignees || []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(ticket.assignees || []).map(a => (
+                    <span key={a.userId} className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#DBEAFE] text-[#1D4ED8] text-[12px] font-medium rounded-full">
+                      <span className="w-4 h-4 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[9px] font-bold">{getInitials(a.user.fullName)}</span>
+                      {a.user.fullName.split(' ')[0]}
+                      <button onClick={() => toggleAssignee(a.userId)} className="hover:text-red-500 leading-none text-[14px]">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setShowAssigneeDropdown(v => !v)}
+                className="input text-[13px] h-9 text-left flex items-center justify-between w-full">
+                <span className="text-[#94A3B8]">Add assignee...</span>
+                <Users className="w-4 h-4 text-[#94A3B8]" />
+              </button>
+              {showAssigneeDropdown && (
+                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-[#E2E8F0] rounded-lg shadow-lg overflow-hidden">
+                  <div className="p-2 border-b border-[#E2E8F0]">
+                    <input autoFocus value={assigneeSearch} onChange={e => setAssigneeSearch(e.target.value)}
+                      placeholder="Search..." className="w-full h-7 px-2 text-[12px] border border-[#E2E8F0] rounded outline-none" />
+                  </div>
+                  <div className="max-h-[180px] overflow-y-auto">
+                    {users.filter(u => u.fullName.toLowerCase().includes(assigneeSearch.toLowerCase())).map(u => {
+                      const isSelected = ticket.assignees?.some(a => a.userId === u.id);
+                      return (
+                        <button key={u.id} type="button" onClick={() => { toggleAssignee(u.id); setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[#F8FAFC]">
+                          <div className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                            <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(u.fullName)}</span>
+                          </div>
+                          <span className="flex-1 text-[13px] text-left truncate">{u.fullName}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#2563EB]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="p-1.5 border-t border-[#E2E8F0]">
+                    <button onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
+                      className="w-full text-[11px] text-[#64748B] py-1">Done</button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Team */}
@@ -399,15 +622,6 @@ export function TicketDetailPage() {
               </div>
             </div>
 
-            {/* Story Points */}
-            <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Story Points</label>
-              <select value={ticket.storyPoints || ''} onChange={(e) => handleFieldChange('storyPoints', e.target.value ? Number(e.target.value) : null)} className="input text-[13px] h-9 w-24">
-                <option value="">—</option>
-                {FIBONACCI.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-
             {/* Labels */}
             <div>
               <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Labels</label>
@@ -421,7 +635,63 @@ export function TicketDetailPage() {
               </div>
             </div>
 
-            <div className="border-t border-[#E2E8F0] pt-4 mt-2">
+            {/* Links — sidebar compact */}
+            <div className="border-t border-[#E2E8F0] pt-4">
+              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <LinkIcon className="w-3 h-3" /> Links
+              </label>
+              {(ticket.links || []).length > 0 && (
+                <div className="flex flex-col gap-1 mb-2">
+                  {(ticket.links || []).map(l => (
+                    <div key={l} className="flex items-center gap-1.5 group">
+                      <ExternalLink className="w-3 h-3 text-[#2563EB] flex-shrink-0" />
+                      <a href={l} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 text-[12px] text-[#2563EB] truncate hover:underline min-w-0"
+                        title={l}>{l.replace(/^https?:\/\//, '')}</a>
+                      <button onClick={() => removeLink(l)} className="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-red-500 flex-shrink-0">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-1.5">
+                <input value={linkInput} onChange={e => setLinkInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addLink()}
+                  placeholder="Add a link..." className="flex-1 h-8 px-2 text-[12px] border border-[#E2E8F0] rounded-md outline-none focus:border-primary-500 bg-white min-w-0" />
+                <button onClick={addLink} disabled={!linkInput.trim()}
+                  className="h-8 px-2 text-[11px] font-medium text-[#475569] bg-[#F1F5F9] rounded-md hover:bg-[#E2E8F0] disabled:opacity-40 flex-shrink-0">Add</button>
+              </div>
+            </div>
+
+            {/* Attachments — sidebar compact */}
+            <div className="border-t border-[#E2E8F0] pt-4">
+              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Paperclip className="w-3 h-3" /> Attachments {uploading && <span className="text-[10px] font-normal animate-pulse text-[#64748B]">uploading…</span>}</span>
+                <button onClick={() => attachFileRef.current?.click()}
+                  className="text-[10px] font-medium text-[#2563EB] hover:underline">+ Add</button>
+              </label>
+              <input ref={attachFileRef} type="file" multiple className="hidden" onChange={e => handleAttachmentUpload(e.target.files)} />
+              {(ticket.attachments || []).length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {(ticket.attachments || []).map(a => (
+                    <div key={a.id} className="flex items-center gap-1.5 group py-1">
+                      <Paperclip className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+                      <a href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 text-[12px] text-[#0F172A] truncate hover:text-[#2563EB] min-w-0" title={a.originalName}>{a.originalName}</a>
+                      <span className="text-[10px] text-[#94A3B8] flex-shrink-0">{formatFileSize(a.size)}</span>
+                      <button onClick={() => deleteAttachment(a.id)} className="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-red-500 flex-shrink-0">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[12px] text-[#94A3B8]">No attachments</p>
+              )}
+            </div>
+
+            <div className="border-t border-[#E2E8F0] pt-4">
               <p className="text-[11px] text-[#94A3B8] flex items-center gap-1.5 mb-1">
                 <Clock className="w-3 h-3" /> Created {new Date(ticket.createdAt).toLocaleDateString()}
               </p>
@@ -429,7 +699,7 @@ export function TicketDetailPage() {
                 <Clock className="w-3 h-3" /> Updated {new Date(ticket.updatedAt).toLocaleDateString()}
               </p>
             </div>
-            
+
           </div>
         </div>
       </div>

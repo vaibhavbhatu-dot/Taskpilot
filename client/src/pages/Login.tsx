@@ -5,9 +5,9 @@ import { authApi } from '../api';
 import { useAuthStore } from '../stores';
 
 const DEMO_CREDENTIALS = [
-  { role: 'Admin', email: 'admin@projecthub.com', password: 'admin123', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-  { role: 'Manager', email: 'vikram@projecthub.com', password: 'demo123', color: 'bg-purple-50 border-purple-200 text-purple-700' },
-  { role: 'Member', email: 'rahul@projecthub.com', password: 'demo123', color: 'bg-green-50 border-green-200 text-green-700' },
+  { role: 'Admin', email: 'admin@taskpilot.com', password: 'admin123', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+  { role: 'Manager', email: 'vikram@taskpilot.com', password: 'demo123', color: 'bg-purple-50 border-purple-200 text-purple-700' },
+  { role: 'Member', email: 'rahul@taskpilot.com', password: 'demo123', color: 'bg-green-50 border-green-200 text-green-700' },
 ];
 
 export function LoginPage() {

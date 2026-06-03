@@ -1,26 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, List, Columns3, X, ChevronLeft, ChevronRight, AlertCircle, Tag as TagIcon } from 'lucide-react';
+import { Plus, List, Columns3, X, ChevronLeft, ChevronRight, AlertCircle, Tag as TagIcon, Paperclip, Link as LinkIcon, ExternalLink, Check, Users } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, projectsApi, usersApi, sprintsApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
-import type { Ticket, TicketStatus, TicketPriority, TicketType, Project, User, Sprint, Team } from '../types';
+import type { Ticket, TicketPriority, Project, User, Sprint, Team } from '../types';
 import { FilterBuilder, type FilterRow } from '../components/tickets/FilterBuilder';
 import { exportTicketsToCSV, exportTicketsToPDF } from '../utils/export';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ClipboardList } from 'lucide-react';
+import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
 
-const STATUS_OPTIONS: TicketStatus[] = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'];
+const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS: TicketPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-
-const STATUS_BADGES: Record<string, string> = {
-  BACKLOG: 'bg-[#F1F5F9] text-[#64748B]',
-  TODO: 'bg-[#DBEAFE] text-[#2563EB]',
-  IN_PROGRESS: 'bg-[#FEF3C7] text-[#D97706]',
-  IN_REVIEW: 'bg-[#E0E7FF] text-[#4F46E5]',
-  DONE: 'bg-[#D1FAE5] text-[#059669]',
-  BLOCKED: 'bg-[#FEE2E2] text-[#DC2626]',
-};
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: 'bg-red-500',
@@ -29,7 +22,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   LOW: 'bg-gray-400',
 };
 
-const FIBONACCI = [1, 2, 3, 5, 8, 13, 21];
 
 const formatDate = (d: string) => {
   const date = new Date(d);
@@ -37,7 +29,7 @@ const formatDate = (d: string) => {
 };
 
 const isOverdue = (d: string, status: string) =>
-  new Date(d) < new Date() && status !== 'DONE';
+  new Date(d) < new Date() && status !== 'LIVE';
 
 export function TicketsPage() {
   const navigate = useNavigate();
@@ -99,9 +91,7 @@ export function TicketsPage() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-[22px] font-semibold text-[#0F172A]">
-          {isAdmin ? 'All Tickets' : 'My Tickets'}
-        </h1>
+        <PageHeader title={isAdmin ? 'All Tickets' : 'My Tickets'} />
         <div className="flex items-center gap-3">
           {/* View toggle */}
           <div className="flex bg-[#F1F5F9] rounded-lg p-0.5">
@@ -181,7 +171,6 @@ export function TicketsPage() {
               <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Priority</th>
               <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Assignee</th>
               <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Due Date</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Points</th>
             </tr>
           </thead>
           <tbody>
@@ -193,7 +182,7 @@ export function TicketsPage() {
                   <td className="px-5 py-4"><Skeleton className="h-4 w-48" /></td>
                   <td className="px-5 py-4"><Skeleton className="h-5 w-20 rounded" /></td>
                   <td className="px-5 py-4"><Skeleton className="h-4 w-24" /></td>
-                  <td className="px-5 py-4"><div className="flex items-center gap-2"><Skeleton variant="circular" className="h-6 w-6" /><Skeleton className="h-4 w-24" /></div></td>
+                  <td className="px-5 py-4"><div className="flex items-center gap-2"><Skeleton variant="circle" className="h-6 w-6" /><Skeleton className="h-4 w-24" /></div></td>
                   <td className="px-5 py-4"><Skeleton className="h-4 w-16" /></td>
                   <td className="px-5 py-4"><Skeleton className="h-4 w-8" /></td>
                 </tr>
@@ -201,12 +190,11 @@ export function TicketsPage() {
             ) : tickets.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-16">
-                  <EmptyState 
-                    icon={ClipboardList} 
-                    title="No tickets yet" 
-                    description="Create your first ticket to get started." 
-                    actionLabel="Create Ticket" 
-                    onAction={() => setShowCreate(true)} 
+                  <EmptyState
+                    icon={<ClipboardList className="w-12 h-12" />}
+                    title="No tickets yet"
+                    description="Create your first ticket to get started."
+                    action={{ label: 'Create Ticket', onClick: () => setShowCreate(true) }}
                   />
                 </td>
               </tr>
@@ -237,8 +225,8 @@ export function TicketsPage() {
                     <span className="text-[14px] font-medium text-[#0F172A]">{t.title}</span>
                   </td>
                   <td className="px-5">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${STATUS_BADGES[t.status] || ''}`}>
-                      {t.status.replace(/_/g, ' ')}
+                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold" style={{ backgroundColor: STATUS_CONFIG[t.status]?.bg, color: STATUS_CONFIG[t.status]?.text }}>
+                      {getStatusLabel(t.status)}
                     </span>
                   </td>
                   <td className="px-5">
@@ -248,25 +236,38 @@ export function TicketsPage() {
                     </div>
                   </td>
                   <td className="px-5">
-                    {t.assignedTo ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-semibold text-[#2563EB]">{t.assignedTo.fullName?.charAt(0)}</span>
+                    {(() => {
+                      const assignees = t.assignees && t.assignees.length > 0
+                        ? t.assignees
+                        : t.assignedTo ? [{ userId: t.assignedTo.id, user: t.assignedTo }] : [];
+                      if (assignees.length === 0) return <span className="text-[13px] text-[#94A3B8]">Unassigned</span>;
+                      return (
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {assignees.slice(0, 3).map((a, i) => (
+                              <div key={a.userId}
+                                className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center border-2 border-white flex-shrink-0"
+                                style={{ marginLeft: i > 0 ? '-6px' : 0, zIndex: 10 - i }}
+                                title={a.user.fullName}>
+                                <span className="text-[10px] font-semibold text-[#2563EB]">{a.user.fullName.charAt(0)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-[13px] text-[#0F172A]">
+                            {assignees[0].user.fullName}
+                            {assignees.length > 1 && (
+                              <span className="text-[#64748B] font-medium"> +{assignees.length - 1}</span>
+                            )}
+                          </span>
                         </div>
-                        <span className="text-[13px] text-[#0F172A]">{t.assignedTo.fullName}</span>
-                      </div>
-                    ) : <span className="text-[13px] text-[#94A3B8]">Unassigned</span>}
+                      );
+                    })()}
                   </td>
                   <td className="px-5">
                     {t.dueDate ? (
                       <span className={`text-[13px] ${isOverdue(t.dueDate, t.status) ? 'text-red-600 font-medium' : 'text-[#64748B]'}`}>
                         {formatDate(t.dueDate)}
                       </span>
-                    ) : <span className="text-[13px] text-[#94A3B8]">—</span>}
-                  </td>
-                  <td className="px-5">
-                    {t.storyPoints ? (
-                      <span className="inline-block px-2 py-0.5 bg-[#F1F5F9] text-[#64748B] text-[12px] font-medium rounded">{t.storyPoints}</span>
                     ) : <span className="text-[13px] text-[#94A3B8]">—</span>}
                   </td>
                 </tr>
@@ -323,7 +324,7 @@ export function TicketsPage() {
               disabled={bulkActionLoad}
             >
               <option value="">Set Status...</option>
-              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
             </select>
             
             <select 
@@ -391,6 +392,9 @@ export function TicketsPage() {
 }
 
 // ─── Create Ticket Slide-over Panel ───────────────────────
+const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+const formatFileSize = (bytes: number) => bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
 function CreateTicketPanel({ projects, users, teams, sprints, onClose, onCreated }: {
   projects: Project[]; users: User[]; teams: Team[]; sprints: Sprint[];
   onClose: () => void; onCreated: () => void;
@@ -400,53 +404,110 @@ function CreateTicketPanel({ projects, users, teams, sprints, onClose, onCreated
   const [type, setType] = useState('TASK');
   const [priority, setPriority] = useState('MEDIUM');
   const [description, setDescription] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
   const [teamId, setTeamId] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [storyPoints, setStoryPoints] = useState<number | ''>('');
   const [labels, setLabels] = useState<string[]>([]);
   const [labelInput, setLabelInput] = useState('');
+  const [links, setLinks] = useState<string[]>([]);
+  const [linkInput, setLinkInput] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sprintId, setSprintId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  // Smart team filter: only show teams that contain at least one selected assignee
+  const availableTeams = useMemo(() => {
+    if (assigneeIds.length === 0) return teams;
+    const selectedUsers = users.filter(u => assigneeIds.includes(u.id));
+    const memberTeamIds = new Set(selectedUsers.map(u => u.teamId).filter(Boolean));
+    return teams.filter(t => memberTeamIds.has(t.id));
+  }, [assigneeIds, users, teams]);
+
+  // Auto-clear team if it's no longer available after assignee change
+  useEffect(() => {
+    if (teamId && !availableTeams.find(t => t.id === teamId)) setTeamId('');
+    if (availableTeams.length === 1 && assigneeIds.length > 0) setTeamId(availableTeams[0].id);
+  }, [availableTeams]);
+
+  const filteredUsers = users.filter(u =>
+    u.fullName.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
+    u.email?.toLowerCase().includes(assigneeSearch.toLowerCase())
+  );
+
+  function toggleAssignee(uid: string) {
+    setAssigneeIds(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+  }
+
+  function addLabel(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && labelInput.trim()) {
+      e.preventDefault();
+      if (!labels.includes(labelInput.trim())) setLabels([...labels, labelInput.trim()]);
+      setLabelInput('');
+    }
+  }
+
+  function addLink(e?: React.KeyboardEvent) {
+    if (e && e.key !== 'Enter') return;
+    e?.preventDefault();
+    const url = linkInput.trim();
+    if (!url) return;
+    const full = url.startsWith('http') ? url : `https://${url}`;
+    if (!links.includes(full)) setLinks([...links, full]);
+    setLinkInput('');
+  }
+
+  function handleFileSelect(files: FileList | null) {
+    if (!files) return;
+    const arr = Array.from(files);
+    setPendingFiles(prev => {
+      const existing = new Set(prev.map(f => f.name));
+      return [...prev, ...arr.filter(f => !existing.has(f.name))];
+    });
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    handleFileSelect(e.dataTransfer.files);
+  }
+
+  const activeSprints = sprints.filter(s => s.status === 'PLANNED' || s.status === 'ACTIVE');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      await ticketsApi.create({
+      const res = await ticketsApi.create({
         title, projectId, type: type as any, priority: priority as any,
-        description, assignedToId: assigneeId || undefined,
+        description: description || undefined,
+        assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
+        assignedToId: assigneeIds[0] || undefined,
         teamId: teamId || undefined,
         dueDate: dueDate || undefined,
-        storyPoints: storyPoints ? Number(storyPoints) : undefined,
         labels,
-      });
+        links,
+      } as any);
+      const ticketId = res.data.id;
+      if (pendingFiles.length > 0) {
+        await Promise.allSettled(pendingFiles.map(f => ticketsApi.uploadAttachment(ticketId, f)));
+      }
       setToast('Ticket created successfully');
-      setTimeout(() => onCreated(), 800);
+      setTimeout(() => onCreated(), 700);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create ticket');
     } finally { setSubmitting(false); }
   }
 
-  function addLabel(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && labelInput.trim()) {
-      e.preventDefault();
-      if (!labels.includes(labelInput.trim())) {
-        setLabels([...labels, labelInput.trim()]);
-      }
-      setLabelInput('');
-    }
-  }
-
-  const activeSprints = sprints.filter(s => s.status === 'PLANNED' || s.status === 'ACTIVE');
-
   return (
     <div className="fixed inset-0 z-[60]">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="absolute right-0 top-0 h-full w-[560px] bg-white border-l border-[#E2E8F0] flex flex-col animate-slide-in-right">
+      <div className="absolute right-0 top-0 h-full w-[580px] bg-white border-l border-[#E2E8F0] flex flex-col animate-slide-in-right shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
           <h2 className="text-[18px] font-semibold text-[#0F172A]">Create Ticket</h2>
@@ -457,10 +518,7 @@ function CreateTicketPanel({ projects, users, teams, sprints, onClose, onCreated
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* Toast */}
-          {toast && (
-            <div className="bg-green-50 border border-green-100 text-green-700 text-sm px-4 py-3 rounded-lg">{toast}</div>
-          )}
+          {toast && <div className="bg-green-50 border border-green-100 text-green-700 text-sm px-4 py-3 rounded-lg">{toast}</div>}
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
@@ -509,40 +567,92 @@ function CreateTicketPanel({ projects, users, teams, sprints, onClose, onCreated
           <div>
             <label className="label">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a detailed description..." className="input min-h-[200px] resize-y" />
+              placeholder="Add a detailed description..." className="input min-h-[120px] resize-y" />
           </div>
 
-          {/* Assignee */}
-          <div>
-            <label className="label">Assignee</label>
-            <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className="input">
-              <option value="">Unassigned</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select>
+          {/* Assignees — multi-select */}
+          <div className="relative">
+            <label className="label flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Assignees</label>
+            {/* Selected chips */}
+            {assigneeIds.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {assigneeIds.map(id => {
+                  const u = users.find(x => x.id === id);
+                  if (!u) return null;
+                  return (
+                    <span key={id} className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#DBEAFE] text-[#1D4ED8] text-[12px] font-medium rounded-full">
+                      <span className="w-4 h-4 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[9px] font-bold">{getInitials(u.fullName)}</span>
+                      {u.fullName.split(' ')[0]}
+                      <button type="button" onClick={() => toggleAssignee(id)} className="hover:text-red-500 leading-none">×</button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {/* Dropdown trigger */}
+            <button type="button" onClick={() => setShowAssigneeDropdown(v => !v)}
+              className="input text-left flex items-center justify-between text-[14px]">
+              <span className={assigneeIds.length === 0 ? 'text-[#94A3B8]' : 'text-[#0F172A]'}>
+                {assigneeIds.length === 0 ? 'Search & add assignees...' : `${assigneeIds.length} assignee${assigneeIds.length > 1 ? 's' : ''} selected`}
+              </span>
+              <Users className="w-4 h-4 text-[#94A3B8]" />
+            </button>
+            {showAssigneeDropdown && (
+              <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-[#E2E8F0] rounded-lg shadow-lg overflow-hidden">
+                <div className="p-2 border-b border-[#E2E8F0]">
+                  <input autoFocus value={assigneeSearch} onChange={e => setAssigneeSearch(e.target.value)}
+                    placeholder="Search members..." className="w-full h-8 px-3 text-[13px] border border-[#E2E8F0] rounded-md outline-none focus:border-primary-500" />
+                </div>
+                <div className="max-h-[200px] overflow-y-auto">
+                  {filteredUsers.length === 0 ? (
+                    <p className="px-3 py-3 text-[13px] text-[#94A3B8]">No members found</p>
+                  ) : filteredUsers.map(u => (
+                    <button key={u.id} type="button" onClick={() => toggleAssignee(u.id)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F8FAFC] transition-colors">
+                      <div className="w-7 h-7 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] font-bold text-[#2563EB]">{getInitials(u.fullName)}</span>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="text-[13px] font-medium text-[#0F172A] truncate">{u.fullName}</p>
+                        <p className="text-[11px] text-[#94A3B8] truncate">{u.designation || u.role}</p>
+                      </div>
+                      {assigneeIds.includes(u.id) && <Check className="w-4 h-4 text-[#2563EB] flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+                <div className="p-2 border-t border-[#E2E8F0]">
+                  <button type="button" onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
+                    className="w-full text-[12px] text-[#64748B] hover:text-[#0F172A] py-1">Done</button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Team */}
+          {/* Team — smart filtered */}
           <div>
             <label className="label">Team</label>
             <select value={teamId} onChange={(e) => setTeamId(e.target.value)} className="input">
               <option value="">No team</option>
-              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {availableTeams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
+            {assigneeIds.length > 0 && availableTeams.length < teams.length && (
+              <p className="text-[11px] text-[#64748B] mt-1">Showing {availableTeams.length} team{availableTeams.length !== 1 ? 's' : ''} matching selected assignees</p>
+            )}
           </div>
 
-          {/* Due Date + Points */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Due Date</label>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="input" />
-            </div>
-            <div>
-              <label className="label">Story Points</label>
-              <select value={storyPoints} onChange={(e) => setStoryPoints(e.target.value ? Number(e.target.value) : '')} className="input">
-                <option value="">—</option>
-                {FIBONACCI.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
+          {/* Due Date */}
+          <div>
+            <label className="label">Due Date</label>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="input" />
+          </div>
+
+          {/* Sprint */}
+          <div>
+            <label className="label">Sprint</label>
+            <select value={sprintId} onChange={(e) => setSprintId(e.target.value)} className="input">
+              <option value="">No sprint</option>
+              {activeSprints.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.status})</option>)}
+            </select>
           </div>
 
           {/* Labels */}
@@ -557,22 +667,66 @@ function CreateTicketPanel({ projects, users, teams, sprints, onClose, onCreated
               ))}
             </div>
             <input type="text" value={labelInput} onChange={(e) => setLabelInput(e.target.value)}
-              onKeyDown={addLabel} placeholder="Type and press Enter" className="input" />
+              onKeyDown={addLabel} placeholder="Type and press Enter to add a label" className="input" />
           </div>
 
-          {/* Sprint */}
+          {/* Links */}
           <div>
-            <label className="label">Sprint</label>
-            <select value={sprintId} onChange={(e) => setSprintId(e.target.value)} className="input">
-              <option value="">No sprint</option>
-              {activeSprints.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.status})</option>)}
-            </select>
+            <label className="label flex items-center gap-1.5"><LinkIcon className="w-3.5 h-3.5" /> Links</label>
+            {links.length > 0 && (
+              <div className="flex flex-col gap-1.5 mb-2">
+                {links.map(l => (
+                  <div key={l} className="flex items-center gap-2 px-3 py-1.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg group">
+                    <ExternalLink className="w-3.5 h-3.5 text-[#2563EB] flex-shrink-0" />
+                    <a href={l} target="_blank" rel="noopener noreferrer"
+                      className="flex-1 text-[12px] text-[#2563EB] truncate hover:underline">{l}</a>
+                    <button type="button" onClick={() => setLinks(links.filter(x => x !== l))}
+                      className="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-red-500 text-[16px] leading-none">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)}
+                onKeyDown={addLink} placeholder="https://... (Enter to add)" className="input flex-1" />
+              <button type="button" onClick={() => addLink()} disabled={!linkInput.trim()}
+                className="h-10 px-3 bg-[#F1F5F9] text-[#475569] rounded-lg text-[13px] font-medium hover:bg-[#E2E8F0] disabled:opacity-40">Add</button>
+            </div>
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <label className="label flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> Attachments</label>
+            {/* Drop zone */}
+            <div ref={dropRef} onDrop={handleDrop} onDragOver={e => e.preventDefault()}
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-[#E2E8F0] rounded-lg p-4 text-center cursor-pointer hover:border-[#2563EB] hover:bg-[#EFF6FF] transition-colors mb-2">
+              <Paperclip className="w-5 h-5 text-[#94A3B8] mx-auto mb-1" />
+              <p className="text-[13px] text-[#64748B]">Drop files here or <span className="text-[#2563EB] font-medium">click to browse</span></p>
+              <p className="text-[11px] text-[#94A3B8] mt-0.5">Max 10 MB per file</p>
+            </div>
+            <input ref={fileInputRef} type="file" multiple onChange={e => handleFileSelect(e.target.files)}
+              className="hidden" />
+            {pendingFiles.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                {pendingFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg group">
+                    <Paperclip className="w-3.5 h-3.5 text-[#64748B] flex-shrink-0" />
+                    <span className="flex-1 text-[12px] text-[#0F172A] truncate">{f.name}</span>
+                    <span className="text-[11px] text-[#94A3B8] flex-shrink-0">{formatFileSize(f.size)}</span>
+                    <button type="button" onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
+                      className="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-red-500 text-[16px] leading-none">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#E2E8F0]">
-          <button type="submit" onClick={handleSubmit as any} disabled={submitting || !title || !projectId} className="btn-primary w-full">
+        <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+          <button type="submit" onClick={handleSubmit as any} disabled={submitting || !title || !projectId}
+            className="btn-primary w-full h-10 text-[14px] font-medium">
             {submitting ? 'Creating...' : 'Create Ticket'}
           </button>
         </div>

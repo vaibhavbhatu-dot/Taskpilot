@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, X, AlertCircle, FolderOpen } from 'lucide-react';
+import { Plus, X, AlertCircle, FolderOpen, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { projectsApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Project, User } from '../types';
@@ -19,6 +20,63 @@ export function ProjectsPage() {
   const [error, setError] = useState('');
 
   const canCreate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER' || currentUser?.role === 'PROJECT_MANAGER';
+  const canManage = currentUser?.role === 'ADMIN';
+
+  // Edit state
+  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editKey, setEditKey] = useState('');
+  const [editLeadId, setEditLeadId] = useState('');
+  const [editStatus, setEditStatus] = useState<'ACTIVE' | 'ARCHIVED'>('ACTIVE');
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  // Delete state
+  const [deleteProject, setDeleteProject] = useState<Project | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  function openEdit(p: Project) {
+    setEditProject(p);
+    setEditName(p.name);
+    setEditKey(p.key);
+    setEditLeadId(p.lead?.id || '');
+    setEditStatus(p.status as 'ACTIVE' | 'ARCHIVED');
+    setEditError('');
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editProject) return;
+    setSaving(true);
+    setEditError('');
+    const canEditKey = (editProject._count?.tickets || 0) === 0;
+    try {
+      await projectsApi.update(editProject.id, {
+        name: editName.trim(),
+        ...(canEditKey && editKey.trim() !== editProject.key ? { key: editKey.trim().toUpperCase() } : {}),
+        leadId: editLeadId || undefined,
+        status: editStatus,
+      } as any);
+      setEditProject(null);
+      loadData();
+    } catch (err: any) {
+      setEditError(err.response?.data?.error || 'Failed to update project');
+    } finally { setSaving(false); }
+  }
+
+  async function handleDelete() {
+    if (!deleteProject) return;
+    setDeleting(true);
+    try {
+      await projectsApi.delete(deleteProject.id);
+      setDeleteProject(null);
+      setDeleteConfirmText('');
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to delete project');
+    } finally { setDeleting(false); }
+  }
 
   useEffect(() => { loadData(); }, []);
 
@@ -75,19 +133,16 @@ export function ProjectsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#0F172A]">Projects</h1>
-          <p className="text-sm text-[#64748B] mt-1">{projects.length} projects</p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        title="Projects"
+        subtitle={`${projects.length} projects`}
+        action={canCreate ? (
           <button onClick={() => setShowModal(true)} className="btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             Create Project
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Projects Table */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
@@ -142,9 +197,22 @@ export function ProjectsPage() {
                   </span>
                 </td>
                 <td className="px-5 text-right">
-                  <button className="text-sm text-[#2563EB] hover:text-[#1D4ED8] font-medium">
-                    Edit
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => openEdit(project)}
+                      className="flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium text-[#2563EB] hover:bg-[#EFF6FF] rounded-lg transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    {canManage && (
+                      <button
+                        onClick={() => { setDeleteProject(project); setDeleteConfirmText(''); }}
+                        className="flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -157,6 +225,138 @@ export function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* ── Edit Project Modal ─────────────────────────── */}
+      {editProject && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setEditProject(null)} />
+          <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-7 animate-fade-in shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[18px] font-semibold text-[#0F172A]">Edit Project</h2>
+              <button onClick={() => setEditProject(null)} className="p-1 rounded-lg hover:bg-[#F1F5F9]">
+                <X className="w-5 h-5 text-[#64748B]" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              {editError && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />{editError}
+                </div>
+              )}
+
+              {/* Key — editable only if no tickets */}
+              {(() => {
+                const canEditKey = (editProject._count?.tickets || 0) === 0;
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="label mb-0">Project Key</label>
+                      {canEditKey ? (
+                        <span className="text-[11px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                          Editable — no tickets yet
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium text-[#94A3B8] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
+                          Locked — {editProject._count?.tickets} ticket{editProject._count?.tickets !== 1 ? 's' : ''} exist
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      value={canEditKey ? editKey : editProject.key}
+                      onChange={e => canEditKey && setEditKey(e.target.value.toUpperCase())}
+                      disabled={!canEditKey}
+                      maxLength={6}
+                      className={`input font-mono tracking-widest uppercase ${
+                        canEditKey
+                          ? 'border-green-400 focus:border-green-500 bg-green-50/30'
+                          : 'bg-[#F8FAFC] text-[#94A3B8] cursor-not-allowed'
+                      }`}
+                    />
+                  </div>
+                );
+              })()}
+
+              <div>
+                <label className="label">Project Name *</label>
+                <input value={editName} onChange={e => setEditName(e.target.value)}
+                  className="input" required autoFocus placeholder="Project name" />
+              </div>
+
+              <div>
+                <label className="label">Project Lead</label>
+                <select value={editLeadId} onChange={e => setEditLeadId(e.target.value)} className="input">
+                  <option value="">No lead</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="label">Status</label>
+                <select value={editStatus} onChange={e => setEditStatus(e.target.value as 'ACTIVE' | 'ARCHIVED')} className="input">
+                  <option value="ACTIVE">Active</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={saving || !editName.trim()} className="btn-primary flex-1">
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={() => setEditProject(null)}
+                  className="text-sm text-[#64748B] hover:text-[#0F172A] font-medium px-4">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ───────────────────── */}
+      {deleteProject && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setDeleteProject(null)} />
+          <div className="relative bg-white rounded-2xl w-full max-w-[440px] p-7 animate-fade-in shadow-xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-[17px] font-semibold text-[#0F172A]">Delete Project</h2>
+                <p className="text-[13px] text-[#64748B]">This action cannot be undone</p>
+              </div>
+              <button onClick={() => setDeleteProject(null)} className="ml-auto p-1 rounded-lg hover:bg-[#F1F5F9]">
+                <X className="w-5 h-5 text-[#64748B]" />
+              </button>
+            </div>
+            <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-4 text-[13px] text-red-700">
+              Deleting <strong>{deleteProject.name}</strong> will permanently remove{' '}
+              <strong>{deleteProject._count?.tickets || 0} ticket{deleteProject._count?.tickets !== 1 ? 's' : ''}</strong> and{' '}
+              <strong>{deleteProject._count?.sprints || 0} sprint{deleteProject._count?.sprints !== 1 ? 's' : ''}</strong>.
+            </div>
+            <div className="mb-5">
+              <label className="text-[13px] font-medium text-[#0F172A] mb-1.5 block">
+                Type <span className="font-mono bg-[#F1F5F9] px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
+              </label>
+              <input value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder={deleteProject.key} className="input font-mono" autoFocus />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={deleteConfirmText !== deleteProject.key || deleting}
+                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white text-[14px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting...' : 'Delete Project'}
+              </button>
+              <button onClick={() => setDeleteProject(null)}
+                className="text-sm text-[#64748B] hover:text-[#0F172A] font-medium px-4">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Project Modal */}
       {showModal && (

@@ -1,7 +1,7 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Ticket, Columns3, Zap, Calendar, BarChart3,
-  Users, FolderOpen, UserPlus, User, Settings, LogOut, X, History
+  LayoutDashboard, ClipboardList, Ticket, Columns3, Zap, Calendar, BarChart3,
+  Users, FolderOpen, UserPlus, LogOut, X, History
 } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../stores';
 
@@ -23,6 +23,7 @@ const sections: NavSection[] = [
     label: 'MAIN',
     items: [
       { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+      { name: 'Work Update', href: '/my-work', icon: ClipboardList },
       { name: 'My Tickets', href: '/tickets', icon: Ticket },
       { name: 'Kanban Board', href: '/board', icon: Columns3 },
     ],
@@ -43,13 +44,6 @@ const sections: NavSection[] = [
       { name: 'Projects', href: '/projects', icon: FolderOpen },
       { name: 'Members', href: '/members', icon: UserPlus, roles: ['ADMIN'] },
       { name: 'Activity Log', href: '/activity', icon: History, roles: ['ADMIN'] },
-    ],
-  },
-  {
-    label: 'SETTINGS',
-    items: [
-      { name: 'My Profile', href: '/profile', icon: User },
-      { name: 'Admin Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
     ],
   },
 ];
@@ -101,7 +95,7 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-1">
-          <span className="text-[20px] font-semibold text-white tracking-tight">ProjectHub</span>
+          <span className="text-[20px] font-semibold text-white tracking-tight">TaskPilot</span>
           <button
             onClick={toggleSidebar}
             className="p-1 rounded hover:bg-white/10 lg:hidden text-slate-400"

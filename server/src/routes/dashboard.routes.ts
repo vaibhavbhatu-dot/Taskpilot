@@ -30,31 +30,31 @@ router.get('/', async (req: Request, res: Response) => {
       ticketWhere.projectId = { in: projects.map(p => p.id) };
     }
 
+    const DONE_STATUSES = ['LIVE', 'NOT_REQUIRED'] as const;
+
     // KPI counts
-    const [totalTickets, todoTickets, inProgressTickets, doneTickets, blockedTickets, overdueTickets] = await Promise.all([
+    const [totalTickets, todoTickets, devInProgressTickets, inReviewTickets, deployedTickets, overdueTickets] = await Promise.all([
       prisma.ticket.count({ where: ticketWhere }),
-      prisma.ticket.count({ where: { ...ticketWhere, status: 'TODO' } }),
-      prisma.ticket.count({ where: { ...ticketWhere, status: 'IN_PROGRESS' } }),
-      prisma.ticket.count({ where: { ...ticketWhere, status: 'DONE' } }),
-      prisma.ticket.count({ where: { ...ticketWhere, status: 'BLOCKED' } }),
+      prisma.ticket.count({ where: { ...ticketWhere, status: 'REQUIREMENTS' } }),
+      prisma.ticket.count({ where: { ...ticketWhere, status: 'ON_DEVELOPMENT' } }),
+      prisma.ticket.count({ where: { ...ticketWhere, status: 'QA' } }),
+      prisma.ticket.count({ where: { ...ticketWhere, status: 'LIVE' } }),
       prisma.ticket.count({
         where: {
           ...ticketWhere,
           dueDate: { lt: new Date() },
-          status: { notIn: ['DONE'] },
+          status: { notIn: DONE_STATUSES },
         },
       }),
     ]);
 
-    // Ticket distribution by status
-    const ticketsByStatus = {
-      BACKLOG: await prisma.ticket.count({ where: { ...ticketWhere, status: 'BACKLOG' } }),
-      TODO: todoTickets,
-      IN_PROGRESS: inProgressTickets,
-      IN_REVIEW: await prisma.ticket.count({ where: { ...ticketWhere, status: 'IN_REVIEW' } }),
-      DONE: doneTickets,
-      BLOCKED: blockedTickets,
-    };
+    // Ticket distribution by status (all 11)
+    const statusCounts = await Promise.all(
+      ['BACKLOG','REQUIREMENTS','DESIGN','HTML','ON_DEVELOPMENT','QA','BUGS','ENHANCEMENT','UAT','LIVE','NOT_REQUIRED'].map(s =>
+        prisma.ticket.count({ where: { ...ticketWhere, status: s as any } }).then(c => [s, c])
+      )
+    );
+    const ticketsByStatus = Object.fromEntries(statusCounts);
 
     // Ticket distribution by priority
     const ticketsByPriority = {
@@ -80,7 +80,7 @@ router.get('/', async (req: Request, res: Response) => {
       where: {
         ...ticketWhere,
         dueDate: { lt: new Date() },
-        status: { notIn: ['DONE'] },
+        status: { notIn: ['LIVE', 'NOT_REQUIRED'] },
       },
       select: {
         id: true,
@@ -101,9 +101,9 @@ router.get('/', async (req: Request, res: Response) => {
       kpis: {
         totalTickets,
         todoTickets,
-        inProgressTickets,
-        doneTickets,
-        blockedTickets,
+        devInProgressTickets,
+        inReviewTickets,
+        deployedTickets,
         overdueTickets,
         teamMemberCount,
       },
@@ -118,7 +118,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/dashboard/velocity — Sprint velocity data
+// GET /api/dashboard/velocity — Sprint velocity (ticket count based)
 router.get('/velocity', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.query;
@@ -129,7 +129,7 @@ router.get('/velocity', async (req: Request, res: Response) => {
       where,
       include: {
         sprintTickets: {
-          include: { ticket: { select: { storyPoints: true, status: true } } },
+          include: { ticket: { select: { status: true } } },
         },
       },
       orderBy: { endDate: 'asc' },
@@ -139,17 +139,12 @@ router.get('/velocity', async (req: Request, res: Response) => {
     const velocity = completedSprints.map(sprint => ({
       sprintName: sprint.name,
       sprintId: sprint.id,
-      completedPoints: sprint.sprintTickets
-        .filter(st => st.ticket.status === 'DONE')
-        .reduce((sum, st) => sum + (st.ticket.storyPoints || 0), 0),
-      totalPoints: sprint.sprintTickets
-        .reduce((sum, st) => sum + (st.pointsAtStart || 0), 0),
-      completedTickets: sprint.sprintTickets.filter(st => st.ticket.status === 'DONE').length,
+      completedTickets: sprint.sprintTickets.filter(st => st.ticket.status === 'LIVE').length,
       totalTickets: sprint.sprintTickets.length,
     }));
 
     const avgVelocity = velocity.length > 0
-      ? Math.round(velocity.reduce((sum, v) => sum + v.completedPoints, 0) / velocity.length)
+      ? Math.round(velocity.reduce((sum, v) => sum + v.completedTickets, 0) / velocity.length)
       : 0;
 
     res.json({ velocity, avgVelocity });
@@ -185,7 +180,7 @@ router.get('/workload', async (req: Request, res: Response) => {
         assignedTickets: {
           where: sprintIds.length > 0 ? {
             sprintTickets: { some: { sprintId: { in: sprintIds } } }
-          } : { status: { notIn: ['DONE', 'BACKLOG'] } },
+          } : { status: { notIn: ['LIVE', 'NOT_REQUIRED', 'BACKLOG'] } },
           select: {
             status: true
           }
@@ -196,7 +191,7 @@ router.get('/workload', async (req: Request, res: Response) => {
 
     const workload = members.map(m => {
       const total = m.assignedTickets.length;
-      const completed = m.assignedTickets.filter(t => t.status === 'DONE').length;
+      const completed = m.assignedTickets.filter(t => t.status === 'LIVE').length;
       return {
         id: m.id,
         fullName: m.fullName,

@@ -11,126 +11,126 @@ async function main() {
 
   // ─── Admins ───────────────────────────────────────────
   const arjun = await prisma.user.upsert({
-    where: { email: 'admin@projecthub.com' },
+    where: { email: 'admin@taskpilot.com' },
     update: {},
-    create: { email: 'admin@projecthub.com', password: adminPwd, fullName: 'Arjun Patel', designation: 'CTO', role: 'ADMIN', status: 'ACTIVE' },
+    create: { email: 'admin@taskpilot.com', password: adminPwd, fullName: 'Arjun Patel', designation: 'CTO', role: 'ADMIN', status: 'ACTIVE' },
   });
 
   const sneha = await prisma.user.upsert({
-    where: { email: 'sneha@projecthub.com' },
+    where: { email: 'sneha@taskpilot.com' },
     update: {},
-    create: { email: 'sneha@projecthub.com', password: adminPwd, fullName: 'Sneha Reddy', designation: 'VP Engineering', role: 'ADMIN', status: 'ACTIVE' },
+    create: { email: 'sneha@taskpilot.com', password: adminPwd, fullName: 'Sneha Reddy', designation: 'VP Engineering', role: 'ADMIN', status: 'ACTIVE' },
   });
 
   // ─── Managers ─────────────────────────────────────────
   const vikram = await prisma.user.upsert({
-    where: { email: 'vikram@projecthub.com' },
+    where: { email: 'vikram@taskpilot.com' },
     update: {},
-    create: { email: 'vikram@projecthub.com', password: demoPwd, fullName: 'Vikram Sharma', designation: 'Engineering Manager', role: 'MANAGER', status: 'ACTIVE' },
+    create: { email: 'vikram@taskpilot.com', password: demoPwd, fullName: 'Vikram Sharma', designation: 'Engineering Manager', role: 'MANAGER', status: 'ACTIVE' },
   });
 
   const priya = await prisma.user.upsert({
-    where: { email: 'priya@projecthub.com' },
+    where: { email: 'priya@taskpilot.com' },
     update: {},
-    create: { email: 'priya@projecthub.com', password: demoPwd, fullName: 'Priya Nair', designation: 'Backend Lead', role: 'MANAGER', status: 'ACTIVE' },
+    create: { email: 'priya@taskpilot.com', password: demoPwd, fullName: 'Priya Nair', designation: 'Backend Lead', role: 'MANAGER', status: 'ACTIVE' },
   });
 
   const rohan = await prisma.user.upsert({
-    where: { email: 'rohan@projecthub.com' },
+    where: { email: 'rohan@taskpilot.com' },
     update: {},
-    create: { email: 'rohan@projecthub.com', password: demoPwd, fullName: 'Rohan Gupta', designation: 'QA Manager', role: 'MANAGER', status: 'ACTIVE' },
+    create: { email: 'rohan@taskpilot.com', password: demoPwd, fullName: 'Rohan Gupta', designation: 'QA Manager', role: 'MANAGER', status: 'ACTIVE' },
   });
 
   const ananya = await prisma.user.upsert({
-    where: { email: 'ananya@projecthub.com' },
+    where: { email: 'ananya@taskpilot.com' },
     update: {},
-    create: { email: 'ananya@projecthub.com', password: demoPwd, fullName: 'Ananya Singh', designation: 'Design Lead', role: 'MANAGER', status: 'ACTIVE' },
+    create: { email: 'ananya@taskpilot.com', password: demoPwd, fullName: 'Ananya Singh', designation: 'Design Lead', role: 'MANAGER', status: 'ACTIVE' },
   });
 
   // ─── Project Managers ─────────────────────────────────
   const karthik = await prisma.user.upsert({
-    where: { email: 'karthik@projecthub.com' },
+    where: { email: 'karthik@taskpilot.com' },
     update: {},
-    create: { email: 'karthik@projecthub.com', password: demoPwd, fullName: 'Karthik Iyer', designation: 'Project Manager', role: 'PROJECT_MANAGER', status: 'ACTIVE', managerId: vikram.id },
+    create: { email: 'karthik@taskpilot.com', password: demoPwd, fullName: 'Karthik Iyer', designation: 'Project Manager', role: 'PROJECT_MANAGER', status: 'ACTIVE', managerId: vikram.id },
   });
 
   const meera = await prisma.user.upsert({
-    where: { email: 'meera@projecthub.com' },
+    where: { email: 'meera@taskpilot.com' },
     update: {},
-    create: { email: 'meera@projecthub.com', password: demoPwd, fullName: 'Meera Joshi', designation: 'Project Manager', role: 'PROJECT_MANAGER', status: 'ACTIVE', managerId: priya.id },
+    create: { email: 'meera@taskpilot.com', password: demoPwd, fullName: 'Meera Joshi', designation: 'Project Manager', role: 'PROJECT_MANAGER', status: 'ACTIVE', managerId: priya.id },
   });
 
   // ─── Members ──────────────────────────────────────────
   const rahul = await prisma.user.upsert({
-    where: { email: 'rahul@projecthub.com' },
+    where: { email: 'rahul@taskpilot.com' },
     update: {},
-    create: { email: 'rahul@projecthub.com', password: demoPwd, fullName: 'Rahul Dev', designation: 'Senior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
+    create: { email: 'rahul@taskpilot.com', password: demoPwd, fullName: 'Rahul Dev', designation: 'Senior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
   });
 
   const deepak = await prisma.user.upsert({
-    where: { email: 'deepak@projecthub.com' },
+    where: { email: 'deepak@taskpilot.com' },
     update: {},
-    create: { email: 'deepak@projecthub.com', password: demoPwd, fullName: 'Deepak Kumar', designation: 'Senior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: priya.id },
+    create: { email: 'deepak@taskpilot.com', password: demoPwd, fullName: 'Deepak Kumar', designation: 'Senior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: priya.id },
   });
 
   const lakshmi = await prisma.user.upsert({
-    where: { email: 'lakshmi@projecthub.com' },
+    where: { email: 'lakshmi@taskpilot.com' },
     update: {},
-    create: { email: 'lakshmi@projecthub.com', password: demoPwd, fullName: 'Lakshmi Priya', designation: 'QA Engineer', role: 'MEMBER', status: 'ACTIVE', managerId: rohan.id },
+    create: { email: 'lakshmi@taskpilot.com', password: demoPwd, fullName: 'Lakshmi Priya', designation: 'QA Engineer', role: 'MEMBER', status: 'ACTIVE', managerId: rohan.id },
   });
 
   const sanjay = await prisma.user.upsert({
-    where: { email: 'sanjay@projecthub.com' },
+    where: { email: 'sanjay@taskpilot.com' },
     update: {},
-    create: { email: 'sanjay@projecthub.com', password: demoPwd, fullName: 'Sanjay Reddy', designation: 'DevOps Engineer', role: 'MEMBER', status: 'ACTIVE', managerId: priya.id },
+    create: { email: 'sanjay@taskpilot.com', password: demoPwd, fullName: 'Sanjay Reddy', designation: 'DevOps Engineer', role: 'MEMBER', status: 'ACTIVE', managerId: priya.id },
   });
 
   const divya = await prisma.user.upsert({
-    where: { email: 'divya@projecthub.com' },
+    where: { email: 'divya@taskpilot.com' },
     update: {},
-    create: { email: 'divya@projecthub.com', password: demoPwd, fullName: 'Divya Menon', designation: 'UI/UX Designer', role: 'MEMBER', status: 'ACTIVE', managerId: ananya.id },
+    create: { email: 'divya@taskpilot.com', password: demoPwd, fullName: 'Divya Menon', designation: 'UI/UX Designer', role: 'MEMBER', status: 'ACTIVE', managerId: ananya.id },
   });
 
   const amit = await prisma.user.upsert({
-    where: { email: 'amit@projecthub.com' },
+    where: { email: 'amit@taskpilot.com' },
     update: {},
-    create: { email: 'amit@projecthub.com', password: demoPwd, fullName: 'Amit Sharma', designation: 'Frontend Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
+    create: { email: 'amit@taskpilot.com', password: demoPwd, fullName: 'Amit Sharma', designation: 'Frontend Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
   });
 
   const nisha = await prisma.user.upsert({
-    where: { email: 'nisha@projecthub.com' },
+    where: { email: 'nisha@taskpilot.com' },
     update: {},
-    create: { email: 'nisha@projecthub.com', password: demoPwd, fullName: 'Nisha Patel', designation: 'Backend Developer', role: 'MEMBER', status: 'ACTIVE', managerId: priya.id },
+    create: { email: 'nisha@taskpilot.com', password: demoPwd, fullName: 'Nisha Patel', designation: 'Backend Developer', role: 'MEMBER', status: 'ACTIVE', managerId: priya.id },
   });
 
   const vivek = await prisma.user.upsert({
-    where: { email: 'vivek@projecthub.com' },
+    where: { email: 'vivek@taskpilot.com' },
     update: {},
-    create: { email: 'vivek@projecthub.com', password: demoPwd, fullName: 'Vivek Jain', designation: 'Full Stack Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
+    create: { email: 'vivek@taskpilot.com', password: demoPwd, fullName: 'Vivek Jain', designation: 'Full Stack Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
   });
 
   const kavya = await prisma.user.upsert({
-    where: { email: 'kavya@projecthub.com' },
+    where: { email: 'kavya@taskpilot.com' },
     update: {},
-    create: { email: 'kavya@projecthub.com', password: demoPwd, fullName: 'Kavya Krishnamurthy', designation: 'UI/UX Designer', role: 'MEMBER', status: 'ACTIVE', managerId: ananya.id },
+    create: { email: 'kavya@taskpilot.com', password: demoPwd, fullName: 'Kavya Krishnamurthy', designation: 'UI/UX Designer', role: 'MEMBER', status: 'ACTIVE', managerId: ananya.id },
   });
 
   const harish = await prisma.user.upsert({
-    where: { email: 'harish@projecthub.com' },
+    where: { email: 'harish@taskpilot.com' },
     update: {},
-    create: { email: 'harish@projecthub.com', password: demoPwd, fullName: 'Harish Nair', designation: 'QA Engineer', role: 'MEMBER', status: 'ACTIVE', managerId: rohan.id },
+    create: { email: 'harish@taskpilot.com', password: demoPwd, fullName: 'Harish Nair', designation: 'QA Engineer', role: 'MEMBER', status: 'ACTIVE', managerId: rohan.id },
   });
 
   const sunita = await prisma.user.upsert({
-    where: { email: 'sunita@projecthub.com' },
+    where: { email: 'sunita@taskpilot.com' },
     update: {},
-    create: { email: 'sunita@projecthub.com', password: demoPwd, fullName: 'Sunita Rao', designation: 'Technical Writer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
+    create: { email: 'sunita@taskpilot.com', password: demoPwd, fullName: 'Sunita Rao', designation: 'Technical Writer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
   });
 
   const ravi = await prisma.user.upsert({
-    where: { email: 'ravi@projecthub.com' },
+    where: { email: 'ravi@taskpilot.com' },
     update: {},
-    create: { email: 'ravi@projecthub.com', password: demoPwd, fullName: 'Ravi Kumar', designation: 'Junior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
+    create: { email: 'ravi@taskpilot.com', password: demoPwd, fullName: 'Ravi Kumar', designation: 'Junior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
   });
 
   console.log('✅ 20 users created');
@@ -170,7 +170,7 @@ async function main() {
   const df = (days: number) => new Date(now.getTime() + days * 86400000);
 
   // ─── Tickets ──────────────────────────────────────────
-  type TicketStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
+  type TicketStatus = 'BACKLOG' | 'REQUIREMENTS' | 'DESIGN' | 'HTML' | 'ON_DEVELOPMENT' | 'QA' | 'BUGS' | 'ENHANCEMENT' | 'UAT' | 'LIVE' | 'NOT_REQUIRED';
   type TicketType = 'BUG' | 'FEATURE' | 'TASK' | 'IMPROVEMENT';
   type TicketPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -180,7 +180,6 @@ async function main() {
     type: TicketType;
     priority: TicketPriority;
     status: TicketStatus;
-    points: number;
     project: { id: string };
     assignee: { id: string } | null;
     team: { id: string };
@@ -191,59 +190,60 @@ async function main() {
 
   const ticketDefs: TicketDef[] = [
     // ── Customer Portal ──────────────────────────────────
-    { num: 'CP-1', title: 'Fix login redirect on session expiry', type: 'BUG', priority: 'CRITICAL', status: 'DONE', points: 2, project: cpProject, assignee: rahul, team: frontendTeam, labels: ['auth', 'hotfix'], dueDate: d(27) },
-    { num: 'CP-2', title: 'Implement user search with filters', type: 'FEATURE', priority: 'HIGH', status: 'DONE', points: 8, project: cpProject, assignee: amit, team: frontendTeam, labels: ['search', 'ux'], dueDate: d(25) },
-    { num: 'CP-3', title: 'Design onboarding flow for new users', type: 'FEATURE', priority: 'HIGH', status: 'DONE', points: 13, project: cpProject, assignee: divya, team: designTeam, labels: ['onboarding', 'design'], dueDate: d(22) },
-    { num: 'CP-4', title: 'API rate limiting on public endpoints', type: 'IMPROVEMENT', priority: 'HIGH', status: 'DONE', points: 5, project: cpProject, assignee: deepak, team: backendTeam, labels: ['security', 'api'], dueDate: d(20) },
-    { num: 'CP-5', title: 'Fix pagination on ticket list view', type: 'BUG', priority: 'MEDIUM', status: 'DONE', points: 3, project: cpProject, assignee: vivek, team: frontendTeam, labels: ['pagination'], dueDate: d(18) },
-    { num: 'CP-6', title: 'Add CSV export for reports', type: 'FEATURE', priority: 'MEDIUM', status: 'DONE', points: 5, project: cpProject, assignee: nisha, team: backendTeam, labels: ['export', 'reports'], dueDate: d(16) },
-    { num: 'CP-7', title: 'Optimize homepage load time', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'DONE', points: 8, project: cpProject, assignee: ravi, team: frontendTeam, labels: ['performance'], dueDate: d(14) },
-    { num: 'CP-8', title: 'Write unit tests for auth module', type: 'TASK', priority: 'MEDIUM', status: 'DONE', points: 5, project: cpProject, assignee: lakshmi, team: qaTeam, labels: ['testing', 'auth'], dueDate: d(12) },
-    { num: 'CP-9', title: 'Dashboard KPI cards show wrong data', type: 'BUG', priority: 'HIGH', status: 'DONE', points: 3, project: cpProject, assignee: rahul, team: frontendTeam, labels: ['dashboard'], dueDate: d(10) },
-    { num: 'CP-10', title: 'Notification system integration', type: 'FEATURE', priority: 'HIGH', status: 'DONE', points: 13, project: cpProject, assignee: deepak, team: backendTeam, labels: ['notifications'], dueDate: d(8) },
-    { num: 'CP-11', title: 'Add role-based sidebar navigation', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'IN_PROGRESS', points: 5, project: cpProject, assignee: amit, team: frontendTeam, labels: ['rbac', 'ui'], dueDate: df(3) },
-    { num: 'CP-12', title: 'Sprint burndown chart accuracy fix', type: 'BUG', priority: 'HIGH', status: 'IN_PROGRESS', points: 5, project: cpProject, assignee: vivek, team: frontendTeam, labels: ['charts'], dueDate: df(2) },
-    { num: 'CP-13', title: 'Integrate email notifications on ticket assignment', type: 'FEATURE', priority: 'MEDIUM', status: 'IN_PROGRESS', points: 8, project: cpProject, assignee: nisha, team: backendTeam, labels: ['email'], dueDate: df(4) },
-    { num: 'CP-14', title: 'Add two-factor authentication support', type: 'FEATURE', priority: 'HIGH', status: 'IN_REVIEW', points: 13, project: cpProject, assignee: deepak, team: backendTeam, labels: ['security', '2fa'], dueDate: df(1) },
-    { num: 'CP-15', title: 'Responsive design audit for mobile', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'IN_REVIEW', points: 8, project: cpProject, assignee: divya, team: designTeam, labels: ['responsive'], dueDate: df(2) },
-    { num: 'CP-16', title: 'Bulk ticket status update feature', type: 'FEATURE', priority: 'LOW', status: 'TODO', points: 5, project: cpProject, assignee: rahul, team: frontendTeam, labels: ['bulk-actions'], dueDate: df(7) },
-    { num: 'CP-17', title: 'Add dark mode support', type: 'FEATURE', priority: 'LOW', status: 'TODO', points: 13, project: cpProject, assignee: kavya, team: designTeam, labels: ['dark-mode', 'ui'], dueDate: df(10) },
-    { num: 'CP-18', title: 'Refactor API client for better error handling', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'TODO', points: 5, project: cpProject, assignee: sanjay, team: backendTeam, labels: ['refactor'], dueDate: df(8) },
-    { num: 'CP-19', title: 'Write E2E tests for login flow', type: 'TASK', priority: 'HIGH', status: 'TODO', points: 8, project: cpProject, assignee: harish, team: qaTeam, labels: ['testing', 'e2e'], dueDate: df(6) },
-    { num: 'CP-20', title: 'Profile page avatar upload', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', points: 5, project: cpProject, assignee: null, team: frontendTeam, labels: ['profile'], dueDate: df(14) },
-    { num: 'CP-21', title: 'Add global keyboard shortcuts', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', points: 3, project: cpProject, assignee: null, team: frontendTeam, labels: ['accessibility'], dueDate: df(14) },
-    { num: 'CP-22', title: 'Database query optimization for reports', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'BACKLOG', points: 8, project: cpProject, assignee: null, team: backendTeam, labels: ['performance', 'db'], dueDate: df(21) },
-    { num: 'CP-23', title: 'Fix comment threading display issue', type: 'BUG', priority: 'LOW', status: 'BACKLOG', points: 2, project: cpProject, assignee: null, team: frontendTeam, labels: ['comments'], dueDate: df(14) },
-    { num: 'CP-24', title: 'Activity log export to PDF', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', points: 5, project: cpProject, assignee: null, team: backendTeam, labels: ['export', 'pdf'], dueDate: df(21) },
-    { num: 'CP-25', title: 'Overdue ticket auto-notification', type: 'FEATURE', priority: 'MEDIUM', status: 'BLOCKED', points: 8, project: cpProject, assignee: deepak, team: backendTeam, labels: ['notifications', 'cron'], dueDate: d(2), desc: 'Blocked by missing SMTP credentials. DevOps team is setting up the SMTP relay service.' },
+    // ── Customer Portal ──────────────────────────────────
+    { num: 'CP-1', title: 'Fix login redirect on session expiry', type: 'BUG', priority: 'CRITICAL', status: 'LIVE', project: cpProject, assignee: rahul, team: frontendTeam, labels: ['auth', 'hotfix'], dueDate: d(27) },
+    { num: 'CP-2', title: 'Implement user search with filters', type: 'FEATURE', priority: 'HIGH', status: 'LIVE', project: cpProject, assignee: amit, team: frontendTeam, labels: ['search', 'ux'], dueDate: d(25) },
+    { num: 'CP-3', title: 'Design onboarding flow for new users', type: 'FEATURE', priority: 'HIGH', status: 'LIVE', project: cpProject, assignee: divya, team: designTeam, labels: ['onboarding', 'design'], dueDate: d(22) },
+    { num: 'CP-4', title: 'API rate limiting on public endpoints', type: 'IMPROVEMENT', priority: 'HIGH', status: 'LIVE', project: cpProject, assignee: deepak, team: backendTeam, labels: ['security', 'api'], dueDate: d(20) },
+    { num: 'CP-5', title: 'Fix pagination on ticket list view', type: 'BUG', priority: 'MEDIUM', status: 'LIVE', project: cpProject, assignee: vivek, team: frontendTeam, labels: ['pagination'], dueDate: d(18) },
+    { num: 'CP-6', title: 'Add CSV export for reports', type: 'FEATURE', priority: 'MEDIUM', status: 'LIVE', project: cpProject, assignee: nisha, team: backendTeam, labels: ['export', 'reports'], dueDate: d(16) },
+    { num: 'CP-7', title: 'Optimize homepage load time', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'LIVE', project: cpProject, assignee: ravi, team: frontendTeam, labels: ['performance'], dueDate: d(14) },
+    { num: 'CP-8', title: 'Write unit tests for auth module', type: 'TASK', priority: 'MEDIUM', status: 'LIVE', project: cpProject, assignee: lakshmi, team: qaTeam, labels: ['testing', 'auth'], dueDate: d(12) },
+    { num: 'CP-9', title: 'Dashboard KPI cards show wrong data', type: 'BUG', priority: 'HIGH', status: 'LIVE', project: cpProject, assignee: rahul, team: frontendTeam, labels: ['dashboard'], dueDate: d(10) },
+    { num: 'CP-10', title: 'Notification system integration', type: 'FEATURE', priority: 'HIGH', status: 'LIVE', project: cpProject, assignee: deepak, team: backendTeam, labels: ['notifications'], dueDate: d(8) },
+    { num: 'CP-11', title: 'Add role-based sidebar navigation', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'ON_DEVELOPMENT', project: cpProject, assignee: amit, team: frontendTeam, labels: ['rbac', 'ui'], dueDate: df(3) },
+    { num: 'CP-12', title: 'Sprint burndown chart accuracy fix', type: 'BUG', priority: 'HIGH', status: 'ON_DEVELOPMENT', project: cpProject, assignee: vivek, team: frontendTeam, labels: ['charts'], dueDate: df(2) },
+    { num: 'CP-13', title: 'Integrate email notifications on ticket assignment', type: 'FEATURE', priority: 'MEDIUM', status: 'ON_DEVELOPMENT', project: cpProject, assignee: nisha, team: backendTeam, labels: ['email'], dueDate: df(4) },
+    { num: 'CP-14', title: 'Add two-factor authentication support', type: 'FEATURE', priority: 'HIGH', status: 'QA', project: cpProject, assignee: deepak, team: backendTeam, labels: ['security', '2fa'], dueDate: df(1) },
+    { num: 'CP-15', title: 'Responsive design audit for mobile', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'QA', project: cpProject, assignee: divya, team: designTeam, labels: ['responsive'], dueDate: df(2) },
+    { num: 'CP-16', title: 'Bulk ticket status update feature', type: 'FEATURE', priority: 'LOW', status: 'REQUIREMENTS', project: cpProject, assignee: rahul, team: frontendTeam, labels: ['bulk-actions'], dueDate: df(7) },
+    { num: 'CP-17', title: 'Add dark mode support', type: 'FEATURE', priority: 'LOW', status: 'ON_DEVELOPMENT', project: cpProject, assignee: kavya, team: designTeam, labels: ['dark-mode', 'ui'], dueDate: df(10) },
+    { num: 'CP-18', title: 'Refactor API client for better error handling', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'REQUIREMENTS', project: cpProject, assignee: sanjay, team: backendTeam, labels: ['refactor'], dueDate: df(8) },
+    { num: 'CP-19', title: 'Write E2E tests for login flow', type: 'TASK', priority: 'HIGH', status: 'REQUIREMENTS', project: cpProject, assignee: harish, team: qaTeam, labels: ['testing', 'e2e'], dueDate: df(6) },
+    { num: 'CP-20', title: 'Profile page avatar upload', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', project: cpProject, assignee: null, team: frontendTeam, labels: ['profile'], dueDate: df(14) },
+    { num: 'CP-21', title: 'Add global keyboard shortcuts', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', project: cpProject, assignee: null, team: frontendTeam, labels: ['accessibility'], dueDate: df(14) },
+    { num: 'CP-22', title: 'Database query optimization for reports', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'BACKLOG', project: cpProject, assignee: null, team: backendTeam, labels: ['performance', 'db'], dueDate: df(21) },
+    { num: 'CP-23', title: 'Fix comment threading display issue', type: 'BUG', priority: 'LOW', status: 'BACKLOG', project: cpProject, assignee: null, team: frontendTeam, labels: ['comments'], dueDate: df(14) },
+    { num: 'CP-24', title: 'Activity log export to PDF', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', project: cpProject, assignee: null, team: backendTeam, labels: ['export', 'pdf'], dueDate: df(21) },
+    { num: 'CP-25', title: 'Overdue ticket auto-notification', type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', project: cpProject, assignee: deepak, team: backendTeam, labels: ['notifications', 'cron', 'Blocked'], dueDate: d(2), desc: 'Blocked by missing SMTP credentials. DevOps team is setting up the SMTP relay service.' },
 
     // ── Mobile App ────────────────────────────────────────
-    { num: 'APP-1', title: 'Set up React Native project structure', type: 'TASK', priority: 'CRITICAL', status: 'DONE', points: 3, project: appProject, assignee: rahul, team: frontendTeam, labels: ['setup', 'rn'], dueDate: d(28) },
-    { num: 'APP-2', title: 'Implement push notification service', type: 'FEATURE', priority: 'HIGH', status: 'DONE', points: 13, project: appProject, assignee: deepak, team: backendTeam, labels: ['push', 'notifications'], dueDate: d(22) },
-    { num: 'APP-3', title: 'Design mobile UI component library', type: 'TASK', priority: 'HIGH', status: 'DONE', points: 21, project: appProject, assignee: divya, team: designTeam, labels: ['design', 'components'], dueDate: d(18) },
-    { num: 'APP-4', title: 'Authentication token refresh on mobile', type: 'BUG', priority: 'CRITICAL', status: 'DONE', points: 5, project: appProject, assignee: nisha, team: backendTeam, labels: ['auth', 'mobile'], dueDate: d(16) },
-    { num: 'APP-5', title: 'Offline mode data sync', type: 'FEATURE', priority: 'HIGH', status: 'IN_PROGRESS', points: 21, project: appProject, assignee: vivek, team: frontendTeam, labels: ['offline', 'sync'], dueDate: df(5) },
-    { num: 'APP-6', title: 'Biometric login integration', type: 'FEATURE', priority: 'MEDIUM', status: 'IN_PROGRESS', points: 8, project: appProject, assignee: amit, team: frontendTeam, labels: ['biometric', 'security'], dueDate: df(6) },
-    { num: 'APP-7', title: 'App crash on Android 12 deep links', type: 'BUG', priority: 'CRITICAL', status: 'IN_REVIEW', points: 5, project: appProject, assignee: ravi, team: frontendTeam, labels: ['android', 'crash', 'hotfix'], dueDate: d(1) },
-    { num: 'APP-8', title: 'Performance profiling and optimization', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'TODO', points: 13, project: appProject, assignee: sanjay, team: backendTeam, labels: ['performance'], dueDate: df(10) },
-    { num: 'APP-9', title: 'QA regression test suite for v1.0', type: 'TASK', priority: 'HIGH', status: 'TODO', points: 13, project: appProject, assignee: lakshmi, team: qaTeam, labels: ['qa', 'regression'], dueDate: df(8) },
-    { num: 'APP-10', title: 'App Store submission checklist', type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: 3, project: appProject, assignee: null, team: frontendTeam, labels: ['release'], dueDate: df(21) },
-    { num: 'APP-11', title: 'Localization support (Hindi, Tamil)', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', points: 13, project: appProject, assignee: null, team: frontendTeam, labels: ['i18n'], dueDate: df(28) },
-    { num: 'APP-12', title: 'Memory leak in image caching', type: 'BUG', priority: 'HIGH', status: 'BLOCKED', points: 8, project: appProject, assignee: rahul, team: frontendTeam, labels: ['memory', 'performance'], dueDate: d(3), desc: 'Blocked pending profiling tool access. DevOps needs to enable heap snapshots in staging.' },
+    { num: 'APP-1', title: 'Set up React Native project structure', type: 'TASK', priority: 'CRITICAL', status: 'LIVE', project: appProject, assignee: rahul, team: frontendTeam, labels: ['setup', 'rn'], dueDate: d(28) },
+    { num: 'APP-2', title: 'Implement push notification service', type: 'FEATURE', priority: 'HIGH', status: 'LIVE', project: appProject, assignee: deepak, team: backendTeam, labels: ['push', 'notifications'], dueDate: d(22) },
+    { num: 'APP-3', title: 'Design mobile UI component library', type: 'TASK', priority: 'HIGH', status: 'LIVE', project: appProject, assignee: divya, team: designTeam, labels: ['design', 'components'], dueDate: d(18) },
+    { num: 'APP-4', title: 'Authentication token refresh on mobile', type: 'BUG', priority: 'CRITICAL', status: 'LIVE', project: appProject, assignee: nisha, team: backendTeam, labels: ['auth', 'mobile'], dueDate: d(16) },
+    { num: 'APP-5', title: 'Offline mode data sync', type: 'FEATURE', priority: 'HIGH', status: 'ON_DEVELOPMENT', project: appProject, assignee: vivek, team: frontendTeam, labels: ['offline', 'sync'], dueDate: df(5) },
+    { num: 'APP-6', title: 'Biometric login integration', type: 'FEATURE', priority: 'MEDIUM', status: 'ON_DEVELOPMENT', project: appProject, assignee: amit, team: frontendTeam, labels: ['biometric', 'security'], dueDate: df(6) },
+    { num: 'APP-7', title: 'App crash on Android 12 deep links', type: 'BUG', priority: 'CRITICAL', status: 'QA', project: appProject, assignee: ravi, team: frontendTeam, labels: ['android', 'crash', 'hotfix'], dueDate: d(1) },
+    { num: 'APP-8', title: 'Performance profiling and optimization', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'REQUIREMENTS', project: appProject, assignee: sanjay, team: backendTeam, labels: ['performance'], dueDate: df(10) },
+    { num: 'APP-9', title: 'QA regression test suite for v1.0', type: 'TASK', priority: 'HIGH', status: 'REQUIREMENTS', project: appProject, assignee: lakshmi, team: qaTeam, labels: ['qa', 'regression'], dueDate: df(8) },
+    { num: 'APP-10', title: 'App Store submission checklist', type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', project: appProject, assignee: null, team: frontendTeam, labels: ['release'], dueDate: df(21) },
+    { num: 'APP-11', title: 'Localization support (Hindi, Tamil)', type: 'FEATURE', priority: 'LOW', status: 'BACKLOG', project: appProject, assignee: null, team: frontendTeam, labels: ['i18n'], dueDate: df(28) },
+    { num: 'APP-12', title: 'Memory leak in image caching', type: 'BUG', priority: 'HIGH', status: 'BACKLOG', project: appProject, assignee: rahul, team: frontendTeam, labels: ['memory', 'performance', 'Blocked'], dueDate: d(3), desc: 'Blocked pending profiling tool access. DevOps needs to enable heap snapshots in staging.' },
 
     // ── Internal Dashboard ────────────────────────────────
-    { num: 'DASH-1', title: 'Set up analytics data pipeline', type: 'TASK', priority: 'HIGH', status: 'DONE', points: 13, project: dashProject, assignee: sanjay, team: backendTeam, labels: ['analytics', 'pipeline'], dueDate: d(26) },
-    { num: 'DASH-2', title: 'HR metrics dashboard design', type: 'TASK', priority: 'HIGH', status: 'DONE', points: 8, project: dashProject, assignee: kavya, team: designTeam, labels: ['hr', 'design'], dueDate: d(22) },
-    { num: 'DASH-3', title: 'Revenue chart widget component', type: 'FEATURE', priority: 'MEDIUM', status: 'DONE', points: 5, project: dashProject, assignee: amit, team: frontendTeam, labels: ['charts', 'revenue'], dueDate: d(18) },
-    { num: 'DASH-4', title: 'Employee onboarding tracker', type: 'FEATURE', priority: 'HIGH', status: 'IN_PROGRESS', points: 13, project: dashProject, assignee: vivek, team: frontendTeam, labels: ['hr', 'onboarding'], dueDate: df(4) },
-    { num: 'DASH-5', title: 'Real-time data refresh WebSocket', type: 'FEATURE', priority: 'HIGH', status: 'IN_PROGRESS', points: 21, project: dashProject, assignee: deepak, team: backendTeam, labels: ['websocket', 'realtime'], dueDate: df(5) },
-    { num: 'DASH-6', title: 'Date range filter on all charts', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'IN_REVIEW', points: 5, project: dashProject, assignee: nisha, team: backendTeam, labels: ['filters', 'charts'], dueDate: df(2) },
-    { num: 'DASH-7', title: 'Export dashboard as PDF report', type: 'FEATURE', priority: 'MEDIUM', status: 'TODO', points: 8, project: dashProject, assignee: harish, team: qaTeam, labels: ['export', 'pdf'], dueDate: df(8) },
-    { num: 'DASH-8', title: 'Role-based data visibility rules', type: 'FEATURE', priority: 'HIGH', status: 'TODO', points: 13, project: dashProject, assignee: nisha, team: backendTeam, labels: ['rbac', 'security'], dueDate: df(6) },
-    { num: 'DASH-9', title: 'Dashboard loading performance audit', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'BACKLOG', points: 8, project: dashProject, assignee: null, team: frontendTeam, labels: ['performance'], dueDate: df(21) },
-    { num: 'DASH-10', title: 'Write tech documentation for APIs', type: 'TASK', priority: 'LOW', status: 'BACKLOG', points: 5, project: dashProject, assignee: sunita, team: backendTeam, labels: ['docs', 'api'], dueDate: df(21) },
-    { num: 'DASH-11', title: 'Add data anomaly alerts', type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', points: 13, project: dashProject, assignee: null, team: backendTeam, labels: ['alerts', 'monitoring'], dueDate: df(28) },
-    { num: 'DASH-12', title: 'Fix tooltip overflow in bar chart', type: 'BUG', priority: 'LOW', status: 'BACKLOG', points: 2, project: dashProject, assignee: null, team: frontendTeam, labels: ['charts', 'ui'], dueDate: df(14) },
+    { num: 'DASH-1', title: 'Set up analytics data pipeline', type: 'TASK', priority: 'HIGH', status: 'LIVE', project: dashProject, assignee: sanjay, team: backendTeam, labels: ['analytics', 'pipeline'], dueDate: d(26) },
+    { num: 'DASH-2', title: 'HR metrics dashboard design', type: 'TASK', priority: 'HIGH', status: 'LIVE', project: dashProject, assignee: kavya, team: designTeam, labels: ['hr', 'design'], dueDate: d(22) },
+    { num: 'DASH-3', title: 'Revenue chart widget component', type: 'FEATURE', priority: 'MEDIUM', status: 'LIVE', project: dashProject, assignee: amit, team: frontendTeam, labels: ['charts', 'revenue'], dueDate: d(18) },
+    { num: 'DASH-4', title: 'Employee onboarding tracker', type: 'FEATURE', priority: 'HIGH', status: 'ON_DEVELOPMENT', project: dashProject, assignee: vivek, team: frontendTeam, labels: ['hr', 'onboarding'], dueDate: df(4) },
+    { num: 'DASH-5', title: 'Real-time data refresh WebSocket', type: 'FEATURE', priority: 'HIGH', status: 'ON_DEVELOPMENT', project: dashProject, assignee: deepak, team: backendTeam, labels: ['websocket', 'realtime'], dueDate: df(5) },
+    { num: 'DASH-6', title: 'Date range filter on all charts', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'QA', project: dashProject, assignee: nisha, team: backendTeam, labels: ['filters', 'charts'], dueDate: df(2) },
+    { num: 'DASH-7', title: 'Export dashboard as PDF report', type: 'FEATURE', priority: 'MEDIUM', status: 'REQUIREMENTS', project: dashProject, assignee: harish, team: qaTeam, labels: ['export', 'pdf'], dueDate: df(8) },
+    { num: 'DASH-8', title: 'Role-based data visibility rules', type: 'FEATURE', priority: 'HIGH', status: 'ON_DEVELOPMENT', project: dashProject, assignee: nisha, team: backendTeam, labels: ['rbac', 'security'], dueDate: df(6) },
+    { num: 'DASH-9', title: 'Dashboard loading performance audit', type: 'IMPROVEMENT', priority: 'MEDIUM', status: 'BACKLOG', project: dashProject, assignee: null, team: frontendTeam, labels: ['performance'], dueDate: df(21) },
+    { num: 'DASH-10', title: 'Write tech documentation for APIs', type: 'TASK', priority: 'LOW', status: 'BACKLOG', project: dashProject, assignee: sunita, team: backendTeam, labels: ['docs', 'api'], dueDate: df(21) },
+    { num: 'DASH-11', title: 'Add data anomaly alerts', type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', project: dashProject, assignee: null, team: backendTeam, labels: ['alerts', 'monitoring'], dueDate: df(28) },
+    { num: 'DASH-12', title: 'Fix tooltip overflow in bar chart', type: 'BUG', priority: 'LOW', status: 'BACKLOG', project: dashProject, assignee: null, team: frontendTeam, labels: ['charts', 'ui'], dueDate: df(14) },
   ];
 
   const createdTickets: Record<string, any> = {};
@@ -260,7 +260,6 @@ async function main() {
         type: def.type,
         priority: def.priority,
         status: def.status,
-        storyPoints: def.points,
         createdById: arjun.id,
         assignedToId: def.assignee?.id ?? undefined,
         teamId: def.team.id,
@@ -272,6 +271,15 @@ async function main() {
   }
 
   console.log(`✅ ${ticketDefs.length} tickets created`);
+
+  // ─── TicketAssignee records for seeded tickets ────────
+  const assigneeData = ticketDefs
+    .filter(def => def.assignee)
+    .map(def => ({ ticketId: createdTickets[def.num].id, userId: def.assignee!.id }));
+  if (assigneeData.length > 0) {
+    await prisma.ticketAssignee.createMany({ data: assigneeData, skipDuplicates: true });
+  }
+  console.log(`✅ ${assigneeData.length} ticket assignee records created`);
 
   // ─── Sprints ──────────────────────────────────────────
   const sprint12 = await prisma.sprint.create({ data: { name: 'Sprint 12', projectId: cpProject.id, startDate: d(42), endDate: d(28), goal: 'Authentication overhaul and user search', status: 'COMPLETED', createdById: karthik.id } }).catch(() => null);
@@ -290,7 +298,7 @@ async function main() {
     if (!sprint) continue;
     for (const num of nums) {
       const t = createdTickets[num];
-      if (t) await prisma.sprintTicket.create({ data: { sprintId: sprint.id, ticketId: t.id, statusAtStart: 'TODO', pointsAtStart: t.storyPoints } }).catch(() => null);
+      if (t) await prisma.sprintTicket.create({ data: { sprintId: sprint.id, ticketId: t.id, statusAtStart: 'REQUIREMENTS' } }).catch(() => null);
     }
   }
 
@@ -298,40 +306,39 @@ async function main() {
 
   // ─── Ticket History ───────────────────────────────────
   const historyDefs = [
-    { n: 'CP-1', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: rahul, days: 29 },
-    { n: 'CP-1', f: 'status', o: 'IN_PROGRESS', v: 'IN_REVIEW', u: rahul, days: 28 },
-    { n: 'CP-1', f: 'status', o: 'IN_REVIEW', v: 'DONE', u: vikram, days: 27 },
-    { n: 'CP-2', f: 'status', o: 'BACKLOG', v: 'TODO', u: karthik, days: 27 },
-    { n: 'CP-2', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: amit, days: 26 },
-    { n: 'CP-2', f: 'status', o: 'IN_PROGRESS', v: 'DONE', u: amit, days: 25 },
-    { n: 'CP-3', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: divya, days: 24 },
-    { n: 'CP-3', f: 'status', o: 'IN_PROGRESS', v: 'IN_REVIEW', u: divya, days: 23 },
-    { n: 'CP-3', f: 'status', o: 'IN_REVIEW', v: 'DONE', u: ananya, days: 22 },
-    { n: 'CP-4', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: deepak, days: 21 },
+    { n: 'CP-1', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: rahul, days: 29 },
+    { n: 'CP-1', f: 'status', o: 'ON_DEVELOPMENT', v: 'QA', u: rahul, days: 28 },
+    { n: 'CP-1', f: 'status', o: 'QA', v: 'LIVE', u: vikram, days: 27 },
+    { n: 'CP-2', f: 'status', o: 'BACKLOG', v: 'REQUIREMENTS', u: karthik, days: 27 },
+    { n: 'CP-2', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: amit, days: 26 },
+    { n: 'CP-2', f: 'status', o: 'ON_DEVELOPMENT', v: 'LIVE', u: amit, days: 25 },
+    { n: 'CP-3', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: divya, days: 24 },
+    { n: 'CP-3', f: 'status', o: 'ON_DEVELOPMENT', v: 'QA', u: divya, days: 23 },
+    { n: 'CP-3', f: 'status', o: 'QA', v: 'LIVE', u: ananya, days: 22 },
+    { n: 'CP-4', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: deepak, days: 21 },
     { n: 'CP-4', f: 'priority', o: 'MEDIUM', v: 'HIGH', u: arjun, days: 21 },
-    { n: 'CP-4', f: 'status', o: 'IN_PROGRESS', v: 'DONE', u: deepak, days: 20 },
-    { n: 'CP-9', f: 'status', o: 'BACKLOG', v: 'TODO', u: vikram, days: 13 },
-    { n: 'CP-9', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: rahul, days: 12 },
-    { n: 'CP-9', f: 'status', o: 'IN_PROGRESS', v: 'DONE', u: rahul, days: 11 },
-    { n: 'CP-11', f: 'status', o: 'BACKLOG', v: 'TODO', u: karthik, days: 6 },
-    { n: 'CP-11', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: amit, days: 5 },
-    { n: 'CP-12', f: 'status', o: 'BACKLOG', v: 'IN_PROGRESS', u: vivek, days: 4 },
-    { n: 'CP-14', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: deepak, days: 7 },
-    { n: 'CP-14', f: 'status', o: 'IN_PROGRESS', v: 'IN_REVIEW', u: deepak, days: 5 },
-    { n: 'CP-15', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: divya, days: 6 },
-    { n: 'CP-15', f: 'status', o: 'IN_PROGRESS', v: 'IN_REVIEW', u: divya, days: 4 },
-    { n: 'CP-25', f: 'status', o: 'IN_PROGRESS', v: 'BLOCKED', u: deepak, days: 8 },
-    { n: 'APP-1', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: rahul, days: 29 },
-    { n: 'APP-1', f: 'status', o: 'IN_PROGRESS', v: 'DONE', u: rahul, days: 28 },
+    { n: 'CP-4', f: 'status', o: 'ON_DEVELOPMENT', v: 'LIVE', u: deepak, days: 20 },
+    { n: 'CP-9', f: 'status', o: 'BACKLOG', v: 'REQUIREMENTS', u: vikram, days: 13 },
+    { n: 'CP-9', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: rahul, days: 12 },
+    { n: 'CP-9', f: 'status', o: 'ON_DEVELOPMENT', v: 'LIVE', u: rahul, days: 11 },
+    { n: 'CP-11', f: 'status', o: 'BACKLOG', v: 'REQUIREMENTS', u: karthik, days: 6 },
+    { n: 'CP-11', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: amit, days: 5 },
+    { n: 'CP-12', f: 'status', o: 'BACKLOG', v: 'ON_DEVELOPMENT', u: vivek, days: 4 },
+    { n: 'CP-14', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: deepak, days: 7 },
+    { n: 'CP-14', f: 'status', o: 'ON_DEVELOPMENT', v: 'QA', u: deepak, days: 5 },
+    { n: 'CP-15', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: divya, days: 6 },
+    { n: 'CP-15', f: 'status', o: 'ON_DEVELOPMENT', v: 'QA', u: divya, days: 4 },
+    { n: 'CP-25', f: 'status', o: 'ON_DEVELOPMENT', v: 'BACKLOG', u: deepak, days: 8 },
+    { n: 'APP-1', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: rahul, days: 29 },
+    { n: 'APP-1', f: 'status', o: 'ON_DEVELOPMENT', v: 'LIVE', u: rahul, days: 28 },
     { n: 'APP-4', f: 'priority', o: 'HIGH', v: 'CRITICAL', u: sneha, days: 20 },
-    { n: 'APP-4', f: 'status', o: 'IN_PROGRESS', v: 'DONE', u: nisha, days: 18 },
-    { n: 'APP-7', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: ravi, days: 6 },
-    { n: 'APP-7', f: 'status', o: 'IN_PROGRESS', v: 'IN_REVIEW', u: ravi, days: 5 },
-    { n: 'APP-12', f: 'status', o: 'IN_PROGRESS', v: 'BLOCKED', u: rahul, days: 7 },
-    { n: 'DASH-1', f: 'status', o: 'TODO', v: 'IN_PROGRESS', u: sanjay, days: 27 },
-    { n: 'DASH-1', f: 'status', o: 'IN_PROGRESS', v: 'DONE', u: sanjay, days: 26 },
-    { n: 'DASH-5', f: 'storyPoints', o: '13', v: '21', u: meera, days: 4 },
-    { n: 'DASH-6', f: 'status', o: 'IN_PROGRESS', v: 'IN_REVIEW', u: nisha, days: 5 },
+    { n: 'APP-4', f: 'status', o: 'ON_DEVELOPMENT', v: 'LIVE', u: nisha, days: 18 },
+    { n: 'APP-7', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: ravi, days: 6 },
+    { n: 'APP-7', f: 'status', o: 'ON_DEVELOPMENT', v: 'QA', u: ravi, days: 5 },
+    { n: 'APP-12', f: 'status', o: 'ON_DEVELOPMENT', v: 'BACKLOG', u: rahul, days: 7 },
+    { n: 'DASH-1', f: 'status', o: 'REQUIREMENTS', v: 'ON_DEVELOPMENT', u: sanjay, days: 27 },
+    { n: 'DASH-1', f: 'status', o: 'ON_DEVELOPMENT', v: 'LIVE', u: sanjay, days: 26 },
+    { n: 'DASH-6', f: 'status', o: 'ON_DEVELOPMENT', v: 'QA', u: nisha, days: 5 },
   ];
 
   for (const h of historyDefs) {
@@ -398,7 +405,7 @@ async function main() {
   }
 
   // Overdue notifications
-  const overdueTickets = ticketDefs.filter(t => ['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'BLOCKED'].includes(t.status) && t.assignee);
+  const overdueTickets = ticketDefs.filter(t => ['ON_DEVELOPMENT', 'QA', 'REQUIREMENTS'].includes(t.status) && t.assignee);
   for (const t of overdueTickets.slice(0, 8)) {
     if (!t.assignee) continue;
     const ticket = createdTickets[t.num];
@@ -414,9 +421,9 @@ async function main() {
   console.log('\n🎉 Seeding complete!');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  Demo Login Credentials:');
-  console.log('  Admin:   admin@projecthub.com  /  admin123');
-  console.log('  Manager: vikram@projecthub.com /  demo123');
-  console.log('  Member:  rahul@projecthub.com  /  demo123');
+  console.log('  Admin:   admin@taskpilot.com  /  admin123');
+  console.log('  Manager: vikram@taskpilot.com /  demo123');
+  console.log('  Member:  rahul@taskpilot.com  /  demo123');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 

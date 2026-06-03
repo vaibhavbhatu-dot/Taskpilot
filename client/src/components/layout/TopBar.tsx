@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Bell, ChevronDown, LogOut, User, UserPlus, MessageSquare, AlertCircle, Play, CheckCircle, Search } from 'lucide-react';
+import { Menu, Bell, ChevronDown, LogOut, User, UserPlus, MessageSquare, AlertCircle, Play, CheckCircle, Search, Settings } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../stores';
 import { notificationsApi } from '../../api';
 import type { Notification } from '../../types';
@@ -28,20 +28,6 @@ function getNotificationIcon(type: string) {
   }
 }
 
-const pageTitles: Record<string, string> = {
-  '/': 'Dashboard',
-  '/tickets': 'My Tickets',
-  '/board': 'Kanban Board',
-  '/sprints': 'Active Sprint',
-  '/backlog': 'Sprint Planning',
-  '/sprint-reports': 'Sprint Reports',
-  '/teams': 'Teams',
-  '/projects': 'Projects',
-  '/members': 'Team Members',
-  '/profile': 'My Profile',
-  '/settings': 'Admin Settings',
-  '/notifications': 'Notifications',
-};
 
 export function TopBar() {
   const { user, clearAuth } = useAuthStore();
@@ -57,10 +43,6 @@ export function TopBar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Get page title
-  const pageTitle = pageTitles[location.pathname] || 
-    (location.pathname.startsWith('/tickets/') ? 'Ticket Detail' :
-     location.pathname.startsWith('/teams/') ? 'Team Detail' : 'Dashboard');
-
   useEffect(() => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000);
@@ -129,9 +111,6 @@ export function TopBar() {
         <Menu className="w-5 h-5 text-[#0F172A]" />
       </button>
 
-      {/* Page title */}
-      <h1 className="text-[18px] font-semibold text-[#0F172A] hidden sm:block">{pageTitle}</h1>
-
       <div className="flex-1" />
 
       {/* Search Input Trigger */}
@@ -140,7 +119,7 @@ export function TopBar() {
         className="hidden md:flex items-center gap-2 w-full max-w-[320px] h-10 px-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-transparent rounded-lg transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
       >
         <Search className="w-4 h-4 text-[#64748B]" />
-        <span className="flex-1 text-[13px] text-[#94A3B8]">Search tickets, members, projects...</span>
+        <span className="flex-1 text-[13px] text-[#94A3B8] truncate whitespace-nowrap">Search tickets, members, projects...</span>
         <div className="flex items-center gap-1">
           <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans text-[#64748B]">⌘</kbd>
           <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans text-[#64748B]">K</kbd>
@@ -154,6 +133,17 @@ export function TopBar() {
       >
         <Search className="w-5 h-5 text-[#64748B]" />
       </button>
+
+      {/* Settings icon (Admin only) */}
+      {user?.role === 'ADMIN' && (
+        <button
+          onClick={() => navigate('/settings')}
+          className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${location.pathname === '/settings' ? 'bg-[#EFF6FF]' : ''}`}
+          title="Admin Settings"
+        >
+          <Settings className="w-5 h-5 text-[#64748B]" />
+        </button>
+      )}
 
       {/* Notification bell */}
       <div className="relative" ref={notifRef}>

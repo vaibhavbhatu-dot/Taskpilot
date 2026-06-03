@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../api';
-import { History, Clock, User as UserIcon } from 'lucide-react';
+import { Clock, User as UserIcon } from 'lucide-react';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 interface ActivityRecord {
   id: string;
@@ -43,15 +44,7 @@ export function ActivityLog() {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto py-6">
-      <div className="flex items-center gap-3 border-b border-[#E2E8F0] pb-4">
-        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-          <History className="w-5 h-5 text-orange-600" />
-        </div>
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#0F172A]">System Activity Log</h1>
-          <p className="text-[13px] text-[#64748B] mt-0.5">Audit trail of all ticket modifications across the platform.</p>
-        </div>
-      </div>
+      <PageHeader title="Activity Log" subtitle="Audit trail of all ticket modifications across the platform." />
 
       <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden relative">
         {loading && (

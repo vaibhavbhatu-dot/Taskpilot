@@ -44,7 +44,29 @@ export interface Project {
 // ─── Ticket Types ────────────────────────────────────────
 export type TicketType = 'BUG' | 'FEATURE' | 'TASK' | 'IMPROVEMENT';
 export type TicketPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-export type TicketStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
+export type TicketStatus = 'BACKLOG' | 'REQUIREMENTS' | 'DESIGN' | 'HTML' | 'ON_DEVELOPMENT' | 'QA' | 'BUGS' | 'ENHANCEMENT' | 'UAT' | 'LIVE' | 'NOT_REQUIRED';
+
+export interface TicketAssignee {
+  id: string;
+  ticketId: string;
+  userId: string;
+  assignedAt: string;
+  user: Pick<User, 'id' | 'fullName' | 'avatar' | 'email'>;
+}
+
+export interface Attachment {
+  id: string;
+  ticketId: string;
+  filename: string;
+  originalName: string;
+  url: string;
+  size?: number;
+  mimeType?: string;
+  uploadedById: string;
+  commentId?: string | null;
+  createdAt: string;
+  uploadedBy?: Pick<User, 'id' | 'fullName'>;
+}
 
 export interface Ticket {
   id: string;
@@ -59,12 +81,15 @@ export interface Ticket {
   assignedToId?: string;
   teamId?: string;
   dueDate?: string;
-  storyPoints?: number;
+  completedAt?: string;
   labels: string[];
+  links: string[];
   createdAt: string;
   updatedAt: string;
   project?: Pick<Project, 'id' | 'name' | 'key'>;
   assignedTo?: Pick<User, 'id' | 'fullName' | 'avatar'>;
+  assignees?: TicketAssignee[];
+  attachments?: Attachment[];
   createdBy?: Pick<User, 'id' | 'fullName' | 'avatar'>;
   team?: Pick<Team, 'id' | 'name'>;
   _count?: { comments: number };
@@ -94,7 +119,6 @@ export interface SprintTicket {
   sprintId: string;
   ticketId: string;
   statusAtStart: TicketStatus;
-  pointsAtStart?: number;
   ticket?: Ticket;
   sprint?: Sprint;
 }
@@ -110,6 +134,7 @@ export interface Comment {
   updatedAt: string;
   author?: Pick<User, 'id' | 'fullName' | 'avatar'>;
   replies?: Comment[];
+  attachments?: Attachment[];
 }
 
 // ─── Notification Types ──────────────────────────────────
@@ -163,9 +188,9 @@ export interface TicketHistory {
 export interface DashboardKPIs {
   totalTickets: number;
   todoTickets: number;
-  inProgressTickets: number;
-  doneTickets: number;
-  blockedTickets: number;
+  devInProgressTickets: number;
+  inReviewTickets: number;
+  deployedTickets: number;
   overdueTickets: number;
   teamMemberCount: number;
 }
@@ -182,27 +207,10 @@ export interface VelocityData {
   velocity: Array<{
     sprintName: string;
     sprintId: string;
-    completedPoints: number;
-    totalPoints: number;
     completedTickets: number;
     totalTickets: number;
   }>;
   avgVelocity: number;
-}
-
-export interface BurndownData {
-  totalPoints: number;
-  completedPoints: number;
-  remainingPoints: number;
-  totalDays: number;
-  elapsedDays: number;
-  idealBurndown: Array<{ day: number; ideal: number }>;
-  ticketStats: {
-    total: number;
-    done: number;
-    inProgress: number;
-    blocked: number;
-  };
 }
 
 // ─── API Response Types ──────────────────────────────────

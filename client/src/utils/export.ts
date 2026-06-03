@@ -5,8 +5,8 @@ import type { Ticket } from '../types';
 export function exportTicketsToCSV(tickets: Ticket[], filename = 'tickets_export.csv') {
   if (!tickets.length) return;
 
-  const headers = ['Ticket Number', 'Title', 'Status', 'Priority', 'Type', 'Assignee', 'Story Points', 'Due Date'];
-  
+  const headers = ['Ticket Number', 'Title', 'Status', 'Priority', 'Type', 'Assignee', 'Due Date'];
+
   const rows = tickets.map(t => [
     t.ticketNumber,
     `"${t.title.replace(/"/g, '""')}"`,
@@ -14,7 +14,6 @@ export function exportTicketsToCSV(tickets: Ticket[], filename = 'tickets_export
     t.priority,
     t.type,
     t.assignedTo ? `"${t.assignedTo.fullName}"` : 'Unassigned',
-    t.storyPoints || '',
     t.dueDate ? new Date(t.dueDate).toLocaleDateString() : ''
   ]);
 
@@ -46,7 +45,7 @@ export function exportTicketsToPDF(tickets: Ticket[], filename = 'tickets_export
   doc.setFontSize(10);
   doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-  const tableColumn = ['Key', 'Title', 'Status', 'Priority', 'Assignee', 'Points'];
+  const tableColumn = ['Key', 'Title', 'Status', 'Priority', 'Assignee'];
   const tableRows: any[] = [];
 
   tickets.forEach(ticket => {
@@ -55,8 +54,7 @@ export function exportTicketsToPDF(tickets: Ticket[], filename = 'tickets_export
       ticket.title.length > 30 ? ticket.title.substring(0, 30) + '...' : ticket.title,
       ticket.status.replace(/_/g, ' '),
       ticket.priority,
-      ticket.assignedTo?.fullName || 'Unassigned',
-      ticket.storyPoints || '-'
+      ticket.assignedTo?.fullName || 'Unassigned'
     ];
     tableRows.push(ticketData);
   });

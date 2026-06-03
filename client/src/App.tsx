@@ -26,8 +26,11 @@ import { ActivityLog } from './pages/admin/ActivityLog';
 import { NotificationsPage } from './pages/Notifications';
 import { MembersPage } from './pages/Members';
 import { ProjectsPage } from './pages/Projects';
+import { MyWorkPage } from './pages/MyWork';
 import { NotFoundPage } from './pages/NotFound';
+import { StyleGuidePage } from './pages/StyleGuide';
 import { ToastContainer } from './components/ui/Toast';
+import { Toaster } from './components/ui/sonner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,7 +69,7 @@ function ProtectedRoute() {
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-sm text-[#64748B]">Loading ProjectHub...</p>
+          <p className="text-sm text-[#64748B]">Loading TaskPilot...</p>
         </div>
       </div>
     );
@@ -116,6 +119,9 @@ function App() {
       <BrowserRouter>
         <AppInitializer>
           <Routes>
+            {/* Developer tools — no auth guard */}
+            <Route path="/style-guide" element={<StyleGuidePage />} />
+
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/invite" element={<ProfileSetupPage />} />
@@ -124,6 +130,7 @@ function App() {
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/my-work" element={<MyWorkPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
               <Route path="/board" element={<BoardPage />} />
@@ -154,6 +161,7 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <ToastContainer />
+          <Toaster richColors position="bottom-right" />
         </AppInitializer>
       </BrowserRouter>
     </QueryClientProvider>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Camera, Check, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../stores';
 import { usersApi, teamsApi } from '../api';
+import { PageHeader } from '../components/ui/PageHeader';
 import type { User, Team } from '../types';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
@@ -73,8 +74,10 @@ export function ProfilePage() {
   const badge = ROLE_BADGES[user.role] || ROLE_BADGES.MEMBER;
 
   return (
-    <div className="flex justify-center animate-fade-in">
-      <div className="w-full max-w-[600px]">
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader title="My Profile" />
+      <div className="flex justify-center">
+        <div className="w-full max-w-[600px]">
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
           {/* Avatar */}
           <div className="flex justify-center mb-6">
@@ -181,6 +184,7 @@ export function ProfilePage() {
               </button>
             </div>
           </form>
+        </div>
         </div>
       </div>
     </div>

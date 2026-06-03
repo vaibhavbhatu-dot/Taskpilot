@@ -2,17 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Calendar as CalendarIcon, Target, CheckCircle, Columns3, List } from 'lucide-react';
+import { Calendar as CalendarIcon, Target, CheckCircle, CheckCircle2, Columns3, List } from 'lucide-react';
 import { sprintsApi, ticketsApi } from '../api';
-import type { Sprint, Ticket, TicketStatus, BurndownData } from '../types';
+import type { Sprint, Ticket, TicketStatus } from '../types';
+import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
 
-const COLUMNS: { id: TicketStatus; title: string }[] = [
-  { id: 'TODO', title: 'To Do' },
-  { id: 'IN_PROGRESS', title: 'In Progress' },
-  { id: 'IN_REVIEW', title: 'In Review' },
-  { id: 'DONE', title: 'Done' },
-  { id: 'BLOCKED', title: 'Blocked' },
-];
+// Active sprint board excludes BACKLOG column
+const COLUMNS: { id: TicketStatus; title: string }[] = TICKET_STATUSES
+  .filter(s => s !== 'BACKLOG')
+  .map(s => ({ id: s, title: STATUS_CONFIG[s].label }));
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: 'bg-red-500',
@@ -26,13 +24,12 @@ const getInitials = (name: string) =>
 
 export function ActiveSprintPage() {
   const navigate = useNavigate();
-  
+
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [burndown, setBurndown] = useState<BurndownData | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
-  
+
   // Complete Sprint Modal
   const [showComplete, setShowComplete] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -50,12 +47,8 @@ export function ActiveSprintPage() {
       setActiveSprint(active);
 
       if (active) {
-        const [ticketsRes, burndownRes] = await Promise.all([
-          ticketsApi.list({ sprintId: active.id, limit: '500' }),
-          sprintsApi.getBurndown(active.id).catch(() => ({ data: null }))
-        ]);
+        const ticketsRes = await ticketsApi.list({ sprintId: active.id, limit: '500' });
         setTickets(ticketsRes.data.tickets);
-        setBurndown(burndownRes.data);
       }
     } catch (error) {
       console.error('Failed to load active sprint:', error);
@@ -72,7 +65,7 @@ export function ActiveSprintPage() {
     }
 
     const newStatus = destination.droppableId as TicketStatus;
-    
+
     // Optimistic update
     setTickets((prev) =>
       prev.map((t) => (t.id === draggableId ? { ...t, status: newStatus } : t))
@@ -80,26 +73,20 @@ export function ActiveSprintPage() {
 
     try {
       await ticketsApi.update(draggableId, { status: newStatus });
-      // Reload burndown slightly delayed if a ticket goes to DONE
-      setTimeout(() => {
-        if (activeSprint) {
-          sprintsApi.getBurndown(activeSprint.id).then(r => setBurndown(r.data)).catch();
-        }
-      }, 500);
     } catch {
       loadData(); // Revert on failure
     }
   };
 
-  const completedTickets = tickets.filter(t => t.status === 'DONE');
-  const incompleteTickets = tickets.filter(t => t.status !== 'DONE');
+  const completedTickets = tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED');
+  const incompleteTickets = tickets.filter(t => t.status !== 'LIVE' && t.status !== 'NOT_REQUIRED');
 
   const handleCompleteSprint = async () => {
     if (!activeSprint || completing) return;
     setCompleting(true);
     try {
       let nextSprintId: string | undefined = undefined;
-      
+
       // If moving to next sprint, create it first
       if (incompleteAction === 'next' && incompleteTickets.length > 0) {
         const numPattern = /\d+/;
@@ -159,13 +146,11 @@ export function ActiveSprintPage() {
     );
   }
 
-  // Pre-calculate days left based on burndown
-  // If burndown data is unavailable (null), just show generic text
-  const daysRemaining = burndown ? Math.max(0, burndown.totalDays - burndown.elapsedDays) : null;
+  const daysRemaining = activeSprint?.endDate ? Math.max(0, Math.ceil((new Date(activeSprint.endDate).getTime() - Date.now()) / 86400000)) : null;
 
   return (
     <div className="animate-fade-in h-[calc(100vh-100px)] flex flex-col relative">
-      
+
       {/* Sprint Info Bar */}
       <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 mb-5 flex-shrink-0 shadow-sm flex items-center justify-between">
         <div>
@@ -204,28 +189,26 @@ export function ActiveSprintPage() {
       </div>
 
       {/* KPI Row */}
-      {burndown && (
-        <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-[12px] font-semibold text-[#64748B] uppercase tracking-wider mb-1">Committed</p>
-            <p className="text-[24px] font-semibold text-[#0F172A]">{burndown.totalPoints}</p>
-          </div>
-          <div className="bg-[#D1FAE5] border border-[#A7F3D0] rounded-xl p-4">
-            <p className="text-[12px] font-semibold text-[#065F46] uppercase tracking-wider mb-1">Completed</p>
-            <p className="text-[24px] font-semibold text-[#047857]">{burndown.completedPoints}</p>
-          </div>
-          <div className="bg-[#DBEAFE] border border-[#BFDBFE] rounded-xl p-4">
-            <p className="text-[12px] font-semibold text-[#1E3A8A] uppercase tracking-wider mb-1">Remaining</p>
-            <p className="text-[24px] font-semibold text-[#1D4ED8]">{burndown.remainingPoints}</p>
-          </div>
-          <div className="bg-[#FEF3C7] border border-[#FDE68A] rounded-xl p-4">
-            <p className="text-[12px] font-semibold text-[#92400E] uppercase tracking-wider mb-1">Progress</p>
-            <p className="text-[24px] font-semibold text-[#B45309]">
-              {burndown.totalPoints > 0 ? Math.round((burndown.completedPoints / burndown.totalPoints) * 100) : 0}%
-            </p>
-          </div>
+      <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-[#64748B] uppercase tracking-wider mb-1">Total</p>
+          <p className="text-[24px] font-semibold text-[#0F172A]">{tickets.length}</p>
         </div>
-      )}
+        <div className="bg-[#D1FAE5] border border-[#A7F3D0] rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-[#065F46] uppercase tracking-wider mb-1">Done</p>
+          <p className="text-[24px] font-semibold text-[#047857]">{completedTickets.length}</p>
+        </div>
+        <div className="bg-[#DBEAFE] border border-[#BFDBFE] rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-[#1E3A8A] uppercase tracking-wider mb-1">Remaining</p>
+          <p className="text-[24px] font-semibold text-[#1D4ED8]">{incompleteTickets.length}</p>
+        </div>
+        <div className="bg-[#FEF3C7] border border-[#FDE68A] rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-[#92400E] uppercase tracking-wider mb-1">Progress</p>
+          <p className="text-[24px] font-semibold text-[#B45309]">
+            {tickets.length > 0 ? Math.round((completedTickets.length / tickets.length) * 100) : 0}%
+          </p>
+        </div>
+      </div>
 
       {/* View Toggle */}
       <div className="flex items-center justify-end mb-4 flex-shrink-0">
@@ -252,12 +235,13 @@ export function ActiveSprintPage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden min-h-0 bg-white border border-[#E2E8F0] rounded-xl shadow-sm">
         {viewMode === 'board' ? (
-          <div className="h-full overflow-auto p-4 flex gap-4">
+          <div className="h-full overflow-auto p-4 flex gap-4" style={{ WebkitOverflowScrolling: 'touch' }}>
             <DragDropContext onDragEnd={handleDragEnd}>
               {COLUMNS.map(col => {
                 const colTickets = tickets.filter(t => t.status === col.id);
+                const isDeployedCol = col.id === 'LIVE';
                 return (
-                  <div key={col.id} className="w-[280px] flex-shrink-0 flex flex-col">
+                  <div key={col.id} className="w-[260px] flex-shrink-0 flex flex-col">
                     <div className="flex items-center justify-between mb-3 px-1">
                       <h3 className="text-[13px] font-semibold text-[#64748B] uppercase tracking-wider">{col.title}</h3>
                       <span className="text-[12px] font-medium text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
@@ -282,12 +266,15 @@ export function ActiveSprintPage() {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   onClick={() => navigate(`/tickets/${ticket.id}`)}
-                                  className={`bg-white border p-[14px] rounded-[10px] mb-2 cursor-pointer transition-all ${
-                                    snapshot.isDragging 
-                                      ? 'border-[#2563EB] shadow-lg rotate-1 scale-105 opacity-90' 
+                                  className={`bg-white border p-[14px] rounded-[10px] mb-2 cursor-pointer transition-all relative ${
+                                    snapshot.isDragging
+                                      ? 'border-[#2563EB] shadow-lg rotate-1 scale-105 opacity-90'
                                       : 'border-[#E2E8F0] shadow-sm hover:border-[#94A3B8]'
                                   }`}
                                 >
+                                  {isDeployedCol && (
+                                    <CheckCircle2 className="absolute top-2 right-2 w-[14px] h-[14px] text-[#16A34A]" />
+                                  )}
                                   <div className="flex justify-between items-start mb-2">
                                     <span className="text-[11px] font-mono font-medium text-[#64748B]">{ticket.ticketNumber}</span>
                                     <span className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[ticket.priority]}`} title={ticket.priority} />
@@ -296,21 +283,25 @@ export function ActiveSprintPage() {
                                     {ticket.title}
                                   </p>
                                   <div className="flex items-center justify-between">
-                                    {ticket.assignedTo ? (
-                                      <div className="flex items-center gap-1.5">
-                                        <div className="w-[24px] h-[24px] rounded-full bg-[#DBEAFE] flex items-center justify-center border border-white relative z-10" title={ticket.assignedTo.fullName}>
-                                          <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(ticket.assignedTo.fullName)}</span>
+                                    {(() => {
+                                      const assignees = ticket.assignees && ticket.assignees.length > 0
+                                        ? ticket.assignees
+                                        : ticket.assignedTo ? [{ userId: ticket.assignedTo.id, user: ticket.assignedTo }] : [];
+                                      return assignees.length > 0 ? (
+                                        <div className="flex items-center gap-1">
+                                          {assignees.slice(0, 3).map((a, i) => (
+                                            <div key={a.userId} className="w-[24px] h-[24px] rounded-full bg-[#DBEAFE] flex items-center justify-center border-2 border-white" style={{ marginLeft: i > 0 ? '-6px' : 0, zIndex: 10 - i }} title={a.user.fullName}>
+                                              <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(a.user.fullName)}</span>
+                                            </div>
+                                          ))}
+                                          <span className="text-[12px] text-[#64748B] font-medium ml-1 truncate max-w-[80px]">
+                                            {assignees.length === 1 ? assignees[0].user.fullName.split(' ')[0] : `${assignees.length} people`}
+                                          </span>
                                         </div>
-                                        <span className="text-[12px] text-[#64748B] font-medium max-w-[100px] truncate">{ticket.assignedTo.fullName.split(' ')[0]}</span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-[12px] text-[#94A3B8] font-medium">Unassigned</span>
-                                    )}
-                                    {ticket.storyPoints && (
-                                      <span className="h-[20px] px-1.5 flex items-center justify-center bg-[#F1F5F9] text-[#64748B] text-[11px] font-semibold rounded">
-                                        {ticket.storyPoints}
-                                      </span>
-                                    )}
+                                      ) : (
+                                        <span className="text-[12px] text-[#94A3B8] font-medium">Unassigned</span>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               )}
@@ -333,8 +324,7 @@ export function ActiveSprintPage() {
                   <th className="px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider w-24">Ticket #</th>
                   <th className="px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Title</th>
                   <th className="px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider w-40">Assignee</th>
-                  <th className="px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider w-32">Status</th>
-                  <th className="px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider w-24 text-right">Points</th>
+                  <th className="px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider w-48">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E8F0] bg-white">
@@ -350,24 +340,34 @@ export function ActiveSprintPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      {ticket.assignedTo ? (
-                        <div className="flex items-center gap-2">
-                           <div className="w-[24px] h-[24px] rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
-                            <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(ticket.assignedTo.fullName)}</span>
+                      {(() => {
+                        const assignees = ticket.assignees && ticket.assignees.length > 0
+                          ? ticket.assignees
+                          : ticket.assignedTo ? [{ userId: ticket.assignedTo.id, user: ticket.assignedTo }] : [];
+                        if (assignees.length === 0) return <span className="text-[13px] text-[#94A3B8] italic">Unassigned</span>;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className="flex">
+                              {assignees.slice(0, 3).map((a, i) => (
+                                <div key={a.userId} className="w-[24px] h-[24px] rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0 border-2 border-white" style={{ marginLeft: i > 0 ? '-6px' : 0 }} title={a.user.fullName}>
+                                  <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(a.user.fullName)}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-[13px] text-[#475569]">
+                              {assignees.length === 1 ? assignees[0].user.fullName : `${assignees.length} assignees`}
+                            </span>
                           </div>
-                          <span className="text-[13px] text-[#475569]">{ticket.assignedTo.fullName}</span>
-                        </div>
-                      ) : (
-                        <span className="text-[13px] text-[#94A3B8] italic">Unassigned</span>
-                      )}
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569] whitespace-nowrap">
-                        {ticket.status.replace(/_/g, ' ')}
+                      <span
+                        className="text-[12px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                        style={{ backgroundColor: STATUS_CONFIG[ticket.status]?.bg, color: STATUS_CONFIG[ticket.status]?.text }}
+                      >
+                        {getStatusLabel(ticket.status)}
                       </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <span className="text-[13px] font-medium text-[#64748B]">{ticket.storyPoints || '—'}</span>
                     </td>
                   </tr>
                 ))}
@@ -391,12 +391,12 @@ export function ActiveSprintPage() {
             <div className="px-6 py-4 border-b border-[#E2E8F0]">
               <h2 className="text-[18px] font-semibold text-[#0F172A]">Complete {activeSprint.name}</h2>
             </div>
-            
+
             <div className="p-6">
               <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-5 mb-6 flex divide-x divide-[#E2E8F0]">
                 <div className="flex-1 text-center px-4">
                   <p className="text-[32px] font-semibold text-[#10B981] leading-none mb-1">{completedTickets.length}</p>
-                  <p className="text-[13px] font-medium text-[#64748B]">Completed issues</p>
+                  <p className="text-[13px] font-medium text-[#64748B]">Done</p>
                 </div>
                 <div className="flex-1 text-center px-4">
                   <p className="text-[32px] font-semibold text-[#F59E0B] leading-none mb-1">{incompleteTickets.length}</p>
@@ -407,15 +407,15 @@ export function ActiveSprintPage() {
               {incompleteTickets.length > 0 && (
                 <div className="space-y-4">
                   <p className="text-[14px] font-medium text-[#0F172A]">What should happen to the incomplete issues?</p>
-                  
+
                   <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${incompleteAction === 'next' ? 'border-[#2563EB] bg-[#EFF6FF]' : 'border-[#E2E8F0] hover:border-[#CBD5E1]'}`}>
                     <div className="flex items-center gap-3">
-                      <input 
-                        type="radio" 
-                        name="incompleteAction" 
-                        checked={incompleteAction === 'next'} 
+                      <input
+                        type="radio"
+                        name="incompleteAction"
+                        checked={incompleteAction === 'next'}
                         onChange={() => setIncompleteAction('next')}
-                        className="w-4 h-4 text-[#2563EB] focus:ring-[#2563EB]" 
+                        className="w-4 h-4 text-[#2563EB] focus:ring-[#2563EB]"
                       />
                       <div>
                         <p className="text-[14px] font-semibold text-[#0F172A]">Move to next sprint</p>
@@ -426,12 +426,12 @@ export function ActiveSprintPage() {
 
                   <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${incompleteAction === 'backlog' ? 'border-[#2563EB] bg-[#EFF6FF]' : 'border-[#E2E8F0] hover:border-[#CBD5E1]'}`}>
                     <div className="flex items-center gap-3">
-                      <input 
-                        type="radio" 
-                        name="incompleteAction" 
-                        checked={incompleteAction === 'backlog'} 
+                      <input
+                        type="radio"
+                        name="incompleteAction"
+                        checked={incompleteAction === 'backlog'}
                         onChange={() => setIncompleteAction('backlog')}
-                        className="w-4 h-4 text-[#2563EB] focus:ring-[#2563EB]" 
+                        className="w-4 h-4 text-[#2563EB] focus:ring-[#2563EB]"
                       />
                       <div>
                         <p className="text-[14px] font-semibold text-[#0F172A]">Move to backlog</p>
@@ -445,7 +445,7 @@ export function ActiveSprintPage() {
               {incompleteTickets.length === 0 && (
                 <div className="flex items-center gap-2 text-[#059669] bg-[#D1FAE5] p-4 rounded-lg">
                   <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-[14px] font-medium">All issues are complete! Great job!</p>
+                  <p className="text-[14px] font-medium">All issues are deployed! Great job!</p>
                 </div>
               )}
             </div>

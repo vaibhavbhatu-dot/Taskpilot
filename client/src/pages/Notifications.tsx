@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bell, Check, CheckCheck, UserPlus, MessageSquare, Play, CheckCircle, AlertCircle } from 'lucide-react';
 import { notificationsApi } from '../api';
 import { Skeleton } from '../components/ui/Skeleton';
+import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import type { Notification } from '../types';
 
@@ -56,21 +57,19 @@ export function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">Notifications</h1>
-        {!loading && notifications.some((n) => !n.isRead) && (
+      <PageHeader title="Notifications" action={
+        !loading && notifications.some((n) => !n.isRead) ? (
           <button onClick={handleMarkAllRead} className="btn-secondary btn-sm">
-            <CheckCheck className="w-4 h-4 mr-1" />
-            Mark All Read
+            <CheckCheck className="w-4 h-4 mr-1" />Mark All Read
           </button>
-        )}
-      </div>
+        ) : undefined
+      } />
 
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-start gap-3">
-              <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
+              <Skeleton variant="circle" className="w-8 h-8 flex-shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="h-3 w-64" />
@@ -80,12 +79,11 @@ export function NotificationsPage() {
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="bg-white rounded-xl border border-[#E2E8F0]">
+        <div className="bg-card rounded-xl border border-border">
           <EmptyState
-            icon={Bell}
+            icon={<Bell className="w-12 h-12" />}
             title="You're all caught up!"
             description="You have no notifications right now. Check back later."
-            className="py-16"
           />
         </div>
       ) : (

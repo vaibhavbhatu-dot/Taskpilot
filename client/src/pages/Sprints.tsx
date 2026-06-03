@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Play, CheckCircle, Calendar, Target } from 'lucide-react';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { PageHeader } from '../components/ui/PageHeader';
 import { sprintsApi, projectsApi } from '../api';
-import type { Sprint, Project, BurndownData } from '../types';
+import type { Sprint, Project } from '../types';
 
 export function SprintsPage() {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ export function SprintsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
-  const [burndown, setBurndown] = useState<BurndownData | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
@@ -40,12 +39,8 @@ export function SprintsPage() {
   async function selectSprint(sprint: Sprint) {
     setSelectedSprint(sprint);
     try {
-      const [detailRes, burndownRes] = await Promise.all([
-        sprintsApi.get(sprint.id),
-        sprintsApi.getBurndown(sprint.id),
-      ]);
+      const detailRes = await sprintsApi.get(sprint.id);
       setSelectedSprint(detailRes.data);
-      setBurndown(burndownRes.data);
     } catch { /* ignore */ }
   }
 
@@ -87,12 +82,11 @@ export function SprintsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">Sprints</h1>
+      <PageHeader title="Sprints" action={
         <button onClick={() => setShowCreate(true)} className="btn-primary btn-sm">
           <Plus className="w-4 h-4 mr-1" /> New Sprint
         </button>
-      </div>
+      } />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sprint list */}
@@ -155,43 +149,17 @@ export function SprintsPage() {
           {selectedSprint ? (
             <div className="space-y-5">
               {/* Metrics */}
-              {burndown && (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="kpi-card">
-                      <span className="kpi-label">Total Points</span>
-                      <span className="kpi-value">{burndown.totalPoints}</span>
-                    </div>
-                    <div className="kpi-card">
-                      <span className="kpi-label">Completed</span>
-                      <span className="kpi-value text-green-600">{burndown.completedPoints}</span>
-                    </div>
-                    <div className="kpi-card">
-                      <span className="kpi-label">Remaining</span>
-                      <span className="kpi-value text-orange-600">{burndown.remainingPoints}</span>
-                    </div>
-                    <div className="kpi-card">
-                      <span className="kpi-label">Days Left</span>
-                      <span className="kpi-value">{Math.max(0, burndown.totalDays - burndown.elapsedDays)}</span>
-                    </div>
+              {selectedSprint._count && (
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                  <div className="kpi-card">
+                    <span className="kpi-label">Total Tickets</span>
+                    <span className="kpi-value">{selectedSprint._count.sprintTickets}</span>
                   </div>
-
-                  {/* Burndown chart */}
-                  <div className="card p-5">
-                    <h3 className="font-medium text-text-primary mb-4">Burndown Chart</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={burndown.idealBurndown}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                          <XAxis dataKey="day" label={{ value: 'Day', position: 'bottom' }} tick={{ fontSize: 11 }} />
-                          <YAxis label={{ value: 'Points', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} />
-                          <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB' }} />
-                          <Line type="monotone" dataKey="ideal" stroke="#1A56DB" strokeDasharray="5 5" name="Ideal" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <div className="kpi-card">
+                    <span className="kpi-label">Status</span>
+                    <span className="kpi-value capitalize text-[16px]">{selectedSprint.status.toLowerCase()}</span>
                   </div>
-                </>
+                </div>
               )}
 
               {/* Sprint tickets */}

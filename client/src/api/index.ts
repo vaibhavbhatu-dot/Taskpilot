@@ -1,7 +1,7 @@
 import api from './client';
 import type {
   AuthResponse, User, Team, Project, Ticket, Sprint, Comment,
-  Invitation, Notification, DashboardData, VelocityData, BurndownData,
+  Invitation, Notification, DashboardData, VelocityData, Attachment,
   PaginatedResponse, SearchResults,
 } from '../types';
 
@@ -77,6 +77,16 @@ export const ticketsApi = {
     api.get(`/tickets/${id}/history`),
   bulkUpdate: (ticketIds: string[], updates: Partial<Ticket>) =>
     api.put('/tickets/bulk', { ticketIds, updates }),
+  uploadAttachment: (id: string, file: File, commentId?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (commentId) form.append('commentId', commentId);
+    return api.post<Attachment>(`/tickets/${id}/attachments`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  deleteAttachment: (ticketId: string, attachmentId: string) =>
+    api.delete(`/tickets/${ticketId}/attachments/${attachmentId}`),
 };
 
 // ─── Sprints ─────────────────────────────────────────────
@@ -97,8 +107,6 @@ export const sprintsApi = {
     api.post(`/sprints/${id}/tickets`, { ticketIds }),
   removeTicket: (sprintId: string, ticketId: string) =>
     api.delete(`/sprints/${sprintId}/tickets/${ticketId}`),
-  getBurndown: (id: string) =>
-    api.get<BurndownData>(`/sprints/${id}/burndown`),
 };
 
 // ─── Comments ────────────────────────────────────────────
@@ -149,6 +157,16 @@ export const dashboardApi = {
 export const searchApi = {
   globalSearch: (query: string) =>
     api.get<SearchResults>(`/search?q=${encodeURIComponent(query)}`),
+};
+
+// ─── My Work ────────────────────────────────────────────
+export const myWorkApi = {
+  getTickets: (params: Record<string, string>) =>
+    api.get('/my-work', { params }),
+  getTeams: () =>
+    api.get('/my-work/teams'),
+  getMembers: (teamId?: string) =>
+    api.get('/my-work/members', { params: teamId ? { teamId } : {} }),
 };
 
 // ─── Admin ──────────────────────────────────────────────

@@ -86,9 +86,9 @@ export function ManagerDashboard() {
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
             <ListTodo className="w-4 h-4 text-yellow-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">To Do / Pending</span>
+            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">In Development</span>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.todoTickets}</p>
+          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.devInProgressTickets}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">

@@ -16,12 +16,15 @@ router.get('/:ticketId', async (req: Request, res: Response) => {
       },
       include: {
         author: { select: { id: true, fullName: true, avatar: true } },
+        attachments: { orderBy: { createdAt: 'asc' } },
         replies: {
           include: {
             author: { select: { id: true, fullName: true, avatar: true } },
+            attachments: { orderBy: { createdAt: 'asc' } },
             replies: {
               include: {
                 author: { select: { id: true, fullName: true, avatar: true } },
+                attachments: { orderBy: { createdAt: 'asc' } },
               },
             },
           },
@@ -57,6 +60,7 @@ router.post('/:ticketId', async (req: Request, res: Response) => {
       },
       include: {
         author: { select: { id: true, fullName: true, avatar: true } },
+        attachments: { orderBy: { createdAt: 'asc' } },
       },
     });
 

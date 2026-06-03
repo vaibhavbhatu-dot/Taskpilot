@@ -1,24 +1,26 @@
 import { useEffect, useState, useMemo } from 'react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
-import { Calendar as CalendarIcon, Target, TrendingUp, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
+import { Calendar as CalendarIcon, Target, TrendingUp, BarChart3, CheckCircle2, Clock } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { sprintsApi, ticketsApi, dashboardApi } from '../api';
-import type { Sprint, Ticket, BurndownData, VelocityData } from '../types';
+import type { Sprint, Ticket, VelocityData } from '../types';
 
-const STATUS_COLORS = {
-  DONE: '#10B981',
-  IN_PROGRESS: '#3B82F6',
-  BLOCKED: '#EF4444',
-  TODO: '#94A3B8',
-};
+import { STATUS_CONFIG } from '../constants/ticketStatus';
 
 const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+const PRIORITY_COLORS: Record<string, { dot: string; label: string }> = {
+  CRITICAL: { dot: 'bg-red-500', label: 'Critical' },
+  HIGH:     { dot: 'bg-orange-500', label: 'High' },
+  MEDIUM:   { dot: 'bg-yellow-400', label: 'Medium' },
+  LOW:      { dot: 'bg-gray-400', label: 'Low' },
+};
 
 export function SprintReportsPage() {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [selectedSprintId, setSelectedSprintId] = useState<string>('');
   
-  const [burndown, setBurndown] = useState<BurndownData | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [velocityData, setVelocityData] = useState<VelocityData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,11 +62,7 @@ export function SprintReportsPage() {
   async function loadSprintData(sprintId: string) {
     try {
       setLoading(true);
-      const [bdRes, tixRes] = await Promise.all([
-        sprintsApi.getBurndown(sprintId).catch(() => ({ data: null })),
-        ticketsApi.list({ sprintId, limit: '500' }).catch(() => ({ data: { tickets: [] } }))
-      ]);
-      setBurndown(bdRes.data);
+      const tixRes = await ticketsApi.list({ sprintId, limit: '500' }).catch(() => ({ data: { tickets: [] } }));
       setTickets(tixRes.data.tickets);
     } catch (error) {
       console.error('Failed to load report data:', error);
@@ -75,44 +73,22 @@ export function SprintReportsPage() {
 
   const selectedSprint = sprints.find(s => s.id === selectedSprintId);
 
-  // Process Burndown data for chart
-  const burndownChartData = useMemo(() => {
-    if (!burndown) return [];
-    return burndown.idealBurndown.map((ideal, idx) => {
-      // Create actual progress line only up to current elapsed days
-      const isFuture = idx >= burndown.elapsedDays;
-      // In a real app we'd need historical snapshot per day. 
-      // For this step, we'll mimic actual decreasing by simulating a line based on completed vs remaining.
-      // E.g., if total is 40, completed is 10 in 2 days. Day 1 -> 35, Day 2 -> 30.
-      
-      // Using mock actual line for demo to show two lines visually based on total and remaining
-      let actual = undefined;
-      if (!isFuture) {
-        const dropPerDay = burndown.completedPoints / Math.max(1, burndown.elapsedDays - 1);
-        actual = Math.max(0, burndown.totalPoints - (idx * dropPerDay));
-      }
-      if (idx === burndown.elapsedDays - 1) actual = burndown.remainingPoints;
-
-      return {
-        day: `Day ${ideal.day}`,
-        Ideal: ideal.ideal,
-        Actual: actual,
-      };
-    });
-  }, [burndown]);
-
-  // Process Status Pie Data
+  // Status breakdown from tickets
   const pieData = useMemo(() => {
-    if (!burndown) return [];
-    const stats = burndown.ticketStats;
-    const todo = stats.total - stats.done - stats.inProgress - stats.blocked;
-    return [
-      { name: 'Done', value: stats.done, color: STATUS_COLORS.DONE },
-      { name: 'In Progress', value: stats.inProgress, color: STATUS_COLORS.IN_PROGRESS },
-      { name: 'Blocked', value: stats.blocked, color: STATUS_COLORS.BLOCKED },
-      { name: 'To Do', value: Math.max(0, todo), color: STATUS_COLORS.TODO },
-    ].filter(d => d.value > 0);
-  }, [burndown]);
+    const counts: Record<string, number> = {};
+    tickets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
+    const colors: Record<string, string> = {
+      BACKLOG: '#94A3B8', REQUIREMENTS: '#7C3AED', DESIGN: '#A21CAF',
+      HTML: '#C2410C', ON_DEVELOPMENT: '#CA8A04', QA: '#4338CA',
+      BUGS: '#DC2626', ENHANCEMENT: '#2563EB', UAT: '#059669',
+      LIVE: '#16A34A', NOT_REQUIRED: '#6B7280',
+    };
+    return Object.entries(counts).map(([status, value]) => ({
+      name: STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]?.label || status,
+      value,
+      color: colors[status] || '#94A3B8',
+    }));
+  }, [tickets]);
 
   // Process Individual Performance
   const performanceStats = useMemo(() => {
@@ -129,24 +105,20 @@ export function SprintReportsPage() {
           user: ticket.assignedTo,
           assignedCount: 0,
           completedCount: 0,
-          assignedPoints: 0,
-          completedPoints: 0,
         };
       }
-      
+
       userMap[uid].assignedCount++;
-      userMap[uid].assignedPoints += (ticket.storyPoints || 0);
-      
-      if (ticket.status === 'DONE') {
+
+      if (ticket.status === 'LIVE' || ticket.status === 'NOT_REQUIRED') {
         userMap[uid].completedCount++;
-        userMap[uid].completedPoints += (ticket.storyPoints || 0);
       }
     });
 
     return Object.values(userMap).map(stats => {
-      const completionPct = stats.assignedPoints > 0 
-        ? (stats.completedPoints / stats.assignedPoints) * 100 
-        : (stats.assignedCount > 0 ? (stats.completedCount / stats.assignedCount) * 100 : 0);
+      const completionPct = stats.assignedCount > 0
+        ? (stats.completedCount / stats.assignedCount) * 100
+        : 0;
         
       return {
         ...stats,
@@ -155,6 +127,9 @@ export function SprintReportsPage() {
     }).sort((a, b) => b.completionPct - a.completionPct);
     
   }, [tickets]);
+
+  const completedTickets = tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED');
+  const remainingTickets = tickets.filter(t => t.status !== 'LIVE' && t.status !== 'NOT_REQUIRED');
 
   if (sprints.length === 0 && !loading) {
     return (
@@ -174,11 +149,7 @@ export function SprintReportsPage() {
     <div className="animate-fade-in pb-10">
       
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-[24px] font-semibold text-[#0F172A]">Sprint Reports</h1>
-          <p className="text-[14px] text-[#64748B] mt-1">Analyze sprint performance, velocity, and burndown metrics.</p>
-        </div>
-        
+        <PageHeader title="Sprint Reports" subtitle="Analyze sprint performance and metrics." />
         <div className="w-64">
           <select
             value={selectedSprintId}
@@ -221,61 +192,31 @@ export function SprintReportsPage() {
               )}
             </div>
             
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Committed (pts)</p>
-                <p className="text-[24px] font-semibold text-[#0F172A]">{burndown?.totalPoints || 0}</p>
+                <p className="text-[12px] font-medium text-[#64748B] mb-1">Total Issues</p>
+                <p className="text-[24px] font-semibold text-[#0F172A]">{tickets.length}</p>
               </div>
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Completed (pts)</p>
-                <p className="text-[24px] font-semibold text-[#10B981]">{burndown?.completedPoints || 0}</p>
+                <p className="text-[12px] font-medium text-[#64748B] mb-1">Completed</p>
+                <p className="text-[24px] font-semibold text-[#10B981]">{tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length}</p>
               </div>
               <div>
                 <p className="text-[12px] font-medium text-[#64748B] mb-1">Completion Rate</p>
                 <p className="text-[24px] font-semibold text-[#0F172A]">
-                  {burndown && burndown.totalPoints > 0 
-                    ? Math.round((burndown.completedPoints / burndown.totalPoints) * 100)
+                  {tickets.length > 0
+                    ? Math.round((tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length / tickets.length) * 100)
                     : 0}%
                 </p>
               </div>
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Carryover (pts)</p>
-                <p className="text-[24px] font-semibold text-[#F59E0B]">{burndown?.remainingPoints || 0}</p>
-              </div>
-              <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Total Issues</p>
-                <p className="text-[24px] font-semibold text-[#0F172A]">{burndown?.ticketStats.total || 0}</p>
+                <p className="text-[12px] font-medium text-[#64748B] mb-1">Remaining</p>
+                <p className="text-[24px] font-semibold text-[#F59E0B]">{tickets.filter(t => t.status !== 'LIVE' && t.status !== 'NOT_REQUIRED').length}</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-12 gap-6">
-            
-            {/* Burndown Chart */}
-            <div className="col-span-8 bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-              <h3 className="text-[15px] font-semibold text-[#0F172A] mb-4">Burndown Chart</h3>
-              <div className="h-[300px]">
-                {burndownChartData.length > 0 ? (
-                   <ResponsiveContainer width="100%" height="100%">
-                   <LineChart data={burndownChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                     <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
-                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
-                     <Tooltip 
-                       contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                       labelStyle={{ fontWeight: 600, color: '#0F172A', marginBottom: '4px' }}
-                     />
-                     <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }} />
-                     <Line type="monotone" dataKey="Ideal" stroke="#94A3B8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                     <Line type="monotone" dataKey="Actual" stroke="#2563EB" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                   </LineChart>
-                 </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[13px] text-[#64748B]">No burndown data available</div>
-                )}
-              </div>
-            </div>
-            
             {/* Status Breakdown */}
             <div className="col-span-4 bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm flex flex-col">
               <h3 className="text-[15px] font-semibold text-[#0F172A] mb-4">Issue Status</h3>
@@ -327,8 +268,8 @@ export function SprintReportsPage() {
                   <thead>
                     <tr className="border-b border-[#E2E8F0]">
                       <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Member</th>
-                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-center">Assigned Pts</th>
-                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-center">Completed Pts</th>
+                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-center">Assigned</th>
+                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-center">Completed</th>
                       <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-right">Completion %</th>
                     </tr>
                   </thead>
@@ -347,8 +288,8 @@ export function SprintReportsPage() {
                             <span className="text-[14px] font-medium text-[#0F172A]">{stat.user.fullName}</span>
                           </div>
                         </td>
-                        <td className="py-3 text-center text-[14px] text-[#0F172A] font-medium">{stat.assignedPoints}</td>
-                        <td className="py-3 text-center text-[14px] text-[#10B981] font-medium">{stat.completedPoints}</td>
+                        <td className="py-3 text-center text-[14px] text-[#0F172A] font-medium">{stat.assignedCount}</td>
+                        <td className="py-3 text-center text-[14px] text-[#10B981] font-medium">{stat.completedCount}</td>
                         <td className="py-3 text-right">
                           <span className={`text-[14px] font-bold ${stat.completionPct >= 80 ? 'text-[#10B981]' : stat.completionPct < 50 ? 'text-[#EF4444]' : 'text-[#F59E0B]'}`}>
                             {stat.completionPct}%
@@ -392,8 +333,8 @@ export function SprintReportsPage() {
                         <ReferenceLine y={velocityData.avgVelocity} stroke="#94A3B8" strokeDasharray="3 3" />
                       )}
 
-                      <Bar dataKey="totalPoints" name="Committed" fill="#BFDBFE" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                      <Bar dataKey="completedPoints" name="Completed" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      <Bar dataKey="totalTickets" name="Total" fill="#BFDBFE" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      <Bar dataKey="completedTickets" name="Completed" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -404,13 +345,107 @@ export function SprintReportsPage() {
               {velocityData && velocityData.avgVelocity > 0 && (
                 <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex justify-between items-center text-[13px]">
                   <span className="text-[#64748B] font-medium">Average Velocity:</span>
-                  <span className="font-semibold text-[#0F172A]">{Math.round(velocityData.avgVelocity)} pts</span>
+                  <span className="font-semibold text-[#0F172A]">{Math.round(velocityData.avgVelocity)} tickets</span>
                 </div>
               )}
             </div>
             
           </div>
-          
+
+          {/* Sprint Tickets */}
+          {tickets.length > 0 && (
+            <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+                <h3 className="text-[15px] font-semibold text-[#0F172A]">Sprint Tickets</h3>
+                <div className="flex items-center gap-4 text-[13px]">
+                  <span className="flex items-center gap-1.5 text-[#10B981] font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {completedTickets.length} completed
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[#F59E0B] font-medium">
+                    <Clock className="w-4 h-4" />
+                    {remainingTickets.length} remaining
+                  </span>
+                </div>
+              </div>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Title</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Priority</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Assignee</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Completed</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F1F5F9]">
+                  {[...completedTickets, ...remainingTickets].map((ticket, i) => {
+                    const statusCfg = STATUS_CONFIG[ticket.status as keyof typeof STATUS_CONFIG];
+                    const priorityCfg = PRIORITY_COLORS[ticket.priority] || PRIORITY_COLORS.MEDIUM;
+                    const isDone = ticket.status === 'LIVE' || ticket.status === 'NOT_REQUIRED';
+                    return (
+                      <tr key={ticket.id} className={`hover:bg-[#F8FAFC] transition-colors ${i % 2 === 1 ? 'bg-[#FAFAFA]' : ''}`}>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            {isDone && <CheckCircle2 className="w-4 h-4 text-[#10B981] flex-shrink-0" />}
+                            <span className={`text-[14px] font-medium ${isDone ? 'text-[#64748B] line-through' : 'text-[#0F172A]'}`}>
+                              {ticket.title}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {statusCfg && (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold"
+                              style={{ backgroundColor: statusCfg.bg, color: statusCfg.text }}
+                            >
+                              {statusCfg.label}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full ${priorityCfg.dot}`} />
+                            <span className="text-[13px] text-[#475569]">{priorityCfg.label}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-[13px] text-[#475569] capitalize">{ticket.type?.toLowerCase().replace('_', ' ') || '—'}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {ticket.assignedTo ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                                {ticket.assignedTo.avatar ? (
+                                  <img src={ticket.assignedTo.avatar} className="w-6 h-6 rounded-full object-cover" alt="" />
+                                ) : (
+                                  <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(ticket.assignedTo.fullName)}</span>
+                                )}
+                              </div>
+                              <span className="text-[13px] text-[#475569]">{ticket.assignedTo.fullName}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[13px] text-[#94A3B8]">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {ticket.completedAt ? (
+                            <span className="text-[13px] text-[#475569]">
+                              {new Date(ticket.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          ) : (
+                            <span className="text-[13px] text-[#94A3B8]">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
         </div>
       ) : null}
 

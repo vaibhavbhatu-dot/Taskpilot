@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, ListFilter, Trash2 } from 'lucide-react';
+import { Plus, ListFilter, Trash2 } from 'lucide-react';
 
 export type FilterField = 'status' | 'priority' | 'type' | 'assignedToId' | 'teamId' | 'sprintId';
 export type FilterOperator = 'equals' | 'not_equals';
@@ -35,7 +35,9 @@ const OPERATORS: { value: FilterOperator; label: string }[] = [
   { value: 'not_equals', label: 'is not' },
 ];
 
-const STATUS_OPTIONS = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'];
+import { TICKET_STATUSES, getStatusLabel } from '../../constants/ticketStatus';
+
+const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 const TYPE_OPTIONS = ['BUG', 'FEATURE', 'TASK', 'IMPROVEMENT'];
 
@@ -63,7 +65,7 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
         return (
           <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
             <option value="">Select status...</option>
-            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
           </select>
         );
       case 'priority':

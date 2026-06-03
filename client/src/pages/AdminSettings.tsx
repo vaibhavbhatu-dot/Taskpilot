@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Mail, UserCog, FolderKanban, Settings as SettingsIcon, Send, Trash2, Shield, X, Users } from 'lucide-react';
+import { Mail, UserCog, FolderKanban, Settings as SettingsIcon, Send, Trash2, Shield, X, Users, Pencil, AlertTriangle } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { invitationsApi, usersApi, projectsApi, teamsApi } from '../api';
 import type { Invitation, User, Project, Team } from '../types';
 
@@ -18,10 +19,7 @@ export function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">Admin Settings</h1>
-      </div>
-
+      <PageHeader title="Admin Settings" />
       {/* Tabs */}
       <div className="flex border-b border-gray-200 gap-1">
         {tabs.map((tab) => (
@@ -325,9 +323,18 @@ function ProjectsTab() {
   const [key, setKey] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  // Edit state
+  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editKey, setEditKey] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Delete state
+  const [deleteProject, setDeleteProject] = useState<Project | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => { loadProjects(); }, []);
 
   async function loadProjects() {
     try {
@@ -348,8 +355,39 @@ function ProjectsTab() {
     } finally { setCreating(false); }
   }
 
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editProject || !editName.trim() || !editKey.trim()) return;
+    setSaving(true);
+    const canEditKey = (editProject._count?.tickets || 0) === 0;
+    try {
+      await projectsApi.update(editProject.id, {
+        name: editName.trim(),
+        ...(canEditKey && editKey.trim() !== editProject.key ? { key: editKey.trim().toUpperCase() } : {}),
+      });
+      setEditProject(null);
+      loadProjects();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to update project');
+    } finally { setSaving(false); }
+  }
+
+  async function handleDelete() {
+    if (!deleteProject) return;
+    setDeleting(true);
+    try {
+      await projectsApi.delete(deleteProject.id);
+      setDeleteProject(null);
+      setDeleteConfirmText('');
+      loadProjects();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to delete project');
+    } finally { setDeleting(false); }
+  }
+
   return (
     <div className="space-y-5">
+      {/* Create form */}
       <div className="card p-5">
         <h3 className="font-medium mb-3">Create Project</h3>
         <form onSubmit={handleCreate} className="flex gap-3 items-end">
@@ -365,9 +403,28 @@ function ProjectsTab() {
         </form>
       </div>
 
+      {/* Project cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((p) => (
-          <div key={p.id} className="card p-4">
+          <div key={p.id} className="card p-4 group relative">
+            {/* Action buttons — visible on hover */}
+            <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => { setEditProject(p); setEditName(p.name); setEditKey(p.key); }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#2563EB] hover:border-[#2563EB] transition-colors shadow-sm"
+                title="Edit project"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => { setDeleteProject(p); setDeleteConfirmText(''); }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
+                title="Delete project"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             <div className="flex items-center gap-2 mb-2">
               <span className="badge-blue font-mono">{p.key}</span>
               <h4 className="font-medium">{p.name}</h4>
@@ -377,12 +434,127 @@ function ProjectsTab() {
               <span>•</span>
               <span>{p._count?.sprints || 0} sprints</span>
             </div>
-            {p.lead && (
-              <p className="text-xs text-text-secondary mt-2">Lead: {p.lead.fullName}</p>
-            )}
+            {p.lead && <p className="text-xs text-text-secondary mt-2">Lead: {p.lead.fullName}</p>}
           </div>
         ))}
       </div>
+
+      {/* ── Edit Modal ───────────────────────────────── */}
+      {editProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+              <h2 className="text-[16px] font-semibold text-[#0F172A]">Edit Project</h2>
+              <button onClick={() => setEditProject(null)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9]">
+                <X className="w-4 h-4 text-[#64748B]" />
+              </button>
+            </div>
+            {(() => {
+              const canEditKey = (editProject._count?.tickets || 0) === 0;
+              const unchanged = editName.trim() === editProject.name && editKey.trim().toUpperCase() === editProject.key;
+              return (
+                <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="label mb-0">Project Key</label>
+                      {canEditKey ? (
+                        <span className="text-[11px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                          Editable — no tickets yet
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium text-[#94A3B8] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
+                          Locked — {editProject._count?.tickets} ticket{editProject._count?.tickets !== 1 ? 's' : ''} exist
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      value={canEditKey ? editKey : editProject.key}
+                      onChange={e => canEditKey && setEditKey(e.target.value.toUpperCase())}
+                      disabled={!canEditKey}
+                      maxLength={6}
+                      className={`input font-mono tracking-widest uppercase ${
+                        canEditKey
+                          ? 'border-green-400 focus:border-green-500 focus:ring-green-500/20 bg-green-50/30'
+                          : 'bg-[#F8FAFC] text-[#94A3B8] cursor-not-allowed'
+                      }`}
+                    />
+                    {!canEditKey && (
+                      <p className="text-[11px] text-[#94A3B8] mt-1">
+                        Key cannot be changed once tickets exist — it's used in all ticket numbers.
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="label">Project Name *</label>
+                    <input value={editName} onChange={e => setEditName(e.target.value)}
+                      className="input" required autoFocus={!canEditKey} placeholder="Project name" />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={() => setEditProject(null)}
+                      className="h-9 px-4 text-[#64748B] text-[14px] font-medium hover:text-[#0F172A]">Cancel</button>
+                    <button type="submit" disabled={saving || !editName.trim() || !editKey.trim() || unchanged}
+                      className="btn-primary h-9 px-5">
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ─────────────────── */}
+      {deleteProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <h2 className="text-[16px] font-semibold text-[#0F172A]">Delete Project</h2>
+              </div>
+              <button onClick={() => setDeleteProject(null)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9]">
+                <X className="w-4 h-4 text-[#64748B]" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border border-red-100 rounded-lg p-4">
+                <p className="text-[14px] text-red-800 font-medium mb-1">This action cannot be undone.</p>
+                <p className="text-[13px] text-red-700">
+                  Deleting <strong>{deleteProject.name}</strong> will permanently remove all{' '}
+                  <strong>{deleteProject._count?.tickets || 0} tickets</strong> and{' '}
+                  <strong>{deleteProject._count?.sprints || 0} sprints</strong> associated with this project.
+                </p>
+              </div>
+              <div>
+                <label className="text-[13px] font-medium text-[#0F172A] mb-1.5 block">
+                  Type <span className="font-mono bg-[#F1F5F9] px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
+                </label>
+                <input
+                  value={deleteConfirmText}
+                  onChange={e => setDeleteConfirmText(e.target.value)}
+                  placeholder={deleteProject.key}
+                  className="input font-mono"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-1">
+                <button onClick={() => setDeleteProject(null)}
+                  className="h-9 px-4 text-[#64748B] text-[14px] font-medium hover:text-[#0F172A]">Cancel</button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteConfirmText !== deleteProject.key || deleting}
+                  className="h-9 px-5 bg-red-600 hover:bg-red-700 text-white text-[14px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Project'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

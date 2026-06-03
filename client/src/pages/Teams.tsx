@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Users as UsersIcon, Plus, Crown, X, AlertCircle, ArrowLeft } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { teamsApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Team, User } from '../types';
@@ -170,19 +171,16 @@ export function TeamsPage() {
   // List view
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#0F172A]">Teams</h1>
-          <p className="text-sm text-[#64748B] mt-1">{teams.length} teams</p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        title="Teams"
+        subtitle={`${teams.length} teams`}
+        action={canCreate ? (
           <button onClick={() => setShowModal(true)} className="btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             Create Team
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Teams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -128,7 +128,7 @@ router.post('/:id/start', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), as
       return;
     }
 
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate } = req.body || {};
 
     const updated = await prisma.sprint.update({
       where: { id: req.params.id },
@@ -202,7 +202,7 @@ router.post('/:id/complete', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'),
 
       // Find incomplete tickets
       const incompleteTicketIds = sprint.sprintTickets
-        .filter(st => st.ticket.status !== 'DONE')
+        .filter(st => !['LIVE','NOT_REQUIRED'].includes(st.ticket.status))
         .map(st => st.ticketId);
 
       if (incompleteTicketIds.length > 0 && carryOverToSprintId) {
@@ -211,7 +211,6 @@ router.post('/:id/complete', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'),
           sprintId: carryOverToSprintId,
           ticketId,
           statusAtStart: sprint.sprintTickets.find(st => st.ticketId === ticketId)!.ticket.status,
-          pointsAtStart: sprint.sprintTickets.find(st => st.ticketId === ticketId)!.ticket.storyPoints,
         }));
 
         await tx.sprintTicket.createMany({ data: sprintTicketData });
@@ -241,7 +240,7 @@ router.post('/:id/complete', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'),
       });
     }
 
-    res.json({ message: 'Sprint completed', incompleteCount: sprint.sprintTickets.filter(st => st.ticket.status !== 'DONE').length });
+    res.json({ message: 'Sprint completed', incompleteCount: sprint.sprintTickets.filter(st => !['LIVE','NOT_REQUIRED'].includes(st.ticket.status)).length });
   } catch (error) {
     console.error('Complete sprint error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -276,7 +275,6 @@ router.post('/:id/tickets', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), 
       sprintId: req.params.id,
       ticketId: ticket.id,
       statusAtStart: ticket.status,
-      pointsAtStart: ticket.storyPoints,
     }));
 
     await prisma.sprintTicket.createMany({
@@ -290,7 +288,7 @@ router.post('/:id/tickets', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), 
         id: { in: ticketIds },
         status: 'BACKLOG',
       },
-      data: { status: 'TODO' },
+      data: { status: 'REQUIREMENTS' },
     });
 
     res.json({ message: `${tickets.length} tickets added to sprint` });
@@ -313,62 +311,6 @@ router.delete('/:id/tickets/:ticketId', requireRole('ADMIN', 'MANAGER', 'PROJECT
     res.json({ message: 'Ticket removed from sprint' });
   } catch (error) {
     console.error('Remove ticket from sprint error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// GET /api/sprints/:id/burndown
-router.get('/:id/burndown', async (req: Request, res: Response) => {
-  try {
-    const sprint = await prisma.sprint.findUnique({
-      where: { id: req.params.id },
-      include: {
-        sprintTickets: {
-          include: { ticket: true },
-        },
-      },
-    });
-
-    if (!sprint || !sprint.startDate || !sprint.endDate) {
-      res.status(404).json({ error: 'Sprint not found or has no dates' });
-      return;
-    }
-
-    const totalPoints = sprint.sprintTickets.reduce(
-      (sum, st) => sum + (st.pointsAtStart || 0), 0
-    );
-
-    const completedPoints = sprint.sprintTickets
-      .filter(st => st.ticket.status === 'DONE')
-      .reduce((sum, st) => sum + (st.ticket.storyPoints || 0), 0);
-
-    const startDate = new Date(sprint.startDate);
-    const endDate = new Date(sprint.endDate);
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const elapsedDays = Math.ceil((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    // Generate ideal burndown line
-    const idealBurndown = Array.from({ length: totalDays + 1 }, (_, i) => ({
-      day: i,
-      ideal: Math.round(totalPoints - (totalPoints / totalDays) * i),
-    }));
-
-    res.json({
-      totalPoints,
-      completedPoints,
-      remainingPoints: totalPoints - completedPoints,
-      totalDays,
-      elapsedDays: Math.min(elapsedDays, totalDays),
-      idealBurndown,
-      ticketStats: {
-        total: sprint.sprintTickets.length,
-        done: sprint.sprintTickets.filter(st => st.ticket.status === 'DONE').length,
-        inProgress: sprint.sprintTickets.filter(st => st.ticket.status === 'IN_PROGRESS').length,
-        blocked: sprint.sprintTickets.filter(st => st.ticket.status === 'BLOCKED').length,
-      },
-    });
-  } catch (error) {
-    console.error('Sprint burndown error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

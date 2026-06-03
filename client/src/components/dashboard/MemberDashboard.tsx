@@ -44,7 +44,7 @@ export function MemberDashboard() {
       try {
         const [dashRes, myTicketsRes] = await Promise.all([
           dashboardApi.getData(),
-          ticketsApi.list({ assignedToId: user.id, status: 'IN_PROGRESS,TODO', limit: '4' }),
+          ticketsApi.list({ assignedToId: user.id, status: 'DEVELOPMENT_IN_PROGRESS,READY_FOR_DEVELOPMENT', limit: '4' }),
         ]);
         setData(dashRes.data);
         if (myTicketsRes.data?.tickets) {
@@ -74,16 +74,16 @@ export function MemberDashboard() {
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-yellow-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">In Progress</span>
+            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">In Development</span>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.inProgressTickets}</p>
+          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.devInProgressTickets}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">Done</span>
+            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">Deployed</span>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.doneTickets}</p>
+          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.deployedTickets}</p>
         </div>
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
           <div className="flex items-center gap-2 mb-2">

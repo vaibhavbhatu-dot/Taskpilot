@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi, usersApi, projectsApi } from '../api';
 import type { Ticket, Sprint, User, Project } from '../types';
 
@@ -174,12 +175,12 @@ export function SprintPlanningPage() {
       return;
     }
     
-    if (!confirm(`Start ${plannedSprint.name} with ${totalSprintPoints} story points?`)) return;
+    if (!confirm(`Start ${plannedSprint.name} with ${sprintTickets.length} tickets?`)) return;
 
     setStarting(true);
     try {
       await sprintsApi.start(plannedSprint.id);
-      alert(`${plannedSprint.name} has started with ${totalSprintPoints} story points!`);
+      alert(`${plannedSprint.name} has started with ${sprintTickets.length} tickets!`);
       navigate('/sprints/active');
     } catch (error: any) {
       alert(error.response?.data?.error || 'Failed to start sprint. Note: Only 1 active sprint is allowed per project.');
@@ -194,8 +195,6 @@ export function SprintPlanningPage() {
     return backlogTickets.filter(t => t.title.toLowerCase().includes(q) || t.ticketNumber.toLowerCase().includes(q));
   }, [backlogTickets, search]);
 
-  const totalSprintPoints = sprintTickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
-  const totalBacklogPoints = searchedBacklog.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
 
   const renderTicketCard = (ticket: Ticket, removable: boolean = false) => (
     <div className={`bg-white border border-[#E2E8F0] p-3 rounded-lg mb-2 flex flex-col gap-2 ${removable ? 'hover:border-primary-300' : ''} shadow-sm group`}>
@@ -222,11 +221,6 @@ export function SprintPlanningPage() {
         ) : (
           <div className="w-[24px] h-[24px] rounded-full bg-[#F1F5F9] border border-white border-dashed" title="Unassigned" />
         )}
-        {ticket.storyPoints != null && (
-          <span className="h-[22px] px-2 flex items-center justify-center bg-[#F1F5F9] text-[#64748B] text-[12px] font-semibold rounded-full">
-            {ticket.storyPoints}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -234,10 +228,10 @@ export function SprintPlanningPage() {
   return (
     <div className="animate-fade-in h-[calc(100vh-100px)] flex flex-col">
       <div className="flex-shrink-0 mb-6">
-        <h1 className="text-[24px] font-semibold text-[#0F172A]">Sprint Planning</h1>
-        <p className="text-[14px] text-[#64748B] mt-1">Drag tickets from the backlog into your upcoming sprint.</p>
+        <PageHeader title="Sprint Planning" subtitle="Drag tickets from the backlog into your upcoming sprint." />
       </div>
 
+      <DragDropContext onDragEnd={handleDragEnd}>
       <div className="flex flex-1 min-h-0 gap-6">
         
         {/* LEFT PANEL: BACKLOG */}
@@ -248,7 +242,6 @@ export function SprintPlanningPage() {
                 Backlog
                 <span className="text-[12px] bg-[#E2E8F0] text-[#64748B] px-2 py-0.5 rounded-full">{searchedBacklog.length}</span>
               </h2>
-              <span className="text-[13px] font-medium text-[#64748B]">{totalBacklogPoints} pts</span>
             </div>
             
             <div className="space-y-3">
@@ -291,8 +284,7 @@ export function SprintPlanningPage() {
                 <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
               </div>
             ) : (
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="backlog-list">
+              <Droppable droppableId="backlog-list">
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
@@ -324,7 +316,6 @@ export function SprintPlanningPage() {
                     </div>
                   )}
                 </Droppable>
-              </DragDropContext>
             )}
           </div>
         </div>
@@ -439,13 +430,12 @@ export function SprintPlanningPage() {
                     <span className="text-[#0F172A] font-semibold">{sprintTickets.length}</span> tickets
                   </span>
                   <span className="text-[13px] font-medium text-[#64748B]">
-                    <span className="text-[#0F172A] font-semibold">{totalSprintPoints}</span> points committed
+                    <span className="text-[#0F172A] font-semibold">{sprintTickets.length}</span> tickets committed
                   </span>
                 </div>
               </div>
 
               <div className="flex-1 overflow-auto bg-[#F8FAFC] p-3 border-t border-[#E2E8F0]">
-                <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable droppableId="sprint-list">
                     {(provided, snapshot) => (
                       <div
@@ -482,13 +472,13 @@ export function SprintPlanningPage() {
                       </div>
                     )}
                   </Droppable>
-                </DragDropContext>
               </div>
             </>
           ) : null}
         </div>
 
       </div>
+      </DragDropContext>
     </div>
   );
 }

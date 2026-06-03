@@ -8,7 +8,7 @@ import type { SearchResults } from '../../types';
 export function CommandPalette() {
   const { commandPaletteOpen, setCommandPaletteOpen } = useUIStore();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResults>({ tickets: [], users: [] });
+  const [results, setResults] = useState<SearchResults>({ tickets: [], users: [], projects: [] });
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -16,24 +16,24 @@ export function CommandPalette() {
   useEffect(() => {
     if (commandPaletteOpen) {
       setQuery('');
-      setResults({ tickets: [], users: [] });
+      setResults({ tickets: [], users: [], projects: [] });
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [commandPaletteOpen]);
 
   useEffect(() => {
     if (!query || query.length < 2) {
-      setResults({ tickets: [], users: [] });
+      setResults({ tickets: [], users: [], projects: [] });
       return;
     }
 
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const { data } = await searchApi.search(query);
+        const { data } = await searchApi.globalSearch(query);
         setResults(data);
       } catch {
-        setResults({ tickets: [], users: [] });
+        setResults({ tickets: [], users: [], projects: [] });
       } finally {
         setLoading(false);
       }

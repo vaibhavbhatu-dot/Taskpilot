@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import path from 'path';
 
 import { errorHandler } from './middleware/error.middleware';
 import authRoutes from './routes/auth.routes';
@@ -17,13 +18,14 @@ import notificationRoutes from './routes/notifications.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import searchRoutes from './routes/search.routes';
 import adminRoutes from './routes/admin.routes';
+import myWorkRoutes from './routes/mywork.routes';
 
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
@@ -43,6 +45,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -57,6 +60,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/my-work', myWorkRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

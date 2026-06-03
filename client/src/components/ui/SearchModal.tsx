@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Hash, Folder, User as UserIcon } from 'lucide-react';
+import { Search, X, Hash, Folder } from 'lucide-react';
 import { searchApi } from '../../api';
 import type { SearchResults } from '../../types';
 

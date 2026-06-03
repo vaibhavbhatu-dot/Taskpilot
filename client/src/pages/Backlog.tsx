@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Inbox, ArrowRight, Trash2 } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi } from '../api';
 import type { Ticket, Sprint } from '../types';
 
@@ -78,12 +79,7 @@ export function BacklogPage() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Backlog</h1>
-          <p className="text-sm text-text-secondary mt-0.5">{tickets.length} unplanned tickets</p>
-        </div>
-      </div>
+      <PageHeader title="Backlog" subtitle={`${tickets.length} unplanned tickets`} />
 
       {/* Bulk actions */}
       {selected.size > 0 && (
@@ -135,7 +131,6 @@ export function BacklogPage() {
                 <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Title</th>
                 <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Type</th>
                 <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Priority</th>
-                <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Points</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -166,7 +161,6 @@ export function BacklogPage() {
                       {ticket.priority}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-text-secondary">{ticket.storyPoints || '—'}</td>
                 </tr>
               ))}
             </tbody>

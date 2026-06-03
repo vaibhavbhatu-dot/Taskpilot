@@ -6,6 +6,7 @@ import type { User, Invitation, Team } from '../types';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Users as UsersIcon } from 'lucide-react';
+import { getInitials } from '@/design-system';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
@@ -98,9 +99,6 @@ export function MembersPage() {
       loadData();
     } catch { /* ignore */ }
   }
-
-  const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   if (loading && users.length === 0) {
     return (

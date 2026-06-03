@@ -263,13 +263,8 @@ export function TicketDetailPage() {
           {/* Header Section */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-muted text-muted-foreground">{ticket.type}</span>
-              <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
-                ticket.priority === 'CRITICAL' ? 'bg-red-50 text-red-600' :
-                ticket.priority === 'HIGH' ? 'bg-orange-50 text-orange-600' :
-                ticket.priority === 'MEDIUM' ? 'bg-yellow-50 text-yellow-700' :
-                'bg-gray-100 text-gray-500'
-              }`}>{ticket.priority}</span>
+              <Badge variant="secondary" size="sm">{ticket.type}</Badge>
+              <Badge variant={PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary'} size="sm">{ticket.priority}</Badge>
             </div>
             
             {/* Editable Title */}
@@ -436,13 +431,13 @@ export function TicketDetailPage() {
                           onChange={e => handleCommentFileSelect(e.target.files)} />
                         <span className="text-[11px] text-muted-foreground ml-1">⌘+Enter to post</span>
                       </div>
-                      <button
+                      <Button
+                        size="sm"
                         onClick={handleAddComment}
                         disabled={!newComment.trim() && commentFiles.length === 0}
-                        className="h-7 px-4 bg-primary hover:bg-primary/90 text-white text-[13px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Post
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

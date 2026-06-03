@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, List, Columns3, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Plus, List, Columns3, X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Badge, Button } from '@/design-system';
 import { ticketsApi, projectsApi, usersApi, sprintsApi, teamsApi } from '../api';
@@ -12,7 +12,7 @@ import { exportTicketsToCSV, exportTicketsToPDF } from '../utils/export';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ClipboardList } from 'lucide-react';
-import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
+import { TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
 
 const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS: TicketPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];

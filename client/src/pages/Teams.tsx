@@ -71,9 +71,6 @@ export function TeamsPage() {
     } finally { setSubmitting(false); }
   }
 
-  const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">

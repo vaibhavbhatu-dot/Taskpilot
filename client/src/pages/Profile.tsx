@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores';
 import { usersApi, teamsApi } from '../api';
 import { PageHeader } from '../components/ui/PageHeader';
 import type { User, Team } from '../types';
+import { getInitials } from '@/design-system';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
@@ -63,11 +64,6 @@ export function ProfilePage() {
       setSaving(false);
     }
   }
-
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
 
   if (!user) return null;
 

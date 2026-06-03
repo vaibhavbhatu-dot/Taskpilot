@@ -55,55 +55,53 @@ export function CommandPalette() {
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => setCommandPaletteOpen(false)}
       />
-      <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl border border-gray-200 
-                      animate-slide-up overflow-hidden">
+      <div className="relative w-full max-w-lg bg-card rounded-xl shadow-2xl border border-border animate-slide-up overflow-hidden">
+
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-          <Search className="w-5 h-5 text-text-muted flex-shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+          <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tickets, people..."
-            className="flex-1 text-sm outline-none bg-transparent text-text-primary 
-                       placeholder:text-text-muted"
+            className="flex-1 text-sm outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
             onKeyDown={(e) => e.key === 'Escape' && setCommandPaletteOpen(false)}
           />
           <button
             onClick={() => setCommandPaletteOpen(false)}
-            className="p-1 rounded hover:bg-gray-100"
+            className="p-1 rounded hover:bg-accent transition-colors"
           >
-            <X className="w-4 h-4 text-text-muted" />
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
         {/* Results */}
         <div className="max-h-80 overflow-y-auto p-2">
           {loading && (
-            <p className="text-sm text-text-muted text-center py-4">Searching...</p>
+            <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
           )}
 
           {!loading && query.length >= 2 && results.tickets.length === 0 && results.users.length === 0 && (
-            <p className="text-sm text-text-muted text-center py-4">No results found</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No results found</p>
           )}
 
           {results.tickets.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-text-muted px-2 py-1.5 uppercase tracking-wider">
+              <p className="text-xs font-medium text-muted-foreground px-2 py-1.5 uppercase tracking-wider">
                 Tickets
               </p>
               {results.tickets.map((ticket) => (
                 <button
                   key={ticket.id}
                   onClick={() => handleSelect(`/tickets/${ticket.id}`)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 
-                            text-left transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/50 text-left transition-colors"
                 >
-                  <FileText className="w-4 h-4 text-text-muted flex-shrink-0" />
+                  <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs text-text-secondary font-mono">{ticket.ticketNumber}</span>
-                    <p className="text-sm text-text-primary truncate">{ticket.title}</p>
+                    <span className="text-xs text-muted-foreground font-mono">{ticket.ticketNumber}</span>
+                    <p className="text-sm text-foreground truncate">{ticket.title}</p>
                   </div>
                   <span className={`ticket-status-${ticket.status.toLowerCase().replace('_', '-')}`}>
                     {ticket.status.replace('_', ' ')}
@@ -114,27 +112,26 @@ export function CommandPalette() {
           )}
 
           {results.users.length > 0 && (
-            <div className={results.tickets.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
-              <p className="text-xs font-medium text-text-muted px-2 py-1.5 uppercase tracking-wider">
+            <div className={results.tickets.length > 0 ? 'mt-2 pt-2 border-t border-border' : ''}>
+              <p className="text-xs font-medium text-muted-foreground px-2 py-1.5 uppercase tracking-wider">
                 People
               </p>
               {results.users.map((u) => (
                 <button
                   key={u.id}
                   onClick={() => handleSelect(`/user/${u.id}`)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 
-                            text-left transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/50 text-left transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     {u.avatar ? (
                       <img src={u.avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
                     ) : (
-                      <User className="w-4 h-4 text-primary-600" />
+                      <User className="w-4 h-4 text-primary" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary">{u.fullName}</p>
-                    <p className="text-xs text-text-secondary">{u.email}</p>
+                    <p className="text-sm text-foreground">{u.fullName}</p>
+                    <p className="text-xs text-muted-foreground">{u.email}</p>
                   </div>
                 </button>
               ))}
@@ -143,9 +140,9 @@ export function CommandPalette() {
 
           {!query && (
             <div className="text-center py-6">
-              <Search className="w-8 h-8 text-text-muted mx-auto mb-2" />
-              <p className="text-sm text-text-secondary">Type to search tickets and people</p>
-              <p className="text-xs text-text-muted mt-1">Press ESC to close</p>
+              <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Type to search tickets and people</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Press ESC to close</p>
             </div>
           )}
         </div>

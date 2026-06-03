@@ -24,7 +24,7 @@ function getNotificationIcon(type: string) {
     case 'SPRINT_STARTED': return <Play className="w-5 h-5 text-green-500" />;
     case 'SPRINT_COMPLETED': return <CheckCircle className="w-5 h-5 text-purple-500" />;
     case 'OVERDUE': return <AlertCircle className="w-5 h-5 text-red-500" />;
-    default: return <Bell className="w-5 h-5 text-gray-500" />;
+    default: return <Bell className="w-5 h-5 text-muted-foreground" />;
   }
 }
 
@@ -105,10 +105,10 @@ export function TopBar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-[#E2E8F0] flex items-center px-6 gap-4">
+    <header className="sticky top-0 z-30 h-16 bg-card border-b border-border flex items-center px-6 gap-4">
       {/* Mobile menu button */}
-      <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-gray-100 lg:hidden">
-        <Menu className="w-5 h-5 text-[#0F172A]" />
+      <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-accent lg:hidden">
+        <Menu className="w-5 h-5 text-foreground" />
       </button>
 
       <div className="flex-1" />
@@ -116,32 +116,32 @@ export function TopBar() {
       {/* Search Input Trigger */}
       <button
         onClick={() => setShowSearch(true)}
-        className="hidden md:flex items-center gap-2 w-full max-w-[320px] h-10 px-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] border border-transparent rounded-lg transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+        className="hidden md:flex items-center gap-2 w-full max-w-[320px] h-10 px-3 bg-muted hover:bg-muted/70 border border-transparent rounded-lg transition-colors text-left focus:outline-none focus:ring-2 focus:ring-ring mr-2"
       >
-        <Search className="w-4 h-4 text-[#64748B]" />
-        <span className="flex-1 text-[13px] text-[#94A3B8] truncate whitespace-nowrap">Search tickets, members, projects...</span>
+        <Search className="w-4 h-4 text-muted-foreground" />
+        <span className="flex-1 text-[13px] text-muted-foreground truncate whitespace-nowrap">Search tickets, members, projects...</span>
         <div className="flex items-center gap-1">
-          <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans text-[#64748B]">⌘</kbd>
-          <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans text-[#64748B]">K</kbd>
+          <kbd className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-sans text-muted-foreground">⌘</kbd>
+          <kbd className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-sans text-muted-foreground">K</kbd>
         </div>
       </button>
 
       {/* Mobile Search Icon */}
       <button
         onClick={() => setShowSearch(true)}
-        className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
       >
-        <Search className="w-5 h-5 text-[#64748B]" />
+        <Search className="w-5 h-5 text-muted-foreground" />
       </button>
 
       {/* Settings icon (Admin only) */}
       {user?.role === 'ADMIN' && (
         <button
           onClick={() => navigate('/settings')}
-          className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${location.pathname === '/settings' ? 'bg-[#EFF6FF]' : ''}`}
+          className={`p-2 rounded-lg hover:bg-accent transition-colors ${location.pathname === '/settings' ? 'bg-primary/10' : ''}`}
           title="Admin Settings"
         >
-          <Settings className="w-5 h-5 text-[#64748B]" />
+          <Settings className="w-5 h-5 text-muted-foreground" />
         </button>
       )}
 
@@ -149,20 +149,20 @@ export function TopBar() {
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => setShowNotifications(!showNotifications)}
-          className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="relative p-2 rounded-lg hover:bg-accent transition-colors"
         >
-          <Bell className="w-5 h-5 text-[#64748B]" />
+          <Bell className="w-5 h-5 text-muted-foreground" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-card" />
           )}
         </button>
 
         {showNotifications && (
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-[#E2E8F0] shadow-lg overflow-hidden z-50 animate-fade-in">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#E2E8F0] bg-gray-50/50">
-              <span className="font-semibold text-[14px] text-[#0F172A]">Notifications</span>
+          <div className="absolute right-0 mt-2 w-80 bg-card rounded-xl border border-border shadow-lg overflow-hidden z-50 animate-fade-in">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
+              <span className="font-semibold text-[14px] text-foreground">Notifications</span>
               {unreadCount > 0 && (
-                <button onClick={handleMarkAllRead} className="text-[12px] text-[#2563EB] hover:text-[#1D4ED8] font-medium transition-colors">
+                <button onClick={handleMarkAllRead} className="text-[12px] text-[hsl(var(--color-info))] hover:opacity-80 font-medium transition-opacity">
                   Mark all as read
                 </button>
               )}
@@ -170,28 +170,28 @@ export function TopBar() {
             <div className="max-h-[400px] overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                  <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-3">
-                     <Bell className="w-6 h-6 text-blue-400" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                     <Bell className="w-6 h-6 text-primary" />
                   </div>
-                  <p className="text-[14px] font-medium text-[#0F172A]">All caught up!</p>
-                  <p className="text-[12px] text-[#64748B] mt-1">You have no new notifications.</p>
+                  <p className="text-[14px] font-medium text-foreground">All caught up!</p>
+                  <p className="text-[12px] text-muted-foreground mt-1">You have no new notifications.</p>
                 </div>
               ) : (
                 notifications.map((notif) => (
                   <button
                     key={notif.id}
                     onClick={() => handleNotificationClick(notif)}
-                    className={`w-full flex items-start text-left px-4 py-3 border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors gap-3 ${
-                      !notif.isRead ? 'bg-[#EFF6FF]' : 'bg-white'
+                    className={`w-full flex items-start text-left px-4 py-3 border-b border-border hover:bg-accent transition-colors gap-3 ${
+                      !notif.isRead ? 'bg-primary/5' : 'bg-card'
                     }`}
                   >
-                    <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notif.isRead ? 'bg-blue-100/50' : 'bg-gray-100'}`}>
+                    <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notif.isRead ? 'bg-primary/10' : 'bg-muted'}`}>
                       {getNotificationIcon(notif.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[13px] ${!notif.isRead ? 'font-semibold text-[#0F172A]' : 'font-medium text-[#334155]'}`}>{notif.title}</p>
-                      <p className="text-[13px] text-[#64748B] mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
-                      <p className="text-[11px] text-[#94A3B8] mt-1.5 font-medium">
+                      <p className={`text-[13px] ${!notif.isRead ? 'font-semibold text-foreground' : 'font-medium text-foreground'}`}>{notif.title}</p>
+                      <p className="text-[13px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
+                      <p className="text-[11px] text-muted-foreground/70 mt-1.5 font-medium">
                         {timeAgo(notif.createdAt)}
                       </p>
                     </div>
@@ -204,7 +204,7 @@ export function TopBar() {
             </div>
             <button
               onClick={() => { navigate('/notifications'); setShowNotifications(false); }}
-              className="w-full text-center py-3 text-[13px] text-[#2563EB] hover:bg-[#F8FAFC] border-t border-[#E2E8F0] font-medium transition-colors"
+              className="w-full text-center py-3 text-[13px] text-[hsl(var(--color-info))] hover:bg-accent border-t border-border font-medium transition-colors"
             >
               View all
             </button>
@@ -216,34 +216,34 @@ export function TopBar() {
       <div className="relative" ref={userMenuRef}>
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
-          className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             {user?.avatar ? (
               <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
-              <span className="text-xs font-semibold text-[#2563EB]">{getInitials(user?.fullName)}</span>
+              <span className="text-xs font-semibold text-primary">{getInitials(user?.fullName)}</span>
             )}
           </div>
-          <ChevronDown className="w-4 h-4 text-[#64748B]" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </button>
 
         {showUserMenu && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-[#E2E8F0] overflow-hidden z-50 animate-fade-in">
-            <div className="px-4 py-3 border-b border-[#E2E8F0]">
-              <p className="text-sm font-medium text-[#0F172A] truncate">{user?.fullName}</p>
-              <p className="text-xs text-[#64748B] truncate">{user?.email}</p>
+          <div className="absolute right-0 mt-2 w-48 bg-card rounded-xl border border-border overflow-hidden z-50 animate-fade-in">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-sm font-medium text-foreground truncate">{user?.fullName}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
             <button
               onClick={() => { navigate('/profile'); setShowUserMenu(false); }}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
             >
-              <User className="w-4 h-4 text-[#64748B]" />
+              <User className="w-4 h-4 text-muted-foreground" />
               My Profile
             </button>
             <button
               onClick={() => { clearAuth(); navigate('/login'); setShowUserMenu(false); }}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-[#E2E8F0]"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors border-t border-border"
             >
               <LogOut className="w-4 h-4" />
               Log Out

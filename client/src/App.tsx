@@ -29,7 +29,6 @@ import { ProjectsPage } from './pages/Projects';
 import { MyWorkPage } from './pages/MyWork';
 import { NotFoundPage } from './pages/NotFound';
 import { StyleGuidePage } from './pages/StyleGuide';
-import { ToastContainer } from './components/ui/Toast';
 import { Toaster } from './components/ui/sonner';
 
 const queryClient = new QueryClient({
@@ -49,7 +48,7 @@ function AppLayout() {
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto bg-background">
           <div className="px-8 py-7">
             <Outlet />
           </div>
@@ -66,10 +65,10 @@ function ProtectedRoute() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-sm text-[#64748B]">Loading TaskPilot...</p>
+          <p className="text-sm text-muted-foreground">Loading TaskPilot...</p>
         </div>
       </div>
     );
@@ -160,7 +159,6 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-          <ToastContainer />
           <Toaster richColors position="bottom-right" />
         </AppInitializer>
       </BrowserRouter>

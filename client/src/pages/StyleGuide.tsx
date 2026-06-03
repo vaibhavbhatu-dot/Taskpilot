@@ -23,7 +23,9 @@ import { ResumeCard } from '@/components/ui/resume-card';
 import { UploadZone } from '@/components/ui/upload-zone';
 import { AISuggestionChip } from '@/components/ui/ai-suggestion-chip';
 import { StatCard } from '@/components/ui/stat-card';
-import { FileSearch, BarChart2, Target, Briefcase, User } from 'lucide-react';
+import { FileSearch, BarChart2, Target, Briefcase, User, BookOpen } from 'lucide-react';
+import { FormPatternExample } from '@/design-system/patterns/FormPattern';
+import { AsyncPatternExample } from '@/design-system/patterns/AsyncPattern';
 
 // ─── token manifest ───────────────────────────────────────────────────────────
 const COLOR_TOKENS: { variable: string; label: string }[] = [
@@ -85,9 +87,14 @@ export function StyleGuidePage() {
         {/* ── Header ── */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-[32px] font-bold tracking-tight">
-              Design System
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-[32px] font-bold tracking-tight">
+                Design System · TaskPilot
+              </h1>
+              <Badge variant="outline" size="sm" className="self-center translate-y-px">
+                v1.0
+              </Badge>
+            </div>
             <p
               className="mt-1 text-[15px]"
               style={{ color: 'hsl(var(--muted-foreground))' }}
@@ -1364,6 +1371,68 @@ export function StyleGuidePage() {
             </div>
 
           </div>
+        </section>
+
+        {/* ── Patterns section ── */}
+        <section id="patterns">
+          <h2 className="text-[20px] font-semibold mb-1">Patterns</h2>
+          <p
+            className="text-[13px] mb-2"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
+            Reference implementations — not production components.
+            Copy the pattern, strip the comments, adapt to your feature.
+          </p>
+
+          {/* Doc link */}
+          <a
+            href="https://github.com/vaibhavbhatu-dot/Taskpilot/blob/main/client/src/design-system/PATTERNS.md"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium mb-8 transition-opacity hover:opacity-70"
+            style={{ color: 'hsl(var(--color-info))' }}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            src/design-system/PATTERNS.md
+          </a>
+
+          <Stack gap="xl">
+
+            {/* ── Pattern 1: Form ────────────────────────────────────────── */}
+            <div>
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold uppercase tracking-widest mb-1"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Pattern 1 — Form (react-hook-form + zod)
+                </p>
+                <p className="text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Click "Save changes" to simulate a submit. The button shows a spinner
+                  for 1.5s then fires a success or error toast. Modify a field first to
+                  enable the button (isDirty guard).
+                </p>
+              </div>
+              <FormPatternExample />
+            </div>
+
+            <Divider />
+
+            {/* ── Pattern 2: Async data ──────────────────────────────────── */}
+            <div>
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold uppercase tracking-widest mb-1"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Pattern 2 — Async data (loading → error → empty → success)
+                </p>
+                <p className="text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Simulates a 1.5s API call with randomised outcomes: 70% success (3 cards),
+                  10% empty state, 20% error with retry. Refresh the page or click "Refresh"
+                  to cycle through states.
+                </p>
+              </div>
+              <AsyncPatternExample />
+            </div>
+
+          </Stack>
         </section>
 
       </div>

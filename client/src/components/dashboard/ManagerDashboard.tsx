@@ -17,7 +17,7 @@ function DashboardSkeleton() {
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-3">
+          <div key={i} className="bg-card rounded-xl border border-border p-5 space-y-3">
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-8 w-16" />
           </div>
@@ -25,7 +25,7 @@ function DashboardSkeleton() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-6 space-y-4">
+          <div key={i} className="bg-card rounded-xl border border-border p-6 space-y-4">
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-64 w-full" />
           </div>
@@ -69,41 +69,41 @@ export function ManagerDashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+        <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-purple-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">Team Members</span>
+            <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider">Team Members</span>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.teamMemberCount}</p>
+          <p className="text-2xl font-bold text-foreground">{data.kpis.teamMemberCount}</p>
         </div>
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+        <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-2 mb-2">
             <Briefcase className="w-4 h-4 text-blue-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">Total Tickets</span>
+            <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider">Total Tickets</span>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.totalTickets}</p>
+          <p className="text-2xl font-bold text-foreground">{data.kpis.totalTickets}</p>
         </div>
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+        <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-2 mb-2">
             <ListTodo className="w-4 h-4 text-yellow-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">In Development</span>
+            <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider">In Development</span>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A]">{data.kpis.devInProgressTickets}</p>
+          <p className="text-2xl font-bold text-foreground">{data.kpis.devInProgressTickets}</p>
         </div>
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+        <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-4 h-4 text-red-600" />
-            <span className="text-[13px] font-medium text-[#64748B] uppercase tracking-wider">Overdue</span>
+            <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider">Overdue</span>
           </div>
-          <p className={`text-2xl font-bold ${data.kpis.overdueTickets > 0 ? 'text-red-600' : 'text-[#0F172A]'}`}>
+          <p className={`text-2xl font-bold ${data.kpis.overdueTickets > 0 ? 'text-red-600' : 'text-foreground'}`}>
             {data.kpis.overdueTickets}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
-          <h3 className="font-semibold text-[15px] text-[#0F172A] mb-4">Team Workload</h3>
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="font-semibold text-[15px] text-foreground mb-4">Team Workload</h3>
           <div className="h-64">
             {workload.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -118,12 +118,12 @@ export function ManagerDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full text-[#64748B] text-sm">No workload data</div>
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No workload data</div>
             )}
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
-          <h3 className="font-semibold text-[15px] text-[#0F172A] mb-4">Priority Breakdown</h3>
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="font-semibold text-[15px] text-foreground mb-4">Priority Breakdown</h3>
           <div className="h-64 flex items-center justify-center">
             {priorityChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -138,7 +138,7 @@ export function ManagerDashboard() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-[#64748B] text-sm">No tickets to display</div>
+              <div className="text-muted-foreground text-sm">No tickets to display</div>
             )}
           </div>
         </div>

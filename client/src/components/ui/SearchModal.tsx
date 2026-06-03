@@ -17,7 +17,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Total results across all groups
   const allResults = [
     ...results.tickets.map(t => ({ type: 'TICKET' as const, data: t })),
     ...results.users.map(u => ({ type: 'USER' as const, data: u })),
@@ -54,11 +53,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
-
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(prev => (prev < allResults.length - 1 ? prev + 1 : prev));
@@ -74,45 +71,39 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         onClose();
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, selectedIndex, allResults]);
 
   const handleSelect = (item: typeof allResults[0]) => {
-    if (item.type === 'TICKET') {
-      navigate(`/tickets/${item.data.id}`);
-    } else if (item.type === 'USER') {
-      navigate(`/user/${item.data.id}`);
-    } else if (item.type === 'PROJECT') {
-      navigate(`/projects?search=${item.data.key}`);
-    }
+    if (item.type === 'TICKET') navigate(`/tickets/${item.data.id}`);
+    else if (item.type === 'USER') navigate(`/user/${item.data.id}`);
+    else if (item.type === 'PROJECT') navigate(`/projects?search=${item.data.key}`);
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm flex justify-center items-start pt-[15vh]">
-      {/* Click outside context */}
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex justify-center items-start pt-[15vh]">
       <div className="absolute inset-0" onClick={onClose} />
-      
-      <div className="relative w-full max-w-[640px] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col animate-fade-in border border-[#E2E8F0]">
-        
+
+      <div className="relative w-full max-w-[640px] bg-card rounded-xl shadow-2xl overflow-hidden flex flex-col animate-fade-in border border-border">
+
         {/* Search Input */}
-        <div className="flex items-center px-4 border-b border-[#E2E8F0]">
-          <Search className="w-5 h-5 text-[#64748B]" />
+        <div className="flex items-center px-4 border-b border-border">
+          <Search className="w-5 h-5 text-muted-foreground" />
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 px-4 py-4 text-[16px] bg-transparent outline-none placeholder-[#94A3B8] text-[#0F172A]"
+            className="flex-1 px-4 py-4 text-[16px] bg-transparent outline-none placeholder:text-muted-foreground text-foreground"
             placeholder="Search tickets, members, projects... (⌘K)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
           {query && (
-            <button onClick={() => setQuery('')} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
-              <X className="w-4 h-4 text-[#64748B]" />
+            <button onClick={() => setQuery('')} className="p-1 hover:bg-accent rounded-md transition-colors">
+              <X className="w-4 h-4 text-muted-foreground" />
             </button>
           )}
         </div>
@@ -121,36 +112,36 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         {(query.length >= 2 || loading) && (
           <div className="max-h-[400px] overflow-y-auto p-2">
             {loading ? (
-              <div className="px-4 py-8 text-center text-sm text-[#64748B]">Searching...</div>
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">Searching...</div>
             ) : allResults.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-[#64748B]">No results found for "{query}"</div>
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">No results found for "{query}"</div>
             ) : (
               <div className="space-y-4 py-2">
-                
+
                 {/* Tickets Group */}
                 {results.tickets.length > 0 && (
                   <div>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-[#94A3B8] tracking-wider uppercase">Tickets</div>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Tickets</div>
                     {results.tickets.map((ticket) => {
                       const idx = allResults.findIndex(r => r.type === 'TICKET' && r.data.id === ticket.id);
                       return (
                         <button
                           key={ticket.id}
                           onClick={() => handleSelect({ type: 'TICKET', data: ticket })}
-                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${selectedIndex === idx ? 'bg-[#F1F5F9]' : 'hover:bg-[#F8FAFC]'}`}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${selectedIndex === idx ? 'bg-accent' : 'hover:bg-accent/50'}`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950 flex items-center justify-center flex-shrink-0">
                               <Hash className="w-4 h-4 text-blue-600" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-[13px] font-medium text-[#64748B] flex-shrink-0">{ticket.ticketNumber}</span>
-                                <span className="text-[14px] font-medium text-[#0F172A] truncate">{ticket.title}</span>
+                                <span className="text-[13px] font-medium text-muted-foreground flex-shrink-0">{ticket.ticketNumber}</span>
+                                <span className="text-[14px] font-medium text-foreground truncate">{ticket.title}</span>
                               </div>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-gray-100 text-[#475569] font-medium">{ticket.status}</span>
-                                <span className="text-[12px] text-[#94A3B8] truncate">{ticket.project?.name}</span>
+                                <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">{ticket.status}</span>
+                                <span className="text-[12px] text-muted-foreground truncate">{ticket.project?.name}</span>
                               </div>
                             </div>
                           </div>
@@ -166,24 +157,24 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 {/* Members Group */}
                 {results.users.length > 0 && (
                   <div>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-[#94A3B8] tracking-wider uppercase">Members</div>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Members</div>
                     {results.users.map((user) => {
                       const idx = allResults.findIndex(r => r.type === 'USER' && r.data.id === user.id);
                       return (
                         <button
                           key={user.id}
                           onClick={() => handleSelect({ type: 'USER', data: user })}
-                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${selectedIndex === idx ? 'bg-[#F1F5F9]' : 'hover:bg-[#F8FAFC]'}`}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${selectedIndex === idx ? 'bg-accent' : 'hover:bg-accent/50'}`}
                         >
                           <div className="flex items-center gap-3">
                             <img src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=E0E7FF&color=4338CA`} alt="" className="w-8 h-8 rounded-full object-cover" />
                             <div>
-                              <p className="text-[14px] font-medium text-[#0F172A]">{user.fullName}</p>
-                              <div className="flex items-center gap-2 mt-0.5 text-[12px] text-[#64748B]">
+                              <p className="text-[14px] font-medium text-foreground">{user.fullName}</p>
+                              <div className="flex items-center gap-2 mt-0.5 text-[12px] text-muted-foreground">
                                 <span>{user.designation || user.role}</span>
                                 {user.team && (
                                   <>
-                                    <span className="w-1 h-1 rounded-full bg-[#CBD5E1]" />
+                                    <span className="w-1 h-1 rounded-full bg-border" />
                                     <span>{user.team.name}</span>
                                   </>
                                 )}
@@ -199,22 +190,22 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 {/* Projects Group */}
                 {results.projects.length > 0 && (
                   <div>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-[#94A3B8] tracking-wider uppercase">Projects</div>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground tracking-wider uppercase">Projects</div>
                     {results.projects.map((project) => {
                       const idx = allResults.findIndex(r => r.type === 'PROJECT' && r.data.id === project.id);
                       return (
                         <button
                           key={project.id}
                           onClick={() => handleSelect({ type: 'PROJECT', data: project })}
-                          className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors text-left ${selectedIndex === idx ? 'bg-[#F1F5F9]' : 'hover:bg-[#F8FAFC]'}`}
+                          className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors text-left ${selectedIndex === idx ? 'bg-accent' : 'hover:bg-accent/50'}`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center">
                               <Folder className="w-4 h-4 text-indigo-600" />
                             </div>
                             <div>
-                              <p className="text-[14px] font-medium text-[#0F172A]">{project.name}</p>
-                              <p className="text-[12px] font-semibold text-[#64748B] tracking-wider">{project.key}</p>
+                              <p className="text-[14px] font-medium text-foreground">{project.name}</p>
+                              <p className="text-[12px] font-semibold text-muted-foreground tracking-wider">{project.key}</p>
                             </div>
                           </div>
                         </button>
@@ -229,20 +220,20 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         )}
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-[#E2E8F0] bg-gray-50 flex items-center justify-between text-[12px] text-[#64748B]">
+        <div className="px-4 py-3 border-t border-border bg-muted/50 flex items-center justify-between text-[12px] text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans">↑</kbd>
-              <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans">↓</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-sans">↑</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-sans">↓</kbd>
               <span>to navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans">↵</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-sans">↵</kbd>
               <span>to select</span>
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded border border-[#CBD5E1] bg-white text-[10px] font-sans">esc</kbd>
+            <kbd className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-sans">esc</kbd>
             <span>to close</span>
           </span>
         </div>

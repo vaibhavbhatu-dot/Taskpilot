@@ -8,13 +8,20 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:   "border border-transparent bg-primary text-primary-foreground",
-        secondary: "border border-transparent bg-secondary text-secondary-foreground",
-        outline:   "border border-current bg-transparent",
-        success:   "border border-transparent bg-[hsl(var(--color-success))] text-[hsl(var(--color-success-foreground))]",
-        warning:   "border border-transparent bg-[hsl(var(--color-warning))] text-[hsl(var(--color-warning-foreground))]",
-        error:     "border border-transparent bg-[hsl(var(--color-error))] text-[hsl(var(--color-error-foreground))]",
-        info:      "border border-transparent bg-[hsl(var(--color-info))] text-[hsl(var(--color-info-foreground))]",
+        default:        "bg-primary/10 text-primary border border-primary/20",
+        secondary:      "bg-secondary text-secondary-foreground border border-transparent",
+        outline:        "border border-current bg-transparent",
+        success:        "bg-[hsl(var(--color-success))]/10 text-[hsl(var(--color-success))] border border-[hsl(var(--color-success))]/25",
+        warning:        "bg-[hsl(var(--color-warning))]/10 text-[hsl(var(--color-warning))] border border-[hsl(var(--color-warning))]/25",
+        error:          "bg-[hsl(var(--color-error))]/10 text-[hsl(var(--color-error))] border border-[hsl(var(--color-error))]/25",
+        info:           "bg-[hsl(var(--color-info))]/10 text-[hsl(var(--color-info))] border border-[hsl(var(--color-info))]/25",
+        // Ticket-status-specific variants
+        design:         "bg-[#EFF6FF] text-[#1d4ed8] border border-[#bfdbfe]",
+        backlog:        "bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]",
+        "in-development": "bg-[#FFF7ED] text-[#c2410c] border border-[#fed7aa]",
+        qa:             "bg-[#EFF6FF] text-[#1d4ed8] border border-[#bfdbfe]",
+        live:           "bg-[#F0FDF4] text-[#15803d] border border-[#bbf7d0]",
+        requirements:   "bg-[#F5F3FF] text-[#6d28d9] border border-[#ddd6fe]",
       },
       size: {
         sm: "text-xs px-1.5 py-0.5",

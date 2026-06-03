@@ -46,6 +46,7 @@ export function TicketDetailPage() {
   // Assignee multi-select
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
+  const assigneeContainerRef = useRef<HTMLDivElement>(null);
 
   // Links management
   const [linkInput, setLinkInput] = useState('');
@@ -98,6 +99,18 @@ export function TicketDetailPage() {
       setTeams(tRes.data);
     } catch { /* ignore */ }
   }
+
+  useEffect(() => {
+    if (!showAssigneeDropdown) return;
+    function handleOutside(e: MouseEvent) {
+      if (assigneeContainerRef.current && !assigneeContainerRef.current.contains(e.target as Node)) {
+        setShowAssigneeDropdown(false);
+        setAssigneeSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showAssigneeDropdown]);
 
   async function handleFieldChange(field: string, value: any) {
     if (!ticket) return;
@@ -530,7 +543,7 @@ export function TicketDetailPage() {
             </div>
 
             {/* Assignees — multi */}
-            <div className="relative">
+            <div ref={assigneeContainerRef} className="relative">
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Users className="w-3 h-3" /> Assignees
               </label>
@@ -545,7 +558,7 @@ export function TicketDetailPage() {
                   ))}
                 </div>
               )}
-              <button onClick={() => setShowAssigneeDropdown(v => !v)}
+              <button type="button" onClick={() => setShowAssigneeDropdown(v => !v)}
                 className="input text-[13px] h-9 text-left flex items-center justify-between w-full">
                 <span className="text-muted-foreground">Add assignee...</span>
                 <Users className="w-4 h-4 text-muted-foreground" />
@@ -560,7 +573,9 @@ export function TicketDetailPage() {
                     {users.filter(u => u.fullName.toLowerCase().includes(assigneeSearch.toLowerCase())).map(u => {
                       const isSelected = ticket.assignees?.some(a => a.userId === u.id);
                       return (
-                        <button key={u.id} type="button" onClick={() => { toggleAssignee(u.id); setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
+                        <button key={u.id} type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { toggleAssignee(u.id); setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
                           className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50">
                           <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
                             <span className="text-[9px] font-bold text-primary">{getInitials(u.fullName)}</span>
@@ -572,7 +587,9 @@ export function TicketDetailPage() {
                     })}
                   </div>
                   <div className="p-1.5 border-t border-border">
-                    <button onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
+                    <button type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
                       className="w-full text-[11px] text-muted-foreground py-1">Done</button>
                   </div>
                 </div>

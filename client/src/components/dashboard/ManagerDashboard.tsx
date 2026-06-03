@@ -4,13 +4,7 @@ import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Ba
 import { dashboardApi } from '../../api';
 import { Skeleton } from '../ui/Skeleton';
 import type { DashboardData } from '../../types';
-
-const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: '#EF4444',
-  HIGH: '#F97316',
-  MEDIUM: '#F59E0B',
-  LOW: '#10B981',
-};
+import { PRIORITY_DOT_COLORS } from '../../constants/ticketStyles';
 
 function DashboardSkeleton() {
   return (
@@ -63,7 +57,7 @@ export function ManagerDashboard() {
   const priorityChartData = Object.entries(data.ticketsByPriority).map(([name, value]) => ({
     name,
     value,
-    fill: PRIORITY_COLORS[name] || '#9CA3AF',
+    fill: PRIORITY_DOT_COLORS[name] || '#9CA3AF',
   })).filter((item: any) => item.value > 0);
 
   return (

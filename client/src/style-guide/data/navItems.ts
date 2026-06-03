@@ -17,6 +17,7 @@ export const navGroups: NavGroup[] = [
       { label: 'Colors',     path: '/style-guide/foundations/colors'     },
       { label: 'Typography', path: '/style-guide/foundations/typography' },
       { label: 'Spacing',    path: '/style-guide/foundations/spacing'    },
+      { label: 'Layout',     path: '/style-guide/foundations/layout'     },
     ],
   },
   {
@@ -28,8 +29,9 @@ export const navGroups: NavGroup[] = [
       { label: 'Card',     path: '/style-guide/components/card'     },
       { label: 'Badge',    path: '/style-guide/components/badge'    },
       { label: 'Alert',    path: '/style-guide/components/alert'    },
-      { label: 'Feedback', path: '/style-guide/components/feedback' },
-      { label: 'Modal',    path: '/style-guide/components/modal'    },
+      { label: 'Feedback',      path: '/style-guide/components/feedback'       },
+      { label: 'Modal',         path: '/style-guide/components/modal'          },
+      { label: 'AI Suggestion', path: '/style-guide/components/ai-suggestion'  },
     ],
   },
   {

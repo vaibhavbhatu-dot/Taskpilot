@@ -6,17 +6,14 @@ import { Calendar as CalendarIcon, Target, CheckCircle, CheckCircle2, Columns3, 
 import { sprintsApi, ticketsApi } from '../api';
 import type { Sprint, Ticket, TicketStatus } from '../types';
 import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
-import { Badge, getInitials } from '@/design-system';
+import { getInitials } from '@/design-system';
+import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 
 // Active sprint board excludes BACKLOG column
 const COLUMNS: { id: TicketStatus; title: string }[] = TICKET_STATUSES
   .filter(s => s !== 'BACKLOG')
   .map(s => ({ id: s, title: STATUS_CONFIG[s].label }));
 
-type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
-const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'secondary', LOW: 'outline',
-};
 
 export function ActiveSprintPage() {
   const navigate = useNavigate();
@@ -273,7 +270,10 @@ export function ActiveSprintPage() {
                                   )}
                                   <div className="flex justify-between items-start mb-2">
                                     <span className="text-[11px] font-mono font-medium text-muted-foreground">{ticket.ticketNumber}</span>
-                                    <Badge variant={PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary'} size="sm">{ticket.priority}</Badge>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PRIORITY_DOT_COLORS[ticket.priority] ?? '#94A3B8' }} />
+                                      <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">{ticket.priority}</span>
+                                    </span>
                                   </div>
                                   <p className="text-[14px] font-medium text-foreground leading-snug mb-3">
                                     {ticket.title}
@@ -331,7 +331,10 @@ export function ActiveSprintPage() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <Badge variant={PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary'} size="sm">{ticket.priority}</Badge>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PRIORITY_DOT_COLORS[ticket.priority] ?? '#94A3B8' }} />
+                          <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">{ticket.priority}</span>
+                        </span>
                         <span className="text-[14px] font-medium text-foreground">{ticket.title}</span>
                       </div>
                     </td>

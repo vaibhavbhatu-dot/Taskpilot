@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, List, Columns3, X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
-import { Badge, Button } from '@/design-system';
+import { Button } from '@/design-system';
+import { STATUS_STYLES, PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 import { ticketsApi, projectsApi, usersApi, sprintsApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Ticket, TicketPriority, Project, User, Sprint, Team } from '../types';
@@ -16,30 +17,6 @@ import { TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
 
 const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS: TicketPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-
-type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
-
-const STATUS_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  BACKLOG:        'outline',
-  REQUIREMENTS:   'info',
-  DESIGN:         'info',
-  HTML:           'secondary',
-  ON_DEVELOPMENT: 'warning',
-  QA:             'info',
-  BUGS:           'error',
-  ENHANCEMENT:    'secondary',
-  UAT:            'warning',
-  LIVE:           'success',
-  NOT_REQUIRED:   'secondary',
-};
-
-const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  CRITICAL: 'error',
-  HIGH:     'warning',
-  MEDIUM:   'secondary',
-  LOW:      'outline',
-};
-
 
 const formatDate = (d: string) => {
   const date = new Date(d);
@@ -250,14 +227,20 @@ export function TicketsPage() {
                     <span className="text-[14px] font-medium text-foreground">{t.title}</span>
                   </td>
                   <td className="px-5">
-                    <Badge variant={STATUS_BADGE_VARIANT[t.status] ?? 'secondary'} size="sm">
+                    <span className={STATUS_STYLES[t.status] ?? 'text-xs font-semibold tracking-wider uppercase text-[#64748B]'}>
                       {getStatusLabel(t.status)}
-                    </Badge>
+                    </span>
                   </td>
                   <td className="px-5">
-                    <Badge variant={PRIORITY_BADGE_VARIANT[t.priority] ?? 'secondary'} size="sm">
-                      {t.priority}
-                    </Badge>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: PRIORITY_DOT_COLORS[t.priority] ?? '#94A3B8' }}
+                      />
+                      <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">
+                        {t.priority}
+                      </span>
+                    </span>
                   </td>
                   <td className="px-5">
                     {(() => {

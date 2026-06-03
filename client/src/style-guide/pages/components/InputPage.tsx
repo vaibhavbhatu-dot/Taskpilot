@@ -1,5 +1,5 @@
 import { Search, Eye } from 'lucide-react';
-import { Input, Textarea, Label, FormField, Button } from '@/design-system';
+import { Input, Textarea, Label, FormField } from '@/design-system';
 import { DemoBlock } from '../../components/ui/DemoBlock';
 
 export function InputPage() {

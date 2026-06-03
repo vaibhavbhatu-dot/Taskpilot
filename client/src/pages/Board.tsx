@@ -7,22 +7,14 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi, usersApi, projectsApi, teamsApi } from '../api';
 import type { Ticket, TicketStatus, Sprint, User, Project, Team } from '../types';
 import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
-import { Badge, Button, getInitials } from '@/design-system';
+import { Button, getInitials } from '@/design-system';
+import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 import { CreateTicketPanel } from '../components/tickets/CreateTicketPanel';
 
 const COLUMNS: { id: TicketStatus; title: string }[] = TICKET_STATUSES.map(s => ({
   id: s,
   title: STATUS_CONFIG[s].label,
 }));
-
-type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
-
-const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  CRITICAL: 'error',
-  HIGH:     'warning',
-  MEDIUM:   'secondary',
-  LOW:      'outline',
-};
 
 // Semantic top-border color per column status
 const COLUMN_TOP_BORDER_COLOR: Record<string, string> = {
@@ -184,7 +176,10 @@ export function BoardPage() {
           id: p,
           title: (
             <div className="flex items-center gap-2">
-              <Badge variant={PRIORITY_BADGE_VARIANT[p] ?? 'secondary'} size="sm">{p}</Badge>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PRIORITY_DOT_COLORS[p] ?? '#94A3B8' }} />
+                <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">{p}</span>
+              </span>
               <span className="font-semibold text-[15px] text-foreground">{p}</span>
             </div>
           ),
@@ -381,17 +376,20 @@ export function BoardPage() {
                                             <CheckCircle2 className="absolute top-2 right-2 w-[14px] h-[14px] text-[hsl(var(--color-success))]" />
                                           )}
 
-                                          {/* Top row: ticket number + priority badge */}
+                                          {/* Top row: ticket number + priority */}
                                           <div className="flex justify-between items-start mb-2">
                                             <span className="text-[11px] font-mono font-medium text-muted-foreground">
                                               {ticket.ticketNumber}
                                             </span>
-                                            <Badge
-                                              variant={PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary'}
-                                              size="sm"
-                                            >
-                                              {ticket.priority}
-                                            </Badge>
+                                            <span className="flex items-center gap-1.5">
+                                              <span
+                                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                                style={{ background: PRIORITY_DOT_COLORS[ticket.priority] ?? '#94A3B8' }}
+                                              />
+                                              <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">
+                                                {ticket.priority}
+                                              </span>
+                                            </span>
                                           </div>
 
                                           {/* Title */}

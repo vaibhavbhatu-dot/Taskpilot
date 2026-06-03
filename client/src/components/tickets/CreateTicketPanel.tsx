@@ -32,6 +32,7 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
   const [toast, setToast] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
+  const assigneeSectionRef = useRef<HTMLDivElement>(null);
 
   const availableTeams = useMemo(() => {
     if (assigneeIds.length === 0) return teams;
@@ -44,6 +45,18 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
     if (teamId && !availableTeams.find(t => t.id === teamId)) setTeamId('');
     if (availableTeams.length === 1 && assigneeIds.length > 0) setTeamId(availableTeams[0].id);
   }, [availableTeams]);
+
+  useEffect(() => {
+    if (!showAssigneeDropdown) return;
+    function handleOutside(e: MouseEvent) {
+      if (assigneeSectionRef.current && !assigneeSectionRef.current.contains(e.target as Node)) {
+        setShowAssigneeDropdown(false);
+        setAssigneeSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showAssigneeDropdown]);
 
   const filteredUsers = users.filter(u =>
     u.fullName.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
@@ -185,7 +198,7 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
             />
           </FormField>
 
-          <div className="relative flex flex-col gap-1.5">
+          <div ref={assigneeSectionRef} className="relative flex flex-col gap-1.5">
             <Label>
               <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Assignees</span>
             </Label>
@@ -226,7 +239,9 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
                   {filteredUsers.length === 0 ? (
                     <p className="px-3 py-3 text-[13px] text-muted-foreground">No members found</p>
                   ) : filteredUsers.map(u => (
-                    <button key={u.id} type="button" onClick={() => toggleAssignee(u.id)}
+                    <button key={u.id} type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => toggleAssignee(u.id)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors">
                       <div className="w-7 h-7 rounded-full bg-[hsl(var(--color-info))]/15 flex items-center justify-center flex-shrink-0">
                         <span className="text-[10px] font-bold text-[hsl(var(--color-info))]">{getInitials(u.fullName)}</span>
@@ -240,7 +255,9 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
                   ))}
                 </div>
                 <div className="p-2 border-t border-border">
-                  <button type="button" onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
+                  <button type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
                     className="w-full text-[12px] text-muted-foreground hover:text-foreground py-1">Done</button>
                 </div>
               </div>

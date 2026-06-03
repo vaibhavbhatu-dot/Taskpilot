@@ -6,12 +6,9 @@ import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket } from 'lucide-r
 import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi, usersApi, projectsApi } from '../api';
 import type { Ticket, Sprint, User, Project } from '../types';
-import { Badge, getInitials } from '@/design-system';
+import { getInitials } from '@/design-system';
+import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 
-type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
-const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'secondary', LOW: 'outline',
-};
 
 export function SprintPlanningPage() {
   const navigate = useNavigate();
@@ -205,7 +202,10 @@ export function SprintPlanningPage() {
               <Trash2 className="w-[14px] h-[14px]" />
             </button>
           )}
-          <Badge variant={PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary'} size="sm">{ticket.priority}</Badge>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PRIORITY_DOT_COLORS[ticket.priority] ?? '#94A3B8' }} />
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">{ticket.priority}</span>
+          </span>
         </div>
       </div>
       <p className="text-[14px] font-medium text-foreground leading-snug">{ticket.title}</p>

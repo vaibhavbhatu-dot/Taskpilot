@@ -183,10 +183,19 @@ export function ModalPage() {
         <h2 id="use-modal" className="text-xl font-semibold text-foreground mb-4">useModal hook</h2>
         <div className="p-4 rounded-xl border border-border bg-muted/30">
           <pre className="font-mono text-sm text-foreground">{`const modal = useModal();
-// modal.isOpen   boolean
-// modal.open()   () => void
-// modal.close()  () => void
-// modal.props    { isOpen, onClose }  — spread onto Modal/Drawer`}</pre>
+// modal.isOpen    boolean
+// modal.open()    () => void
+// modal.close()   () => void
+// modal.toggle()  () => void
+// modal.props     { open: boolean, onOpenChange: (v: boolean) => void }
+//                 — spread directly onto <Modal> or <Drawer>
+
+// Example:
+const modal = useModal();
+<Button onClick={modal.open}>Open</Button>
+<Modal {...modal.props} title="Edit settings">
+  {/* content */}
+</Modal>`}</pre>
         </div>
       </section>
     </div>

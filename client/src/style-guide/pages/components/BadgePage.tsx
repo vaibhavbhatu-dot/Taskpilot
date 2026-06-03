@@ -9,14 +9,19 @@ export function BadgePage() {
         <h1 className="text-3xl font-bold text-foreground mb-3">Badge</h1>
         <p className="text-lg text-muted-foreground">
           Small labels for status indicators, counts, tags, and categories.
-          Badges have 7 semantic variants, 3 sizes, and optional dot and icon support.
+          All variants use soft muted fills so badges remain readable without competing
+          with surrounding content. 7 semantic variants + 6 ticket-status variants, 3 sizes,
+          and optional dot support.
         </p>
       </div>
 
       <section>
-        <h2 id="variants" className="text-xl font-semibold text-foreground mb-4">Variants</h2>
+        <h2 id="variants" className="text-xl font-semibold text-foreground mb-4">Semantic variants</h2>
+        <p className="text-muted-foreground mb-4">
+          Soft fills — 10% opacity background, token-colored text, and a 25% border.
+        </p>
         <DemoBlock
-          title="All 7 variants"
+          title="All 7 semantic variants"
           code={`<Badge variant="default">Default</Badge>
 <Badge variant="secondary">Secondary</Badge>
 <Badge variant="outline">Outline</Badge>
@@ -33,6 +38,31 @@ export function BadgePage() {
             <Badge variant="warning">Warning</Badge>
             <Badge variant="error">Error</Badge>
             <Badge variant="info">Info</Badge>
+          </div>
+        </DemoBlock>
+      </section>
+
+      <section>
+        <h2 id="ticket-status" className="text-xl font-semibold text-foreground mb-4">Ticket-status variants</h2>
+        <p className="text-muted-foreground mb-4">
+          Purpose-built for TaskPilot's ticket pipeline. Each maps to a specific workflow stage.
+        </p>
+        <DemoBlock
+          title="Ticket-status variants"
+          code={`<Badge variant="backlog">Backlog</Badge>
+<Badge variant="requirements">Requirements</Badge>
+<Badge variant="design">Design</Badge>
+<Badge variant="in-development">On Development</Badge>
+<Badge variant="qa">QA</Badge>
+<Badge variant="live">Live</Badge>`}
+        >
+          <div className="flex flex-wrap gap-3">
+            <Badge variant="backlog">Backlog</Badge>
+            <Badge variant="requirements">Requirements</Badge>
+            <Badge variant="design">Design</Badge>
+            <Badge variant="in-development">On Development</Badge>
+            <Badge variant="qa">QA</Badge>
+            <Badge variant="live">Live</Badge>
           </div>
         </DemoBlock>
       </section>
@@ -118,13 +148,19 @@ export function BadgePage() {
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                ['default',   'Generic tags, unimportant counts'],
-                ['secondary', 'Type tags (Task, Bug), neutral labels'],
-                ['outline',   'Low priority, optional fields, inactive'],
-                ['success',   'Live tickets, active sprints, completed'],
-                ['warning',   'In-progress, pending review, UAT'],
-                ['error',     'Bugs, critical priority, blocked'],
-                ['info',      'Requirements, Design phase, HTML phase'],
+                ['default',          'Generic tags, unimportant counts'],
+                ['secondary',        'Type tags (Task, Bug), neutral labels'],
+                ['outline',          'LOW priority, optional fields, inactive'],
+                ['success',          'Active sprints, completed actions'],
+                ['warning',          'HIGH priority, UAT, attention needed'],
+                ['error',            'CRITICAL priority, blocked, bugs'],
+                ['info',             'HTML phase, general informational'],
+                ['backlog',          'BACKLOG status'],
+                ['requirements',     'REQUIREMENTS status'],
+                ['design',           'DESIGN / QA status'],
+                ['in-development',   'ON_DEVELOPMENT status'],
+                ['qa',               'QA status'],
+                ['live',             'LIVE status'],
               ].map(([v, u]) => (
                 <tr key={v} className="hover:bg-muted/30">
                   <td className="px-4 py-2.5">
@@ -151,7 +187,7 @@ export function BadgePage() {
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                ['variant', '"default" | "secondary" | "outline" | "success" | "warning" | "error" | "info"', '"default"', 'Color scheme'],
+                ['variant', '"default" | "secondary" | "outline" | "success" | "warning" | "error" | "info" | "design" | "backlog" | "in-development" | "qa" | "live" | "requirements"', '"default"', 'Color scheme'],
                 ['size',    '"sm" | "md" | "lg"', '"md"', 'Padding and font size'],
                 ['dot',     'boolean', 'false', 'Prepends a colored status dot'],
               ].map(([p,t,d,desc]) => (

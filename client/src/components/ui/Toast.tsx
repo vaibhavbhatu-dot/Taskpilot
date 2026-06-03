@@ -29,49 +29,45 @@ function Toast({ id, type, message, onRemove }: ToastItemProps) {
 
   const config = {
     success: {
-      bg: '#F0FDF4',
-      border: '#22C55E',
-      text: '#166534',
-      icon: <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />,
+      bgCls:   'bg-[hsl(var(--color-success))]/10',
+      border:  'hsl(var(--color-success))',
+      textCls: 'text-[hsl(var(--color-success))]',
+      icon:    <CheckCircle className="w-4 h-4 flex-shrink-0 text-[hsl(var(--color-success))]" />,
     },
     error: {
-      bg: '#FEF2F2',
-      border: '#EF4444',
-      text: '#991B1B',
-      icon: <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />,
+      bgCls:   'bg-destructive/10',
+      border:  'hsl(var(--destructive))',
+      textCls: 'text-destructive',
+      icon:    <AlertCircle className="w-4 h-4 flex-shrink-0 text-destructive" />,
     },
     info: {
-      bg: '#EFF6FF',
-      border: '#3B82F6',
-      text: '#1E40AF',
-      icon: <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />,
+      bgCls:   'bg-[hsl(var(--color-info))]/10',
+      border:  'hsl(var(--color-info))',
+      textCls: 'text-[hsl(var(--color-info))]',
+      icon:    <Info className="w-4 h-4 flex-shrink-0 text-[hsl(var(--color-info))]" />,
     },
     warning: {
-      bg: '#FFFBEB',
-      border: '#F59E0B',
-      text: '#92400E',
-      icon: <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />,
+      bgCls:   'bg-[hsl(var(--color-warning))]/10',
+      border:  'hsl(var(--color-warning))',
+      textCls: 'text-[hsl(var(--color-warning))]',
+      icon:    <AlertTriangle className="w-4 h-4 flex-shrink-0 text-[hsl(var(--color-warning))]" />,
     },
   }[type];
 
   return (
     <div
-      className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl min-w-[280px] max-w-[360px] animate-slide-up"
-      style={{
-        backgroundColor: config.bg,
-        borderLeft: `3px solid ${config.border}`,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-      }}
+      className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl min-w-[280px] max-w-[360px] animate-slide-up shadow-lg ${config.bgCls}`}
+      style={{ borderLeft: `3px solid ${config.border}` }}
     >
       {config.icon}
-      <span className="flex-1 text-[13px] font-medium" style={{ color: config.text }}>
+      <span className={`flex-1 text-[13px] font-medium ${config.textCls}`}>
         {message}
       </span>
       <button
         onClick={() => onRemove(id)}
         className="p-0.5 rounded hover:bg-black/10 transition-colors flex-shrink-0"
       >
-        <X className="w-3.5 h-3.5" style={{ color: config.text }} />
+        <X className={`w-3.5 h-3.5 ${config.textCls}`} />
       </button>
     </div>
   );

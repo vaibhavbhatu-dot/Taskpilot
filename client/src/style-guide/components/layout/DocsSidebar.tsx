@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search, X, Moon, Sun } from 'lucide-react';
 import { Badge } from '@/design-system';
 import { navGroups, type NavGroup } from '../../data/navItems';
 
 interface DocsSidebarProps {
-  onClose?: () => void;
+  onClose?:       () => void;
+  dark?:          boolean;
+  onToggleDark?:  () => void;
 }
 
-export function DocsSidebar({ onClose }: DocsSidebarProps) {
+export function DocsSidebar({ onClose, dark, onToggleDark }: DocsSidebarProps) {
   const [query,    setQuery]    = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     foundations: true,
@@ -119,6 +121,22 @@ export function DocsSidebar({ onClose }: DocsSidebarProps) {
           </p>
         )}
       </nav>
+
+      {/* Bottom: dark mode toggle — always pinned */}
+      {onToggleDark && (
+        <div className="flex-shrink-0 px-3 py-3 border-t border-border">
+          <button
+            onClick={onToggleDark}
+            aria-label="Toggle dark mode"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            {dark
+              ? <><Sun className="w-4 h-4" /> Light mode</>
+              : <><Moon className="w-4 h-4" /> Dark mode</>
+            }
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

@@ -23,7 +23,7 @@ export function DocsLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex h-screen overflow-hidden">
 
       {/* ── Mobile top bar ── */}
       <header className="lg:hidden flex items-center justify-between px-4 h-12 border-b border-border bg-card sticky top-0 z-30">
@@ -61,27 +61,14 @@ export function DocsLayout() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left sidebar — desktop only */}
-        <div className="hidden lg:flex flex-col h-screen sticky top-0 overflow-y-auto">
-          <DocsSidebar />
-          {/* Dark mode toggle at bottom */}
-          <div className="px-3 py-3 border-t border-border">
-            <button
-              onClick={() => setDark(d => !d)}
-              aria-label="Toggle dark mode"
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              {dark
-                ? <><Sun className="w-4 h-4" /> Light mode</>
-                : <><Moon className="w-4 h-4" /> Dark mode</>
-              }
-            </button>
-          </div>
+        <div className="hidden lg:flex flex-shrink-0 h-screen overflow-y-auto sticky top-0">
+          <DocsSidebar dark={dark} onToggleDark={() => setDark(d => !d)} />
         </div>
 
         {/* Center content */}
         <main
           id="docs-content"
-          className="flex-1 min-w-0 overflow-y-auto"
+          className="flex-1 min-w-0 h-screen overflow-y-auto"
         >
           <div className="max-w-3xl mx-auto px-6 lg:px-10 py-10">
             <Outlet />
@@ -89,7 +76,7 @@ export function DocsLayout() {
         </main>
 
         {/* Right nav — desktop only */}
-        <div className="hidden lg:block px-6 py-10">
+        <div className="hidden lg:block flex-shrink-0 h-screen overflow-y-auto sticky top-0 px-6 py-10">
           <DocsRightNav />
         </div>
 

@@ -28,7 +28,7 @@ import { MembersPage } from './pages/Members';
 import { ProjectsPage } from './pages/Projects';
 import { MyWorkPage } from './pages/MyWork';
 import { NotFoundPage } from './pages/NotFound';
-import { StyleGuidePage } from './pages/StyleGuide';
+import { StyleGuideRouter } from './style-guide';
 import { Toaster } from './components/ui/sonner';
 
 const queryClient = new QueryClient({
@@ -119,7 +119,7 @@ function App() {
         <AppInitializer>
           <Routes>
             {/* Developer tools — no auth guard */}
-            <Route path="/style-guide" element={<StyleGuidePage />} />
+            <Route path="/style-guide/*" element={<StyleGuideRouter />} />
 
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />

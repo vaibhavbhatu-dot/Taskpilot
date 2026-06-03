@@ -67,12 +67,13 @@ if (await ticketsNav.count() > 0) {
 }
 
 // ── 4. Board page ──────────────────────────────────────────────────────────
-const boardNav = page.locator('nav a, aside a').filter({ hasText: /board/i }).first();
+const boardNav = page.locator('aside a').filter({ hasText: /kanban board/i }).first();
 if (await boardNav.count() > 0) {
   await boardNav.click();
+  await page.waitForURL(url => url.href.includes('/board'), { timeout: 8_000 }).catch(() => {});
   await page.waitForTimeout(2000);
   await page.screenshot({ path: `${OUT}/app-04-board.png` });
-  console.log('04 board page captured');
+  console.log('04 board page captured —', page.url());
 }
 
 // ── 5. Members page ────────────────────────────────────────────────────────

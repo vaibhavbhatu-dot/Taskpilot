@@ -1,4 +1,4 @@
-import { useMyWorkTeams, useMyWorkMembers } from '../../hooks/useMyWork';
+﻿import { useMyWorkTeams, useMyWorkMembers } from '../../hooks/useMyWork';
 
 interface MyWorkFiltersProps {
   teamId: string;
@@ -21,7 +21,7 @@ export function MyWorkFilters({ teamId, memberId, onTeamChange, onMemberChange, 
           onMemberChange('');
         }}
         disabled={isManager}
-        className="h-9 px-3 text-[13px] border border-[#E2E8F0] rounded-lg bg-white text-[#0F172A] focus:ring-1 focus:ring-[#2563EB] outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+        className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary outline-none disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {!isManager && <option value="">All Teams</option>}
         {(teams as any[]).map((t: any) => (
@@ -32,7 +32,7 @@ export function MyWorkFilters({ teamId, memberId, onTeamChange, onMemberChange, 
       <select
         value={memberId}
         onChange={(e) => onMemberChange(e.target.value)}
-        className="h-9 px-3 text-[13px] border border-[#E2E8F0] rounded-lg bg-white text-[#0F172A] focus:ring-1 focus:ring-[#2563EB] outline-none min-w-[200px]"
+        className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary outline-none min-w-[200px]"
       >
         <option value="">All Members</option>
         {(members as any[]).map((m: any) => (

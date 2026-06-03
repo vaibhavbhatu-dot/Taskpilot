@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Calendar as CalendarIcon, Target, TrendingUp, BarChart3, CheckCircle2, Clock } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -6,15 +6,14 @@ import { sprintsApi, ticketsApi, dashboardApi } from '../api';
 import type { Sprint, Ticket, VelocityData } from '../types';
 
 import { STATUS_CONFIG } from '../constants/ticketStatus';
+import { Badge, getInitials } from '@/design-system';
 
-const getInitials = (name: string) =>
-  name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-const PRIORITY_COLORS: Record<string, { dot: string; label: string }> = {
-  CRITICAL: { dot: 'bg-red-500', label: 'Critical' },
-  HIGH:     { dot: 'bg-orange-500', label: 'High' },
-  MEDIUM:   { dot: 'bg-yellow-400', label: 'Medium' },
-  LOW:      { dot: 'bg-gray-400', label: 'Low' },
+type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
+const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'secondary', LOW: 'outline',
+};
+const PRIORITY_LABEL: Record<string, string> = {
+  CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
 };
 
 export function SprintReportsPage() {
@@ -137,8 +136,8 @@ export function SprintReportsPage() {
         <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-6">
           <BarChart3 className="w-8 h-8" />
         </div>
-        <h2 className="text-[24px] font-semibold text-[#0F172A] mb-2">No Sprint Data</h2>
-        <p className="text-[15px] text-[#64748B] mb-8 max-w-sm">
+        <h2 className="text-[24px] font-semibold text-foreground mb-2">No Sprint Data</h2>
+        <p className="text-[15px] text-muted-foreground mb-8 max-w-sm">
           There are no sprints available for reporting.
         </p>
       </div>
@@ -154,7 +153,7 @@ export function SprintReportsPage() {
           <select
             value={selectedSprintId}
             onChange={(e) => setSelectedSprintId(e.target.value)}
-            className="w-full h-10 px-3 text-[14px] font-medium border border-[#E2E8F0] rounded-lg bg-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-shadow shadow-sm"
+            className="w-full h-10 px-3 text-[14px] font-medium border border-border rounded-lg bg-card outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-shadow shadow-sm"
           >
             {sprints.map(s => (
               <option key={s.id} value={s.id}>{s.name} {s.status === 'ACTIVE' ? '(Active)' : s.status === 'COMPLETED' ? '(Done)' : '(Planned)'}</option>
@@ -164,62 +163,62 @@ export function SprintReportsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64 border border-[#E2E8F0] rounded-xl bg-white shadow-sm">
+        <div className="flex items-center justify-center h-64 border border-border rounded-xl bg-card shadow-sm">
            <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
         </div>
       ) : selectedSprint ? (
         <div className="space-y-6">
           
           {/* Sprint Summary Card */}
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-            <div className="flex justify-between items-start mb-5 pb-5 border-b border-[#E2E8F0]">
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+            <div className="flex justify-between items-start mb-5 pb-5 border-b border-border">
               <div>
-                <h2 className="text-[18px] font-semibold text-[#0F172A]">{selectedSprint.name}</h2>
+                <h2 className="text-[18px] font-semibold text-foreground">{selectedSprint.name}</h2>
                 {selectedSprint.startDate && selectedSprint.endDate && (
-                  <span className="text-[14px] text-[#64748B] mt-1 flex items-center gap-1.5">
+                  <span className="text-[14px] text-muted-foreground mt-1 flex items-center gap-1.5">
                     <CalendarIcon className="w-4 h-4" />
                     {new Date(selectedSprint.startDate).toLocaleDateString()} — {new Date(selectedSprint.endDate).toLocaleDateString()}
                   </span>
                 )}
               </div>
               {selectedSprint.goal && (
-                <div className="bg-[#F1F5F9] px-4 py-2.5 rounded-lg max-w-sm text-right">
-                  <div className="flex items-center justify-end gap-1.5 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider mb-1">
+                <div className="bg-muted px-4 py-2.5 rounded-lg max-w-sm text-right">
+                  <div className="flex items-center justify-end gap-1.5 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                     <Target className="w-3.5 h-3.5" /> Sprint Goal
                   </div>
-                  <p className="text-[13px] text-[#0F172A] italic">{selectedSprint.goal}</p>
+                  <p className="text-[13px] text-foreground italic">{selectedSprint.goal}</p>
                 </div>
               )}
             </div>
             
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Total Issues</p>
-                <p className="text-[24px] font-semibold text-[#0F172A]">{tickets.length}</p>
+                <p className="text-[12px] font-medium text-muted-foreground mb-1">Total Issues</p>
+                <p className="text-[24px] font-semibold text-foreground">{tickets.length}</p>
               </div>
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Completed</p>
-                <p className="text-[24px] font-semibold text-[#10B981]">{tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length}</p>
+                <p className="text-[12px] font-medium text-muted-foreground mb-1">Completed</p>
+                <p className="text-[24px] font-semibold text-[hsl(var(--color-success))]">{tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length}</p>
               </div>
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Completion Rate</p>
-                <p className="text-[24px] font-semibold text-[#0F172A]">
+                <p className="text-[12px] font-medium text-muted-foreground mb-1">Completion Rate</p>
+                <p className="text-[24px] font-semibold text-foreground">
                   {tickets.length > 0
                     ? Math.round((tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length / tickets.length) * 100)
                     : 0}%
                 </p>
               </div>
               <div>
-                <p className="text-[12px] font-medium text-[#64748B] mb-1">Remaining</p>
-                <p className="text-[24px] font-semibold text-[#F59E0B]">{tickets.filter(t => t.status !== 'LIVE' && t.status !== 'NOT_REQUIRED').length}</p>
+                <p className="text-[12px] font-medium text-muted-foreground mb-1">Remaining</p>
+                <p className="text-[24px] font-semibold text-[hsl(var(--color-warning))]">{tickets.filter(t => t.status !== 'LIVE' && t.status !== 'NOT_REQUIRED').length}</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-12 gap-6">
             {/* Status Breakdown */}
-            <div className="col-span-4 bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm flex flex-col">
-              <h3 className="text-[15px] font-semibold text-[#0F172A] mb-4">Issue Status</h3>
+            <div className="col-span-4 bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col">
+              <h3 className="text-[15px] font-semibold text-foreground mb-4">Issue Status</h3>
               <div className="flex-1 min-h-[250px] flex flex-col justify-center items-center relative">
                 {pieData.length > 0 ? (
                   <>
@@ -245,7 +244,7 @@ export function SprintReportsPage() {
                   {/* Legend */}
                   <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
                     {pieData.map(d => (
-                      <div key={d.name} className="flex items-center gap-1.5 text-[12px] text-[#475569] font-medium">
+                      <div key={d.name} className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
                         {d.name} ({d.value})
                       </div>
@@ -253,7 +252,7 @@ export function SprintReportsPage() {
                   </div>
                   </>
                 ) : (
-                  <div className="text-[13px] text-[#64748B]">No issues in sprint</div>
+                  <div className="text-[13px] text-muted-foreground">No issues in sprint</div>
                 )}
               </div>
             </div>
@@ -261,37 +260,37 @@ export function SprintReportsPage() {
           
           <div className="grid grid-cols-12 gap-6">
             {/* Individual Performance Table */}
-            <div className="col-span-8 bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-              <h3 className="text-[15px] font-semibold text-[#0F172A] mb-4">Team Performance</h3>
+            <div className="col-span-8 bg-card border border-border rounded-xl p-5 shadow-sm">
+              <h3 className="text-[15px] font-semibold text-foreground mb-4">Team Performance</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-[#E2E8F0]">
-                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Member</th>
-                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-center">Assigned</th>
-                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-center">Completed</th>
-                      <th className="pb-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-right">Completion %</th>
+                    <tr className="border-b border-border">
+                      <th className="pb-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Member</th>
+                      <th className="pb-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Assigned</th>
+                      <th className="pb-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Completed</th>
+                      <th className="pb-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Completion %</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E2E8F0]">
+                  <tbody className="divide-y divide-border">
                     {performanceStats.map(stat => (
-                      <tr key={stat.user.id} className="hover:bg-[#F8FAFC]">
+                      <tr key={stat.user.id} className="hover:bg-muted/50">
                         <td className="py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
                               {stat.user.avatar ? (
                                 <img src={stat.user.avatar} className="w-8 h-8 rounded-full object-cover" alt="" />
                               ) : (
-                                <span className="text-[11px] font-bold text-[#2563EB]">{getInitials(stat.user.fullName)}</span>
+                                <span className="text-[11px] font-bold text-primary">{getInitials(stat.user.fullName)}</span>
                               )}
                             </div>
-                            <span className="text-[14px] font-medium text-[#0F172A]">{stat.user.fullName}</span>
+                            <span className="text-[14px] font-medium text-foreground">{stat.user.fullName}</span>
                           </div>
                         </td>
-                        <td className="py-3 text-center text-[14px] text-[#0F172A] font-medium">{stat.assignedCount}</td>
-                        <td className="py-3 text-center text-[14px] text-[#10B981] font-medium">{stat.completedCount}</td>
+                        <td className="py-3 text-center text-[14px] text-foreground font-medium">{stat.assignedCount}</td>
+                        <td className="py-3 text-center text-[14px] text-[hsl(var(--color-success))] font-medium">{stat.completedCount}</td>
                         <td className="py-3 text-right">
-                          <span className={`text-[14px] font-bold ${stat.completionPct >= 80 ? 'text-[#10B981]' : stat.completionPct < 50 ? 'text-[#EF4444]' : 'text-[#F59E0B]'}`}>
+                          <span className={`text-[14px] font-bold ${stat.completionPct >= 80 ? 'text-[hsl(var(--color-success))]' : stat.completionPct < 50 ? 'text-destructive' : 'text-[hsl(var(--color-warning))]'}`}>
                             {stat.completionPct}%
                           </span>
                         </td>
@@ -299,7 +298,7 @@ export function SprintReportsPage() {
                     ))}
                     {performanceStats.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-[#64748B] text-[13px]">No assignments found for this sprint.</td>
+                        <td colSpan={4} className="py-8 text-center text-muted-foreground text-[13px]">No assignments found for this sprint.</td>
                       </tr>
                     )}
                   </tbody>
@@ -308,12 +307,12 @@ export function SprintReportsPage() {
             </div>
 
             {/* Velocity Chart */}
-            <div className="col-span-4 bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-              <h3 className="text-[15px] font-semibold text-[#0F172A] mb-1 flex items-center justify-between">
+            <div className="col-span-4 bg-card border border-border rounded-xl p-5 shadow-sm">
+              <h3 className="text-[15px] font-semibold text-foreground mb-1 flex items-center justify-between">
                 Velocity Trend
-                <TrendingUp className="w-4 h-4 text-[#64748B]" />
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
               </h3>
-              <p className="text-[12px] text-[#64748B] mb-5">Comparing last 6 sprints</p>
+              <p className="text-[12px] text-muted-foreground mb-5">Comparing last 6 sprints</p>
               
               <div className="h-[250px]">
                 {velocityData && velocityData.velocity.length > 0 ? (
@@ -338,14 +337,14 @@ export function SprintReportsPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[13px] text-[#64748B]">No velocity data available</div>
+                  <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">No velocity data available</div>
                 )}
               </div>
               
               {velocityData && velocityData.avgVelocity > 0 && (
-                <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex justify-between items-center text-[13px]">
-                  <span className="text-[#64748B] font-medium">Average Velocity:</span>
-                  <span className="font-semibold text-[#0F172A]">{Math.round(velocityData.avgVelocity)} tickets</span>
+                <div className="mt-4 pt-4 border-t border-border flex justify-between items-center text-[13px]">
+                  <span className="text-muted-foreground font-medium">Average Velocity:</span>
+                  <span className="font-semibold text-foreground">{Math.round(velocityData.avgVelocity)} tickets</span>
                 </div>
               )}
             </div>
@@ -354,15 +353,15 @@ export function SprintReportsPage() {
 
           {/* Sprint Tickets */}
           {tickets.length > 0 && (
-            <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
-                <h3 className="text-[15px] font-semibold text-[#0F172A]">Sprint Tickets</h3>
+            <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-[15px] font-semibold text-foreground">Sprint Tickets</h3>
                 <div className="flex items-center gap-4 text-[13px]">
-                  <span className="flex items-center gap-1.5 text-[#10B981] font-medium">
+                  <span className="flex items-center gap-1.5 text-[hsl(var(--color-success))] font-medium">
                     <CheckCircle2 className="w-4 h-4" />
                     {completedTickets.length} completed
                   </span>
-                  <span className="flex items-center gap-1.5 text-[#F59E0B] font-medium">
+                  <span className="flex items-center gap-1.5 text-[hsl(var(--color-warning))] font-medium">
                     <Clock className="w-4 h-4" />
                     {remainingTickets.length} remaining
                   </span>
@@ -370,26 +369,26 @@ export function SprintReportsPage() {
               </div>
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                    <th className="px-5 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Title</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Priority</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Type</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Assignee</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Completed</th>
+                  <tr className="bg-muted/50 border-b border-border">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Title</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Priority</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Assignee</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Completed</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F1F5F9]">
+                <tbody className="divide-y divide-border">
                   {[...completedTickets, ...remainingTickets].map((ticket, i) => {
                     const statusCfg = STATUS_CONFIG[ticket.status as keyof typeof STATUS_CONFIG];
-                    const priorityCfg = PRIORITY_COLORS[ticket.priority] || PRIORITY_COLORS.MEDIUM;
+                    const priorityVariant = PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary';
                     const isDone = ticket.status === 'LIVE' || ticket.status === 'NOT_REQUIRED';
                     return (
-                      <tr key={ticket.id} className={`hover:bg-[#F8FAFC] transition-colors ${i % 2 === 1 ? 'bg-[#FAFAFA]' : ''}`}>
+                      <tr key={ticket.id} className={`hover:bg-muted/50 transition-colors ${i % 2 === 1 ? 'bg-muted/30' : ''}`}>
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
-                            {isDone && <CheckCircle2 className="w-4 h-4 text-[#10B981] flex-shrink-0" />}
-                            <span className={`text-[14px] font-medium ${isDone ? 'text-[#64748B] line-through' : 'text-[#0F172A]'}`}>
+                            {isDone && <CheckCircle2 className="w-4 h-4 text-[hsl(var(--color-success))] flex-shrink-0" />}
+                            <span className={`text-[14px] font-medium ${isDone ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                               {ticket.title}
                             </span>
                           </div>
@@ -406,36 +405,35 @@ export function SprintReportsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
-                            <span className={`w-2 h-2 rounded-full ${priorityCfg.dot}`} />
-                            <span className="text-[13px] text-[#475569]">{priorityCfg.label}</span>
+                            <Badge variant={priorityVariant} size="sm">{PRIORITY_LABEL[ticket.priority] ?? ticket.priority}</Badge>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-[13px] text-[#475569] capitalize">{ticket.type?.toLowerCase().replace('_', ' ') || '—'}</span>
+                          <span className="text-[13px] text-muted-foreground capitalize">{ticket.type?.toLowerCase().replace('_', ' ') || '—'}</span>
                         </td>
                         <td className="px-4 py-3">
                           {ticket.assignedTo ? (
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                              <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
                                 {ticket.assignedTo.avatar ? (
                                   <img src={ticket.assignedTo.avatar} className="w-6 h-6 rounded-full object-cover" alt="" />
                                 ) : (
-                                  <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(ticket.assignedTo.fullName)}</span>
+                                  <span className="text-[9px] font-bold text-primary">{getInitials(ticket.assignedTo.fullName)}</span>
                                 )}
                               </div>
-                              <span className="text-[13px] text-[#475569]">{ticket.assignedTo.fullName}</span>
+                              <span className="text-[13px] text-muted-foreground">{ticket.assignedTo.fullName}</span>
                             </div>
                           ) : (
-                            <span className="text-[13px] text-[#94A3B8]">Unassigned</span>
+                            <span className="text-[13px] text-muted-foreground">Unassigned</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
                           {ticket.completedAt ? (
-                            <span className="text-[13px] text-[#475569]">
+                            <span className="text-[13px] text-muted-foreground">
                               {new Date(ticket.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           ) : (
-                            <span className="text-[13px] text-[#94A3B8]">—</span>
+                            <span className="text-[13px] text-muted-foreground">—</span>
                           )}
                         </td>
                       </tr>

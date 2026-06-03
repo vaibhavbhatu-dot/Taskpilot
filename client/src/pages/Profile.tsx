@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Camera, Check, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../stores';
 import { usersApi, teamsApi } from '../api';
@@ -7,9 +7,9 @@ import type { User, Team } from '../types';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
-  MANAGER: { bg: 'bg-[#DBEAFE]', text: 'text-[#2563EB]' },
+  MANAGER: { bg: 'bg-primary/15', text: 'text-primary' },
   PROJECT_MANAGER: { bg: 'bg-indigo-100', text: 'text-indigo-600' },
-  MEMBER: { bg: 'bg-[#F1F5F9]', text: 'text-[#64748B]' },
+  MEMBER: { bg: 'bg-muted', text: 'text-muted-foreground' },
 };
 
 export function ProfilePage() {
@@ -78,18 +78,18 @@ export function ProfilePage() {
       <PageHeader title="My Profile" />
       <div className="flex justify-center">
         <div className="w-full max-w-[600px]">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
+        <div className="bg-card rounded-xl border border-border p-8">
           {/* Avatar */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-[#DBEAFE] flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center">
                 {user.avatar ? (
                   <img src={user.avatar} alt="" className="w-20 h-20 rounded-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-semibold text-[#2563EB]">{getInitials(user.fullName)}</span>
+                  <span className="text-2xl font-semibold text-primary">{getInitials(user.fullName)}</span>
                 )}
               </div>
-              <button className="absolute bottom-0 right-0 w-7 h-7 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-full flex items-center justify-center transition-colors">
+              <button className="absolute bottom-0 right-0 w-7 h-7 bg-primary hover:bg-primary/90 text-white rounded-full flex items-center justify-center transition-colors">
                 <Camera className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -129,7 +129,7 @@ export function ProfilePage() {
                 type="email"
                 value={user.email}
                 readOnly
-                className="input bg-[#F8FAFC] text-[#94A3B8] cursor-not-allowed"
+                className="input bg-muted/50 text-muted-foreground cursor-not-allowed"
               />
             </div>
 
@@ -173,7 +173,7 @@ export function ProfilePage() {
                 type="text"
                 value={team?.name || 'Not assigned'}
                 readOnly
-                className="input bg-[#F8FAFC] text-[#94A3B8] cursor-not-allowed"
+                className="input bg-muted/50 text-muted-foreground cursor-not-allowed"
               />
             </div>
 

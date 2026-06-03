@@ -1,17 +1,19 @@
-import { useEffect, useState, useRef } from 'react';
+﻿import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Tag as TagIcon, Clock, Users, Paperclip, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
 import { ticketsApi, commentsApi, usersApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Ticket, Comment, TicketHistory, TicketPriority, User, Team } from '../types';
 import { TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
+import { Badge, Button, getInitials } from '@/design-system';
 
 const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS: TicketPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-
-const getInitials = (name: string) =>
-  name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
+const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'secondary', LOW: 'outline',
+};
 
 const isOverdue = (d: string, status: string) =>
   new Date(d) < new Date() && status !== 'DEPLOYED';
@@ -230,7 +232,7 @@ export function TicketDetailPage() {
   if (!ticket) {
     return (
       <div className="text-center py-12">
-        <p className="text-[#64748B]">Ticket not found</p>
+        <p className="text-muted-foreground">Ticket not found</p>
         <button onClick={() => navigate('/tickets')} className="btn-primary mt-4">Back to Tickets</button>
       </div>
     );
@@ -240,18 +242,18 @@ export function TicketDetailPage() {
     <div className="animate-fade-in relative">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[#10B981] text-white px-4 py-3 rounded-xl text-[14px] font-medium shadow-lg flex items-center gap-2 animate-fade-in">
+        <div className="fixed top-6 right-6 z-[100] bg-[hsl(var(--color-success))] text-white px-4 py-3 rounded-xl text-[14px] font-medium shadow-lg flex items-center gap-2 animate-fade-in">
           <Check className="w-4 h-4" /> {toast}
         </div>
       )}
 
       {/* Breadcrumb & Back */}
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => navigate('/tickets')} className="text-[#64748B] hover:text-[#0F172A] text-sm font-medium flex items-center gap-1 transition-colors">
+        <button onClick={() => navigate('/tickets')} className="text-muted-foreground hover:text-foreground text-sm font-medium flex items-center gap-1 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Tickets
         </button>
-        <span className="text-[#CBD5E1]">/</span>
-        <span className="text-[#2563EB] font-mono text-[13px]">{ticket.ticketNumber}</span>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-primary font-mono text-[13px]">{ticket.ticketNumber}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -261,7 +263,7 @@ export function TicketDetailPage() {
           {/* Header Section */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-[#F1F5F9] text-[#64748B]">{ticket.type}</span>
+              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-muted text-muted-foreground">{ticket.type}</span>
               <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
                 ticket.priority === 'CRITICAL' ? 'bg-red-50 text-red-600' :
                 ticket.priority === 'HIGH' ? 'bg-orange-50 text-orange-600' :
@@ -278,22 +280,22 @@ export function TicketDetailPage() {
                 onChange={e => setEditTitle(e.target.value)}
                 onBlur={saveTitle}
                 onKeyDown={e => e.key === 'Enter' && saveTitle()}
-                className="w-full text-[22px] font-semibold text-[#0F172A] outline-none border-b border-[#2563EB] bg-transparent py-1 mb-2"
+                className="w-full text-[22px] font-semibold text-foreground outline-none border-b border-primary bg-transparent py-1 mb-2"
               />
             ) : (
               <h1 
                 onClick={() => setIsEditingTitle(true)}
-                className="text-[22px] font-semibold text-[#0F172A] mb-3 cursor-text hover:bg-[#F8FAFC] rounded px-1 -mx-1 py-0.5 transition-colors"
+                className="text-[22px] font-semibold text-foreground mb-3 cursor-text hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors"
               >
                 {ticket.title}
               </h1>
             )}
 
-            <div className="flex items-center gap-2 text-[13px] text-[#64748B]">
+            <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
               <span>Created by</span>
-              <div className="flex items-center gap-1.5 font-medium text-[#0F172A]">
-                <div className="w-5 h-5 rounded-full bg-[#DBEAFE] flex items-center justify-center">
-                  <span className="text-[9px] text-[#2563EB]">{getInitials(ticket.createdBy?.fullName || 'U')}</span>
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center">
+                  <span className="text-[9px] text-primary">{getInitials(ticket.createdBy?.fullName || 'U')}</span>
                 </div>
                 {ticket.createdBy?.fullName}
               </div>
@@ -308,11 +310,11 @@ export function TicketDetailPage() {
                 return (
                   <div className="flex items-center gap-1">
                     {assignees.slice(0, 3).map((a, i) => (
-                      <div key={a.userId} className="w-5 h-5 rounded-full bg-[#DBEAFE] flex items-center justify-center border border-white" style={{ marginLeft: i > 0 ? '-4px' : 0 }} title={a.user.fullName}>
-                        <span className="text-[9px] text-[#2563EB]">{getInitials(a.user.fullName)}</span>
+                      <div key={a.userId} className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center border border-white" style={{ marginLeft: i > 0 ? '-4px' : 0 }} title={a.user.fullName}>
+                        <span className="text-[9px] text-primary">{getInitials(a.user.fullName)}</span>
                       </div>
                     ))}
-                    <span className="ml-1 font-medium text-[#0F172A]">
+                    <span className="ml-1 font-medium text-foreground">
                       {assignees.length === 1 ? assignees[0].user.fullName : `${assignees.length} assignees`}
                     </span>
                   </div>
@@ -322,8 +324,8 @@ export function TicketDetailPage() {
           </div>
 
           {/* Description Section */}
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
-            <h3 className="text-[15px] font-semibold text-[#0F172A] mb-3">Description</h3>
+          <div className="bg-card rounded-xl border border-border p-6">
+            <h3 className="text-[15px] font-semibold text-foreground mb-3">Description</h3>
             <textarea
               value={editDesc}
               onChange={(e) => {
@@ -331,7 +333,7 @@ export function TicketDetailPage() {
                 setIsDescChanged(e.target.value !== (ticket.description || ''));
               }}
               placeholder="Add a detailed description..."
-              className="w-full min-h-[120px] text-[14px] text-[#0F172A] outline-none resize-y placeholder:text-[#94A3B8]"
+              className="w-full min-h-[120px] text-[14px] text-foreground outline-none resize-y placeholder:text-muted-foreground"
             />
             {isDescChanged && (
               <div className="flex justify-end mt-3 animate-fade-in">
@@ -344,13 +346,13 @@ export function TicketDetailPage() {
 
           {/* Activity Section */}
           <div>
-            <h3 className="text-[16px] font-semibold text-[#0F172A] mb-4">Activity</h3>
+            <h3 className="text-[16px] font-semibold text-foreground mb-4">Activity</h3>
             
-            <div className="flex gap-6 border-b border-[#E2E8F0] mb-5">
+            <div className="flex gap-6 border-b border-border mb-5">
               <button
                 onClick={() => setActiveTab('comments')}
                 className={`pb-3 text-[14px] font-medium border-b-2 transition-colors ${
-                  activeTab === 'comments' ? 'border-[#2563EB] text-[#2563EB]' : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+                  activeTab === 'comments' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Comments ({comments.length})
@@ -358,7 +360,7 @@ export function TicketDetailPage() {
               <button
                 onClick={() => setActiveTab('history')}
                 className={`pb-3 text-[14px] font-medium border-b-2 transition-colors ${
-                  activeTab === 'history' ? 'border-[#2563EB] text-[#2563EB]' : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+                  activeTab === 'history' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 History ({history.length})
@@ -368,17 +370,17 @@ export function TicketDetailPage() {
             {activeTab === 'comments' ? (
               <div className="space-y-6">
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0 mt-1">
-                    <span className="text-[11px] font-semibold text-[#2563EB]">{getInitials(user?.fullName || 'U')}</span>
+                  <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="text-[11px] font-semibold text-primary">{getInitials(user?.fullName || 'U')}</span>
                   </div>
-                  <div className="flex-1 border border-[#E2E8F0] rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-shadow">
+                  <div className="flex-1 border border-border rounded-xl overflow-hidden bg-card focus-within:ring-2 focus-within:ring-ring focus-within:border-ring transition-shadow">
                     {/* Text area */}
                     <textarea
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Add a comment..."
                       onKeyDown={e => e.key === 'Enter' && e.metaKey && handleAddComment()}
-                      className="w-full px-4 pt-3 pb-2 text-[14px] text-[#0F172A] outline-none resize-none placeholder:text-[#94A3B8] min-h-[80px] bg-transparent"
+                      className="w-full px-4 pt-3 pb-2 text-[14px] text-foreground outline-none resize-none placeholder:text-muted-foreground min-h-[80px] bg-transparent"
                     />
 
                     {/* File previews */}
@@ -388,15 +390,15 @@ export function TicketDetailPage() {
                           <div key={i} className="relative group">
                             {commentPreviews[i] ? (
                               /* Image preview */
-                              <div className="w-16 h-16 rounded-lg overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC]">
+                              <div className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-muted/50">
                                 <img src={commentPreviews[i]} alt={f.name} className="w-full h-full object-cover" />
                               </div>
                             ) : (
                               /* Non-image file */
-                              <div className="flex items-center gap-2 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg max-w-[180px]">
-                                <Paperclip className="w-3.5 h-3.5 text-[#64748B] flex-shrink-0" />
-                                <span className="text-[12px] text-[#0F172A] truncate">{f.name}</span>
-                                <span className="text-[11px] text-[#94A3B8] flex-shrink-0">{formatFileSize(f.size)}</span>
+                              <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg max-w-[180px]">
+                                <Paperclip className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                <span className="text-[12px] text-foreground truncate">{f.name}</span>
+                                <span className="text-[11px] text-muted-foreground flex-shrink-0">{formatFileSize(f.size)}</span>
                               </div>
                             )}
                             {/* Remove button */}
@@ -406,7 +408,7 @@ export function TicketDetailPage() {
                             >×</button>
                             {/* Filename tooltip on image */}
                             {commentPreviews[i] && (
-                              <p className="text-[10px] text-[#94A3B8] mt-0.5 text-center truncate max-w-[64px]">{f.name}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5 text-center truncate max-w-[64px]">{f.name}</p>
                             )}
                           </div>
                         ))}
@@ -414,30 +416,30 @@ export function TicketDetailPage() {
                     )}
 
                     {/* Toolbar */}
-                    <div className="flex items-center justify-between px-3 py-2 border-t border-[#F1F5F9] bg-[#F8FAFC]">
+                    <div className="flex items-center justify-between px-3 py-2 border-t border-muted bg-muted/50">
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => commentFileRef.current?.click()}
-                          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[12px] font-medium text-[#64748B] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors"
+                          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                           title="Attach file"
                         >
                           <Paperclip className="w-3.5 h-3.5" />
                           Attach
                           {commentFiles.length > 0 && (
-                            <span className="ml-0.5 w-4 h-4 rounded-full bg-[#2563EB] text-white text-[10px] flex items-center justify-center">
+                            <span className="ml-0.5 w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center">
                               {commentFiles.length}
                             </span>
                           )}
                         </button>
                         <input ref={commentFileRef} type="file" multiple className="hidden"
                           onChange={e => handleCommentFileSelect(e.target.files)} />
-                        <span className="text-[11px] text-[#94A3B8] ml-1">⌘+Enter to post</span>
+                        <span className="text-[11px] text-muted-foreground ml-1">⌘+Enter to post</span>
                       </div>
                       <button
                         onClick={handleAddComment}
                         disabled={!newComment.trim() && commentFiles.length === 0}
-                        className="h-7 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="h-7 px-4 bg-primary hover:bg-primary/90 text-white text-[13px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Post
                       </button>
@@ -448,18 +450,18 @@ export function TicketDetailPage() {
                 <div className="space-y-5">
                   {comments.map((comment) => (
                     <div key={comment.id} className="flex gap-4">
-                      <div className="w-8 h-8 rounded-full bg-[#F1F5F9] flex items-center justify-center flex-shrink-0">
-                        <span className="text-[11px] font-semibold text-[#64748B]">{getInitials(comment.author?.fullName || 'U')}</span>
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <span className="text-[11px] font-semibold text-muted-foreground">{getInitials(comment.author?.fullName || 'U')}</span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[14px] font-medium text-[#0F172A]">{comment.author?.fullName}</span>
-                          <span className="text-[12px] text-[#64748B]">
+                          <span className="text-[14px] font-medium text-foreground">{comment.author?.fullName}</span>
+                          <span className="text-[12px] text-muted-foreground">
                             {new Date(comment.createdAt).toLocaleDateString()} {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                         {comment.content !== '📎 Attached files' && (
-                          <p className="text-[14px] text-[#0F172A] whitespace-pre-wrap">{comment.content}</p>
+                          <p className="text-[14px] text-foreground whitespace-pre-wrap">{comment.content}</p>
                         )}
                         {comment.attachments && comment.attachments.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
@@ -467,15 +469,15 @@ export function TicketDetailPage() {
                               const isImage = a.mimeType?.startsWith('image/');
                               return isImage ? (
                                 <a key={a.id} href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
-                                  className="block w-24 h-24 rounded-lg overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] hover:opacity-90 transition-opacity flex-shrink-0">
+                                  className="block w-24 h-24 rounded-lg overflow-hidden border border-border bg-muted/50 hover:opacity-90 transition-opacity flex-shrink-0">
                                   <img src={`http://localhost:5000${a.url}`} alt={a.originalName} className="w-full h-full object-cover" />
                                 </a>
                               ) : (
                                 <a key={a.id} href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
-                                  className="flex items-center gap-2 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg hover:border-[#2563EB] hover:bg-[#EFF6FF] transition-colors max-w-[220px]">
-                                  <Paperclip className="w-3.5 h-3.5 text-[#64748B] flex-shrink-0" />
-                                  <span className="text-[12px] text-[#0F172A] truncate">{a.originalName}</span>
-                                  <span className="text-[11px] text-[#94A3B8] flex-shrink-0">{formatFileSize(a.size)}</span>
+                                  className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg hover:border-primary hover:bg-primary/10 transition-colors max-w-[220px]">
+                                  <Paperclip className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                  <span className="text-[12px] text-foreground truncate">{a.originalName}</span>
+                                  <span className="text-[11px] text-muted-foreground flex-shrink-0">{formatFileSize(a.size)}</span>
                                 </a>
                               );
                             })}
@@ -490,18 +492,18 @@ export function TicketDetailPage() {
               <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
                 {history.map((entry) => (
                   <div key={entry.id} className="relative flex items-start justify-between gap-4 py-3">
-                    <div className="absolute left-0 w-6 h-6 rounded-full bg-[#EFF6FF] border-2 border-white flex items-center justify-center shadow-sm z-10">
-                       <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
+                    <div className="absolute left-0 w-6 h-6 rounded-full bg-primary/10 border-2 border-card flex items-center justify-center shadow-sm z-10">
+                       <span className="w-2 h-2 rounded-full bg-[hsl(var(--color-info))]" />
                     </div>
                     <div className="pl-10 w-full flex items-center justify-between">
                       <div className="text-[13px]">
-                        <span className="font-medium text-[#0F172A]">{entry.changedBy?.fullName}</span>
-                        <span className="text-[#64748B]"> changed {entry.fieldChanged} </span>
-                        {entry.oldValue && <span className="text-[#94A3B8] line-through">{entry.oldValue.replace(/_/g, ' ')}</span>}
-                        {entry.oldValue && entry.newValue && <span className="text-[#94A3B8] mx-1">→</span>}
-                        {entry.newValue && <span className="font-medium text-[#0F172A]">{entry.newValue.replace(/_/g, ' ')}</span>}
+                        <span className="font-medium text-foreground">{entry.changedBy?.fullName}</span>
+                        <span className="text-muted-foreground"> changed {entry.fieldChanged} </span>
+                        {entry.oldValue && <span className="text-muted-foreground line-through">{entry.oldValue.replace(/_/g, ' ')}</span>}
+                        {entry.oldValue && entry.newValue && <span className="text-muted-foreground mx-1">→</span>}
+                        {entry.newValue && <span className="font-medium text-foreground">{entry.newValue.replace(/_/g, ' ')}</span>}
                       </div>
-                      <span className="text-[11px] text-[#94A3B8] flex-shrink-0 whitespace-nowrap">
+                      <span className="text-[11px] text-muted-foreground flex-shrink-0 whitespace-nowrap">
                         {new Date(entry.changedAt).toLocaleDateString()} {new Date(entry.changedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -514,11 +516,11 @@ export function TicketDetailPage() {
 
         {/* RIGHT COLUMN: Sidebar (35%) */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4">
+          <div className="bg-card rounded-xl border border-border p-5 space-y-4">
             
             {/* Status */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Status</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Status</label>
               <select value={ticket.status} onChange={(e) => handleFieldChange('status', e.target.value)} className="input text-[13px] font-medium h-9">
                 {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
               </select>
@@ -526,7 +528,7 @@ export function TicketDetailPage() {
 
             {/* Priority */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Priority</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Priority</label>
               <select value={ticket.priority} onChange={(e) => handleFieldChange('priority', e.target.value)} className="input text-[13px] font-medium h-9">
                 {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -534,14 +536,14 @@ export function TicketDetailPage() {
 
             {/* Assignees — multi */}
             <div className="relative">
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Users className="w-3 h-3" /> Assignees
               </label>
               {(ticket.assignees || []).length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {(ticket.assignees || []).map(a => (
-                    <span key={a.userId} className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#DBEAFE] text-[#1D4ED8] text-[12px] font-medium rounded-full">
-                      <span className="w-4 h-4 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[9px] font-bold">{getInitials(a.user.fullName)}</span>
+                    <span key={a.userId} className="inline-flex items-center gap-1.5 px-2 py-1 bg-primary/15 text-primary text-[12px] font-medium rounded-full">
+                      <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[9px] font-bold">{getInitials(a.user.fullName)}</span>
                       {a.user.fullName.split(' ')[0]}
                       <button onClick={() => toggleAssignee(a.userId)} className="hover:text-red-500 leading-none text-[14px]">×</button>
                     </span>
@@ -550,33 +552,33 @@ export function TicketDetailPage() {
               )}
               <button onClick={() => setShowAssigneeDropdown(v => !v)}
                 className="input text-[13px] h-9 text-left flex items-center justify-between w-full">
-                <span className="text-[#94A3B8]">Add assignee...</span>
-                <Users className="w-4 h-4 text-[#94A3B8]" />
+                <span className="text-muted-foreground">Add assignee...</span>
+                <Users className="w-4 h-4 text-muted-foreground" />
               </button>
               {showAssigneeDropdown && (
-                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-[#E2E8F0] rounded-lg shadow-lg overflow-hidden">
-                  <div className="p-2 border-b border-[#E2E8F0]">
+                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+                  <div className="p-2 border-b border-border">
                     <input autoFocus value={assigneeSearch} onChange={e => setAssigneeSearch(e.target.value)}
-                      placeholder="Search..." className="w-full h-7 px-2 text-[12px] border border-[#E2E8F0] rounded outline-none" />
+                      placeholder="Search..." className="w-full h-7 px-2 text-[12px] border border-border rounded outline-none" />
                   </div>
                   <div className="max-h-[180px] overflow-y-auto">
                     {users.filter(u => u.fullName.toLowerCase().includes(assigneeSearch.toLowerCase())).map(u => {
                       const isSelected = ticket.assignees?.some(a => a.userId === u.id);
                       return (
                         <button key={u.id} type="button" onClick={() => { toggleAssignee(u.id); setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[#F8FAFC]">
-                          <div className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
-                            <span className="text-[9px] font-bold text-[#2563EB]">{getInitials(u.fullName)}</span>
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50">
+                          <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[9px] font-bold text-primary">{getInitials(u.fullName)}</span>
                           </div>
                           <span className="flex-1 text-[13px] text-left truncate">{u.fullName}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-[#2563EB]" />}
+                          {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
                         </button>
                       );
                     })}
                   </div>
-                  <div className="p-1.5 border-t border-[#E2E8F0]">
+                  <div className="p-1.5 border-t border-border">
                     <button onClick={() => { setShowAssigneeDropdown(false); setAssigneeSearch(''); }}
-                      className="w-full text-[11px] text-[#64748B] py-1">Done</button>
+                      className="w-full text-[11px] text-muted-foreground py-1">Done</button>
                   </div>
                 </div>
               )}
@@ -584,7 +586,7 @@ export function TicketDetailPage() {
 
             {/* Team */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Team</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Team</label>
               <select value={ticket.teamId || ''} onChange={(e) => handleFieldChange('teamId', e.target.value)} className="input text-[13px] h-9">
                 <option value="">No team</option>
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -593,7 +595,7 @@ export function TicketDetailPage() {
 
             {/* Sprint */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Sprint</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Sprint</label>
               {/* @ts-ignore - API doesn't return full sprint data on ticket right now so mapped by ID if not in list */}
               <select value={ticket.sprintTickets?.[0]?.sprintId || ''} onChange={(e) => {
                 // Handling sprint change would require a separate API call to sprintsApi.addTickets
@@ -601,12 +603,12 @@ export function TicketDetailPage() {
               }} className="input text-[13px] h-9" disabled>
                 <option value="">No sprint</option>
               </select>
-              <p className="text-[10px] text-[#94A3B8] mt-1">Managed via sprint board</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Managed via sprint board</p>
             </div>
 
             {/* Due Date */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Due Date</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Due Date</label>
               <div className="relative">
                 <input
                   type="date"
@@ -624,31 +626,31 @@ export function TicketDetailPage() {
 
             {/* Labels */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-1 block">Labels</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Labels</label>
               <div className="flex flex-wrap gap-1.5">
                 {ticket.labels?.map((l) => (
-                  <span key={l} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F1F5F9] text-[#475569] text-[12px] font-medium rounded border border-[#E2E8F0]">
-                    <TagIcon className="w-3 h-3 text-[#94A3B8]" /> {l}
+                  <span key={l} className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground text-[12px] font-medium rounded border border-border">
+                    <TagIcon className="w-3 h-3 text-muted-foreground" /> {l}
                   </span>
                 ))}
-                {(!ticket.labels || ticket.labels.length === 0) && <span className="text-[13px] text-[#94A3B8]">No labels</span>}
+                {(!ticket.labels || ticket.labels.length === 0) && <span className="text-[13px] text-muted-foreground">No labels</span>}
               </div>
             </div>
 
             {/* Links — sidebar compact */}
-            <div className="border-t border-[#E2E8F0] pt-4">
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <div className="border-t border-border pt-4">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <LinkIcon className="w-3 h-3" /> Links
               </label>
               {(ticket.links || []).length > 0 && (
                 <div className="flex flex-col gap-1 mb-2">
                   {(ticket.links || []).map(l => (
                     <div key={l} className="flex items-center gap-1.5 group">
-                      <ExternalLink className="w-3 h-3 text-[#2563EB] flex-shrink-0" />
+                      <ExternalLink className="w-3 h-3 text-primary flex-shrink-0" />
                       <a href={l} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 text-[12px] text-[#2563EB] truncate hover:underline min-w-0"
+                        className="flex-1 text-[12px] text-primary truncate hover:underline min-w-0"
                         title={l}>{l.replace(/^https?:\/\//, '')}</a>
-                      <button onClick={() => removeLink(l)} className="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-red-500 flex-shrink-0">
+                      <button onClick={() => removeLink(l)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 flex-shrink-0">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
@@ -658,44 +660,44 @@ export function TicketDetailPage() {
               <div className="flex gap-1.5">
                 <input value={linkInput} onChange={e => setLinkInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addLink()}
-                  placeholder="Add a link..." className="flex-1 h-8 px-2 text-[12px] border border-[#E2E8F0] rounded-md outline-none focus:border-primary-500 bg-white min-w-0" />
+                  placeholder="Add a link..." className="flex-1 h-8 px-2 text-[12px] border border-border rounded-md outline-none focus:border-ring bg-card min-w-0" />
                 <button onClick={addLink} disabled={!linkInput.trim()}
-                  className="h-8 px-2 text-[11px] font-medium text-[#475569] bg-[#F1F5F9] rounded-md hover:bg-[#E2E8F0] disabled:opacity-40 flex-shrink-0">Add</button>
+                  className="h-8 px-2 text-[11px] font-medium text-muted-foreground bg-muted rounded-md hover:bg-muted disabled:opacity-40 flex-shrink-0">Add</button>
               </div>
             </div>
 
             {/* Attachments — sidebar compact */}
-            <div className="border-t border-[#E2E8F0] pt-4">
-              <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Paperclip className="w-3 h-3" /> Attachments {uploading && <span className="text-[10px] font-normal animate-pulse text-[#64748B]">uploading…</span>}</span>
+            <div className="border-t border-border pt-4">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Paperclip className="w-3 h-3" /> Attachments {uploading && <span className="text-[10px] font-normal animate-pulse text-muted-foreground">uploading…</span>}</span>
                 <button onClick={() => attachFileRef.current?.click()}
-                  className="text-[10px] font-medium text-[#2563EB] hover:underline">+ Add</button>
+                  className="text-[10px] font-medium text-primary hover:underline">+ Add</button>
               </label>
               <input ref={attachFileRef} type="file" multiple className="hidden" onChange={e => handleAttachmentUpload(e.target.files)} />
               {(ticket.attachments || []).length > 0 ? (
                 <div className="flex flex-col gap-1">
                   {(ticket.attachments || []).map(a => (
                     <div key={a.id} className="flex items-center gap-1.5 group py-1">
-                      <Paperclip className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+                      <Paperclip className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                       <a href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 text-[12px] text-[#0F172A] truncate hover:text-[#2563EB] min-w-0" title={a.originalName}>{a.originalName}</a>
-                      <span className="text-[10px] text-[#94A3B8] flex-shrink-0">{formatFileSize(a.size)}</span>
-                      <button onClick={() => deleteAttachment(a.id)} className="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-red-500 flex-shrink-0">
+                        className="flex-1 text-[12px] text-foreground truncate hover:text-primary min-w-0" title={a.originalName}>{a.originalName}</a>
+                      <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatFileSize(a.size)}</span>
+                      <button onClick={() => deleteAttachment(a.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 flex-shrink-0">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-[12px] text-[#94A3B8]">No attachments</p>
+                <p className="text-[12px] text-muted-foreground">No attachments</p>
               )}
             </div>
 
-            <div className="border-t border-[#E2E8F0] pt-4">
-              <p className="text-[11px] text-[#94A3B8] flex items-center gap-1.5 mb-1">
+            <div className="border-t border-border pt-4">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mb-1">
                 <Clock className="w-3 h-3" /> Created {new Date(ticket.createdAt).toLocaleDateString()}
               </p>
-              <p className="text-[11px] text-[#94A3B8] flex items-center gap-1.5">
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                 <Clock className="w-3 h-3" /> Updated {new Date(ticket.updatedAt).toLocaleDateString()}
               </p>
             </div>

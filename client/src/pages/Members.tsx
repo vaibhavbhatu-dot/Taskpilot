@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Search, Plus, MoreHorizontal, X, ChevronDown, ChevronRight, Mail, Clock, AlertCircle } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { usersApi, invitationsApi, teamsApi } from '../api';
@@ -9,9 +9,9 @@ import { Users as UsersIcon } from 'lucide-react';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
-  MANAGER: { bg: 'bg-[#DBEAFE]', text: 'text-[#2563EB]' },
+  MANAGER: { bg: 'bg-primary/15', text: 'text-primary' },
   PROJECT_MANAGER: { bg: 'bg-indigo-100', text: 'text-indigo-600' },
-  MEMBER: { bg: 'bg-[#F1F5F9]', text: 'text-[#64748B]' },
+  MEMBER: { bg: 'bg-muted', text: 'text-muted-foreground' },
 };
 
 const ROLE_FILTERS = ['All', 'ADMIN', 'MANAGER', 'PROJECT_MANAGER', 'MEMBER'] as const;
@@ -113,7 +113,7 @@ export function MembersPage() {
           <Skeleton className="h-10 w-full" />
           <div className="flex gap-2"><Skeleton className="h-8 w-20" /><Skeleton className="h-8 w-24" /><Skeleton className="h-8 w-16" /></div>
         </div>
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4">
+        <div className="bg-card rounded-xl border border-border p-5 space-y-4">
           <Skeleton className="h-6 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -126,7 +126,7 @@ export function MembersPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[#10B981] text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg animate-fade-in flex items-center gap-2">
+        <div className="fixed top-6 right-6 z-[100] bg-[hsl(var(--color-success))] text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg animate-fade-in flex items-center gap-2">
           <Mail className="w-4 h-4" />
           {toast}
         </div>
@@ -146,7 +146,7 @@ export function MembersPage() {
       {/* Search + Filters */}
       <div className="space-y-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={search}
@@ -162,8 +162,8 @@ export function MembersPage() {
               onClick={() => setRoleFilter(role)}
               className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
                 roleFilter === role
-                  ? 'bg-[#2563EB] text-white'
-                  : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0]'
+                  ? 'bg-primary text-white'
+                  : 'bg-muted text-muted-foreground hover:bg-muted'
               }`}
             >
               {role === 'PROJECT_MANAGER' ? 'Project Manager' : role === 'All' ? 'All' : role.charAt(0) + role.slice(1).toLowerCase()}
@@ -173,17 +173,17 @@ export function MembersPage() {
       </div>
 
       {/* Members Table */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E2E8F0]">
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">User</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Designation</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Team</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Role</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Status</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Joined</th>
-              <th className="text-right px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Actions</th>
+            <tr className="border-b border-border">
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">User</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Designation</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Team</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Joined</th>
+              <th className="text-right px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -192,25 +192,25 @@ export function MembersPage() {
               return (
                 <tr
                   key={user.id}
-                  className={`h-[56px] hover:bg-[#F1F5F9] transition-colors ${i % 2 === 1 ? 'bg-[#F8FAFC]' : 'bg-white'}`}
+                  className={`h-[56px] hover:bg-muted transition-colors ${i % 2 === 1 ? 'bg-muted/50' : 'bg-card'}`}
                 >
                   <td className="px-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
                         {user.avatar ? (
                           <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
-                          <span className="text-[11px] font-semibold text-[#2563EB]">{getInitials(user.fullName)}</span>
+                          <span className="text-[11px] font-semibold text-primary">{getInitials(user.fullName)}</span>
                         )}
                       </div>
                       <div>
-                        <p className="text-[14px] font-medium text-[#0F172A]">{user.fullName}</p>
-                        <p className="text-[12px] text-[#64748B]">{user.email}</p>
+                        <p className="text-[14px] font-medium text-foreground">{user.fullName}</p>
+                        <p className="text-[12px] text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 text-[14px] text-[#0F172A]">{user.designation || '—'}</td>
-                  <td className="px-5 text-[14px] text-[#0F172A]">{user.team?.name || '—'}</td>
+                  <td className="px-5 text-[14px] text-foreground">{user.designation || '—'}</td>
+                  <td className="px-5 text-[14px] text-foreground">{user.team?.name || '—'}</td>
                   <td className="px-5">
                     <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${badge.bg} ${badge.text}`}>
                       {user.role.replace('_', ' ')}
@@ -218,24 +218,24 @@ export function MembersPage() {
                   </td>
                   <td className="px-5">
                     <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${user.status === 'ACTIVE' ? 'bg-[#10B981]' : 'bg-gray-400'}`} />
-                      <span className="text-[13px] text-[#64748B]">{user.status === 'ACTIVE' ? 'Active' : 'Inactive'}</span>
+                      <span className={`w-2 h-2 rounded-full ${user.status === 'ACTIVE' ? 'bg-[hsl(var(--color-success))]' : 'bg-gray-400'}`} />
+                      <span className="text-[13px] text-muted-foreground">{user.status === 'ACTIVE' ? 'Active' : 'Inactive'}</span>
                     </div>
                   </td>
-                  <td className="px-5 text-[13px] text-[#64748B]">
+                  <td className="px-5 text-[13px] text-muted-foreground">
                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-5 text-right relative">
                     <button
                       onClick={() => setActionMenuId(actionMenuId === user.id ? null : user.id)}
-                      className="p-1.5 rounded-lg hover:bg-[#E2E8F0] transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <MoreHorizontal className="w-4 h-4 text-[#64748B]" />
+                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                     </button>
                     {actionMenuId === user.id && (
-                      <div className="absolute right-5 top-full mt-1 w-40 bg-white rounded-lg border border-[#E2E8F0] z-20 text-left overflow-hidden">
-                        <button className="w-full px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F8FAFC] text-left">Edit Role</button>
-                        <button className="w-full px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F8FAFC] text-left">Deactivate</button>
+                      <div className="absolute right-5 top-full mt-1 w-40 bg-card rounded-lg border border-border z-20 text-left overflow-hidden">
+                        <button className="w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 text-left">Edit Role</button>
+                        <button className="w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 text-left">Deactivate</button>
                         <button className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-left">Remove</button>
                       </div>
                     )}
@@ -257,35 +257,35 @@ export function MembersPage() {
 
       {/* Pending Invitations */}
       {invitations.length > 0 && (
-        <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <button
             onClick={() => setShowInvites(!showInvites)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#F8FAFC] transition-colors"
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors"
           >
-            <span className="text-[15px] font-semibold text-[#0F172A]">
+            <span className="text-[15px] font-semibold text-foreground">
               Pending Invitations ({invitations.length})
             </span>
-            {showInvites ? <ChevronDown className="w-4 h-4 text-[#64748B]" /> : <ChevronRight className="w-4 h-4 text-[#64748B]" />}
+            {showInvites ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
           {showInvites && (
             <table className="w-full">
               <thead>
-                <tr className="border-t border-[#E2E8F0]">
-                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Email</th>
-                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Invited By</th>
-                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Sent</th>
-                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Expires</th>
-                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Role</th>
-                  <th className="text-right px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Actions</th>
+                <tr className="border-t border-border">
+                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Email</th>
+                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Invited By</th>
+                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Sent</th>
+                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Expires</th>
+                  <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Role</th>
+                  <th className="text-right px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {invitations.map((inv) => (
-                  <tr key={inv.id} className="border-t border-[#E2E8F0] hover:bg-[#F8FAFC]">
-                    <td className="px-5 py-3 text-sm text-[#0F172A]">{inv.email}</td>
-                    <td className="px-5 py-3 text-sm text-[#64748B]">{inv.invitedBy?.fullName || '—'}</td>
-                    <td className="px-5 py-3 text-sm text-[#64748B]">{new Date(inv.createdAt).toLocaleDateString()}</td>
-                    <td className="px-5 py-3 text-sm text-[#64748B]">
+                  <tr key={inv.id} className="border-t border-border hover:bg-muted/50">
+                    <td className="px-5 py-3 text-sm text-foreground">{inv.email}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{inv.invitedBy?.fullName || '—'}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(inv.expiresAt).toLocaleDateString()}
@@ -316,11 +316,11 @@ export function MembersPage() {
       {showInviteModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowInviteModal(false)} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
+          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-[#0F172A]">Invite New Member</h2>
-              <button onClick={() => setShowInviteModal(false)} className="p-1 rounded-lg hover:bg-[#F1F5F9]">
-                <X className="w-5 h-5 text-[#64748B]" />
+              <h2 className="text-[18px] font-semibold text-foreground">Invite New Member</h2>
+              <button onClick={() => setShowInviteModal(false)} className="p-1 rounded-lg hover:bg-muted">
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
@@ -368,7 +368,7 @@ export function MembersPage() {
                 <button type="submit" disabled={inviting} className="btn-primary flex-1">
                   {inviting ? 'Sending...' : 'Send Invitation'}
                 </button>
-                <button type="button" onClick={() => setShowInviteModal(false)} className="text-sm text-[#64748B] hover:text-[#0F172A] font-medium px-4">
+                <button type="button" onClick={() => setShowInviteModal(false)} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
                   Cancel
                 </button>
               </div>

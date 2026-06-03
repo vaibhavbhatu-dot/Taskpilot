@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { adminApi } from '../../api';
 import { Clock, User as UserIcon } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -37,64 +37,64 @@ export function ActivityLog() {
   }
 
   function formatValue(field: string, val: string) {
-    if (!val || val === 'null') return <span className="text-[#94A3B8] italic">none</span>;
+    if (!val || val === 'null') return <span className="text-muted-foreground italic">none</span>;
     if (field === 'dueDate') return new Date(val).toLocaleDateString();
-    return <span className="font-medium text-[#1E293B]">{val}</span>;
+    return <span className="font-medium text-foreground">{val}</span>;
   }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto py-6">
       <PageHeader title="Activity Log" subtitle="Audit trail of all ticket modifications across the platform." />
 
-      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden relative">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden relative">
         {loading && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-10">
             <div className="w-8 h-8 rounded-full border-2 border-orange-200 border-t-orange-600 animate-spin" />
           </div>
         )}
 
-        <div className="divide-y divide-[#E2E8F0]">
+        <div className="divide-y divide-border">
           {activities.length === 0 && !loading ? (
-            <div className="p-8 text-center text-[#64748B] text-[14px]">No activity recorded yet.</div>
+            <div className="p-8 text-center text-muted-foreground text-[14px]">No activity recorded yet.</div>
           ) : (
             activities.map(activity => (
-              <div key={activity.id} className="p-5 flex gap-4 hover:bg-[#F8FAFC] transition-colors">
+              <div key={activity.id} className="p-5 flex gap-4 hover:bg-muted/50 transition-colors">
                 <div className="flex-shrink-0 mt-0.5">
                   {activity.changedBy.avatar ? (
-                    <img src={activity.changedBy.avatar} alt="Avatar" className="w-9 h-9 rounded-full bg-[#E2E8F0] border border-[#CBD5E1] object-cover" />
+                    <img src={activity.changedBy.avatar} alt="Avatar" className="w-9 h-9 rounded-full bg-muted border border-border object-cover" />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-[#E2E8F0] border border-[#CBD5E1] flex items-center justify-center">
-                      <UserIcon className="w-4 h-4 text-[#64748B]" />
+                    <div className="w-9 h-9 rounded-full bg-muted border border-border flex items-center justify-center">
+                      <UserIcon className="w-4 h-4 text-muted-foreground" />
                     </div>
                   )}
                 </div>
                 
                 <div className="flex-1 space-y-1">
-                  <p className="text-[14px] text-[#334155] leading-relaxed">
-                    <span className="font-semibold text-[#0F172A]">{activity.changedBy.fullName}</span>
+                  <p className="text-[14px] text-foreground leading-relaxed">
+                    <span className="font-semibold text-foreground">{activity.changedBy.fullName}</span>
                     {' updated '}
-                    <span className="font-mono text-[12px] bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#2563EB] font-medium mx-1">
+                    <span className="font-mono text-[12px] bg-muted px-1.5 py-0.5 rounded text-primary font-medium mx-1">
                       {activity.ticket.ticketNumber}
                     </span>
-                    <span className="text-[#64748B] text-[13px]">({activity.ticket.title.substring(0, 40)}{activity.ticket.title.length > 40 ? '...' : ''})</span>
+                    <span className="text-muted-foreground text-[13px]">({activity.ticket.title.substring(0, 40)}{activity.ticket.title.length > 40 ? '...' : ''})</span>
                   </p>
                   
-                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-3 py-2 mt-2 w-max max-w-full text-[13px]">
-                    <span className="text-[#64748B] font-medium uppercase text-[11px] tracking-wider mb-1 block">
+                  <div className="bg-muted/50 border border-border rounded-md px-3 py-2 mt-2 w-max max-w-full text-[13px]">
+                    <span className="text-muted-foreground font-medium uppercase text-[11px] tracking-wider mb-1 block">
                       {activity.fieldChanged.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                     <div className="flex items-center gap-2">
-                      <div className="text-[#64748B] line-through decoration-[#94A3B8]">
+                      <div className="text-muted-foreground line-through decoration-muted-foreground">
                         {formatValue(activity.fieldChanged, activity.oldValue)}
                       </div>
-                      <span className="text-[#94A3B8]">→</span>
-                      <div className="text-[#0F172A]">
+                      <span className="text-muted-foreground">→</span>
+                      <div className="text-foreground">
                         {formatValue(activity.fieldChanged, activity.newValue)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[12px] text-[#94A3B8] pt-1">
+                  <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground pt-1">
                     <Clock className="w-3.5 h-3.5" />
                     {new Date(activity.changedAt).toLocaleString()}
                   </div>
@@ -105,19 +105,19 @@ export function ActivityLog() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+          <div className="flex items-center justify-between px-5 py-4 border-t border-border bg-muted/50">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="text-[13px] font-medium text-[#0F172A] disabled:text-[#94A3B8] disabled:cursor-not-allowed hover:bg-[#E2E8F0] px-3 py-1.5 rounded-lg transition-colors"
+              className="text-[13px] font-medium text-foreground disabled:text-muted-foreground disabled:cursor-not-allowed hover:bg-muted px-3 py-1.5 rounded-lg transition-colors"
             >
               Previous
             </button>
-            <span className="text-[13px] text-[#64748B]">Page {page} of {totalPages}</span>
+            <span className="text-[13px] text-muted-foreground">Page {page} of {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="text-[13px] font-medium text-[#0F172A] disabled:text-[#94A3B8] disabled:cursor-not-allowed hover:bg-[#E2E8F0] px-3 py-1.5 rounded-lg transition-colors"
+              className="text-[13px] font-medium text-foreground disabled:text-muted-foreground disabled:cursor-not-allowed hover:bg-muted px-3 py-1.5 rounded-lg transition-colors"
             >
               Next
             </button>

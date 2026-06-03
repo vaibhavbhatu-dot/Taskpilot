@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api';
@@ -53,8 +53,8 @@ export function LoginPage() {
         </div>
 
         {/* Demo credentials */}
-        <div className="mb-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
-          <p className="text-[12px] font-semibold text-[#64748B] uppercase tracking-wider mb-3">Demo Credentials — click to fill</p>
+        <div className="mb-5 bg-muted/50 border border-border rounded-xl p-4">
+          <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Demo Credentials — click to fill</p>
           <div className="flex flex-col gap-2">
             {DEMO_CREDENTIALS.map((cred) => (
               <button

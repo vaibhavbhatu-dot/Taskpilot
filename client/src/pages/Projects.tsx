@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Plus, X, AlertCircle, FolderOpen, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { projectsApi, usersApi } from '../api';
@@ -145,48 +145,48 @@ export function ProjectsPage() {
       />
 
       {/* Projects Table */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E2E8F0]">
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Project</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Lead</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Tickets</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Sprints</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Status</th>
-              <th className="text-right px-5 py-3 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Actions</th>
+            <tr className="border-b border-border">
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Project</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Lead</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Tickets</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Sprints</th>
+              <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+              <th className="text-right px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
             {projects.map((project, i) => (
               <tr
                 key={project.id}
-                className={`h-[56px] hover:bg-[#F1F5F9] transition-colors ${i % 2 === 1 ? 'bg-[#F8FAFC]' : 'bg-white'}`}
+                className={`h-[56px] hover:bg-muted transition-colors ${i % 2 === 1 ? 'bg-muted/50' : 'bg-card'}`}
               >
                 <td className="px-5">
                   <div className="flex items-center gap-3">
-                    <span className="inline-block px-2 py-0.5 bg-[#DBEAFE] text-[#2563EB] text-[11px] font-bold font-mono rounded">
+                    <span className="inline-block px-2 py-0.5 bg-primary/15 text-primary text-[11px] font-bold font-mono rounded">
                       {project.key}
                     </span>
-                    <span className="text-[14px] font-medium text-[#0F172A]">{project.name}</span>
+                    <span className="text-[14px] font-medium text-foreground">{project.name}</span>
                   </div>
                 </td>
                 <td className="px-5">
                   {project.lead ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#DBEAFE] flex items-center justify-center">
-                        <span className="text-[10px] font-semibold text-[#2563EB]">
+                      <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
+                        <span className="text-[10px] font-semibold text-primary">
                           {project.lead.fullName?.charAt(0)}
                         </span>
                       </div>
-                      <span className="text-sm text-[#0F172A]">{project.lead.fullName}</span>
+                      <span className="text-sm text-foreground">{project.lead.fullName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-[#94A3B8]">—</span>
+                    <span className="text-sm text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-5 text-sm text-[#0F172A]">{project._count?.tickets || 0}</td>
-                <td className="px-5 text-sm text-[#0F172A]">{project._count?.sprints || 0}</td>
+                <td className="px-5 text-sm text-foreground">{project._count?.tickets || 0}</td>
+                <td className="px-5 text-sm text-foreground">{project._count?.sprints || 0}</td>
                 <td className="px-5">
                   <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
                     project.status === 'ACTIVE'
@@ -200,7 +200,7 @@ export function ProjectsPage() {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => openEdit(project)}
-                      className="flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium text-[#2563EB] hover:bg-[#EFF6FF] rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     >
                       <Pencil className="w-3.5 h-3.5" /> Edit
                     </button>
@@ -220,8 +220,8 @@ export function ProjectsPage() {
         </table>
         {projects.length === 0 && (
           <div className="text-center py-12">
-            <FolderOpen className="w-8 h-8 mx-auto text-[#94A3B8] mb-3" />
-            <p className="text-sm text-[#64748B]">No projects yet. Create your first project.</p>
+            <FolderOpen className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No projects yet. Create your first project.</p>
           </div>
         )}
       </div>
@@ -230,11 +230,11 @@ export function ProjectsPage() {
       {editProject && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
           <div className="absolute inset-0 bg-black/30" onClick={() => setEditProject(null)} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-7 animate-fade-in shadow-xl">
+          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-[#0F172A]">Edit Project</h2>
-              <button onClick={() => setEditProject(null)} className="p-1 rounded-lg hover:bg-[#F1F5F9]">
-                <X className="w-5 h-5 text-[#64748B]" />
+              <h2 className="text-[18px] font-semibold text-foreground">Edit Project</h2>
+              <button onClick={() => setEditProject(null)} className="p-1 rounded-lg hover:bg-muted">
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
             <form onSubmit={handleSaveEdit} className="space-y-4">
@@ -256,7 +256,7 @@ export function ProjectsPage() {
                           Editable — no tickets yet
                         </span>
                       ) : (
-                        <span className="text-[11px] font-medium text-[#94A3B8] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
+                        <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                           Locked — {editProject._count?.tickets} ticket{editProject._count?.tickets !== 1 ? 's' : ''} exist
                         </span>
                       )}
@@ -269,7 +269,7 @@ export function ProjectsPage() {
                       className={`input font-mono tracking-widest uppercase ${
                         canEditKey
                           ? 'border-green-400 focus:border-green-500 bg-green-50/30'
-                          : 'bg-[#F8FAFC] text-[#94A3B8] cursor-not-allowed'
+                          : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
                       }`}
                     />
                   </div>
@@ -303,7 +303,7 @@ export function ProjectsPage() {
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button type="button" onClick={() => setEditProject(null)}
-                  className="text-sm text-[#64748B] hover:text-[#0F172A] font-medium px-4">
+                  className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
                   Cancel
                 </button>
               </div>
@@ -316,17 +316,17 @@ export function ProjectsPage() {
       {deleteProject && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
           <div className="absolute inset-0 bg-black/30" onClick={() => setDeleteProject(null)} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[440px] p-7 animate-fade-in shadow-xl">
+          <div className="relative bg-card rounded-2xl w-full max-w-[440px] p-7 animate-fade-in shadow-xl">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h2 className="text-[17px] font-semibold text-[#0F172A]">Delete Project</h2>
-                <p className="text-[13px] text-[#64748B]">This action cannot be undone</p>
+                <h2 className="text-[17px] font-semibold text-foreground">Delete Project</h2>
+                <p className="text-[13px] text-muted-foreground">This action cannot be undone</p>
               </div>
-              <button onClick={() => setDeleteProject(null)} className="ml-auto p-1 rounded-lg hover:bg-[#F1F5F9]">
-                <X className="w-5 h-5 text-[#64748B]" />
+              <button onClick={() => setDeleteProject(null)} className="ml-auto p-1 rounded-lg hover:bg-muted">
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
             <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-4 text-[13px] text-red-700">
@@ -335,8 +335,8 @@ export function ProjectsPage() {
               <strong>{deleteProject._count?.sprints || 0} sprint{deleteProject._count?.sprints !== 1 ? 's' : ''}</strong>.
             </div>
             <div className="mb-5">
-              <label className="text-[13px] font-medium text-[#0F172A] mb-1.5 block">
-                Type <span className="font-mono bg-[#F1F5F9] px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
+              <label className="text-[13px] font-medium text-foreground mb-1.5 block">
+                Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
               </label>
               <input value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)}
                 placeholder={deleteProject.key} className="input font-mono" autoFocus />
@@ -350,7 +350,7 @@ export function ProjectsPage() {
                 {deleting ? 'Deleting...' : 'Delete Project'}
               </button>
               <button onClick={() => setDeleteProject(null)}
-                className="text-sm text-[#64748B] hover:text-[#0F172A] font-medium px-4">
+                className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
                 Cancel
               </button>
             </div>
@@ -362,11 +362,11 @@ export function ProjectsPage() {
       {showModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
+          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-[#0F172A]">Create Project</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-[#F1F5F9]">
-                <X className="w-5 h-5 text-[#64748B]" />
+              <h2 className="text-[18px] font-semibold text-foreground">Create Project</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-muted">
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
@@ -399,7 +399,7 @@ export function ProjectsPage() {
                   className="input font-mono uppercase"
                   required
                 />
-                <p className="text-[12px] text-[#94A3B8] mt-1">2-6 uppercase letters, used in ticket IDs</p>
+                <p className="text-[12px] text-muted-foreground mt-1">2-6 uppercase letters, used in ticket IDs</p>
               </div>
               <div>
                 <label className="label">Project Lead</label>
@@ -412,7 +412,7 @@ export function ProjectsPage() {
                 <button type="submit" disabled={submitting} className="btn-primary flex-1">
                   {submitting ? 'Creating...' : 'Create'}
                 </button>
-                <button type="button" onClick={() => setShowModal(false)} className="text-sm text-[#64748B] hover:text-[#0F172A] font-medium px-4">
+                <button type="button" onClick={() => setShowModal(false)} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
                   Cancel
                 </button>
               </div>

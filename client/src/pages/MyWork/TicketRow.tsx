@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { STATUS_CONFIG, getStatusLabel } from '../../constants/ticketStatus';
 import type { TicketStatus } from '../../types';
 
@@ -17,7 +17,7 @@ const PRIORITY_DOTS: Record<string, string> = {
 
 function getDueDateDisplay(dueDate: string, tab: string) {
   if (tab === 'today') {
-    return { text: 'Today', className: 'text-[#D97706]' };
+    return { text: 'Today', className: 'text-[hsl(var(--color-warning))]' };
   }
   // Due tab — overdue
   const now = new Date();
@@ -26,7 +26,7 @@ function getDueDateDisplay(dueDate: string, tab: string) {
   const days = Math.max(1, Math.ceil(diffMs / 86400000));
   return {
     text: `${days} day${days > 1 ? 's' : ''} overdue`,
-    className: 'text-[#EF4444] bg-[#FEF2F2] px-1.5 py-0.5 rounded',
+    className: 'text-destructive bg-destructive/10 px-1.5 py-0.5 rounded',
   };
 }
 
@@ -37,7 +37,7 @@ export function TicketRow({ ticket, tab, isAlt }: TicketRowProps) {
 
   return (
     <div
-      className={`flex items-center h-[52px] px-4 cursor-pointer hover:bg-[#F8FAFC] transition-colors ${isAlt ? 'bg-[#FAFAFA]' : 'bg-white'} border-t border-[#F1F5F9] first:border-t-0`}
+      className={`flex items-center h-[52px] px-4 cursor-pointer hover:bg-muted/50 transition-colors ${isAlt ? 'bg-muted/30' : 'bg-card'} border-t border-muted first:border-t-0`}
       onClick={() => navigate(`/tickets/${ticket.id}`)}
     >
       {/* Left side */}
@@ -47,16 +47,16 @@ export function TicketRow({ ticket, tab, isAlt }: TicketRowProps) {
           style={{ backgroundColor: PRIORITY_DOTS[ticket.priority] || '#94A3B8' }}
         />
         <span
-          className="text-[12px] font-mono font-medium text-[#2563EB] flex-shrink-0 cursor-pointer hover:underline"
+          className="text-[12px] font-mono font-medium text-primary flex-shrink-0 cursor-pointer hover:underline"
           onClick={(e) => { e.stopPropagation(); navigate(`/tickets/${ticket.id}`); }}
         >
           {ticket.ticketNumber}
         </span>
-        <span className="text-[14px] font-medium text-[#0F172A] truncate">
+        <span className="text-[14px] font-medium text-foreground truncate">
           {ticket.title}
         </span>
         {ticket.project && (
-          <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-[#DBEAFE] text-[#2563EB] text-[11px] font-semibold">
+          <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[11px] font-semibold">
             {ticket.project.key}
           </span>
         )}
@@ -73,7 +73,7 @@ export function TicketRow({ ticket, tab, isAlt }: TicketRowProps) {
           </span>
         )}
         {ticket.sprint && (
-          <span className="text-[12px] text-[#94A3B8] whitespace-nowrap">{ticket.sprint.name}</span>
+          <span className="text-[12px] text-muted-foreground whitespace-nowrap">{ticket.sprint.name}</span>
         )}
         {dueDateDisplay && (
           <span className={`text-[12px] font-medium whitespace-nowrap ${dueDateDisplay.className}`}>

@@ -1,4 +1,4 @@
-import { TicketRow } from './TicketRow';
+﻿import { TicketRow } from './TicketRow';
 
 interface MemberGroupProps {
   member: {
@@ -13,10 +13,10 @@ interface MemberGroupProps {
 }
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
-  ADMIN: 'bg-[#FEE2E2] text-[#DC2626]',
-  MANAGER: 'bg-[#DBEAFE] text-[#2563EB]',
-  PROJECT_MANAGER: 'bg-[#EDE9FE] text-[#7C3AED]',
-  MEMBER: 'bg-[#F1F5F9] text-[#64748B]',
+  ADMIN: 'bg-destructive/15 text-destructive',
+  MANAGER: 'bg-primary/15 text-primary',
+  PROJECT_MANAGER: 'bg-[hsl(var(--color-info))]/15 text-[hsl(var(--color-info))]',
+  MEMBER: 'bg-muted text-muted-foreground',
 };
 
 const getInitials = (name: string) =>
@@ -26,20 +26,20 @@ export function MemberGroup({ member, tickets, tab }: MemberGroupProps) {
   return (
     <div className="mb-5">
       {/* Member header */}
-      <div className="flex items-center justify-between pb-3 mb-0 border-b border-[#E2E8F0]">
+      <div className="flex items-center justify-between pb-3 mb-0 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
             {member.avatar ? (
               <img src={member.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
-              <span className="text-[11px] font-bold text-[#2563EB]">{getInitials(member.fullName)}</span>
+              <span className="text-[11px] font-bold text-primary">{getInitials(member.fullName)}</span>
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[14px] font-semibold text-[#0F172A]">{member.fullName}</span>
-              <span className="text-[12px] text-[#64748B]">{member.designation}</span>
-              <span className="bg-[#F1F5F9] text-[#64748B] text-[11px] font-medium px-1.5 py-0.5 rounded-full">
+              <span className="text-[14px] font-semibold text-foreground">{member.fullName}</span>
+              <span className="text-[12px] text-muted-foreground">{member.designation}</span>
+              <span className="bg-muted text-muted-foreground text-[11px] font-medium px-1.5 py-0.5 rounded-full">
                 {tickets.length}
               </span>
             </div>
@@ -53,7 +53,7 @@ export function MemberGroup({ member, tickets, tab }: MemberGroupProps) {
       </div>
 
       {/* Ticket list */}
-      <div className="bg-white border border-[#E2E8F0] border-t-0 rounded-b-[12px] overflow-hidden">
+      <div className="bg-card border border-border border-t-0 rounded-b-[12px] overflow-hidden">
         {tickets.map((ticket, i) => (
           <TicketRow key={ticket.id} ticket={ticket} tab={tab} isAlt={i % 2 === 1} />
         ))}

@@ -62,8 +62,17 @@ if (await ticketsLink.count() > 0) {
   await page.evaluate(() => window.history.pushState({}, '', '/tickets'));
 }
 await page.waitForTimeout(2000);
-await page.screenshot({ path: `${OUT}/tickets-parta.png` });
-console.log('tickets-parta.png — URL:', page.url());
+await page.screenshot({ path: `${OUT}/tickets-partb-table.png` });
+console.log('tickets-partb-table.png — URL:', page.url());
+
+// Open the Create Ticket panel
+const createBtn = page.locator('button').filter({ hasText: /create ticket/i }).first();
+if (await createBtn.count() > 0) {
+  await createBtn.click();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT}/tickets-partb-panel.png` });
+  console.log('tickets-partb-panel.png — panel open');
+}
 
 if (errors.length) console.error('Page errors:', errors.slice(0, 5));
 else console.log('No page errors.');

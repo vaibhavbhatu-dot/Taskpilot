@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Plus, ListFilter, Trash2 } from 'lucide-react';
 
 export type FilterField = 'status' | 'priority' | 'type' | 'assignedToId' | 'teamId' | 'sprintId';
@@ -109,29 +109,29 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
   };
 
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm transition-all duration-200">
       {/* Header (Toggle) */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-[#F8FAFC] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <ListFilter className="w-4 h-4 text-[#64748B]" />
-          <span className="text-[14px] font-medium text-[#0F172A]">Advanced Filters</span>
+          <ListFilter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[14px] font-medium text-foreground">Advanced Filters</span>
           {filters.length > 0 && (
             <span className="ml-2 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 text-[11px] font-bold">
               {filters.length}
             </span>
           )}
         </div>
-        <span className="text-[#64748B] text-[13px]">{isExpanded ? 'Collapse' : 'Expand'}</span>
+        <span className="text-muted-foreground text-[13px]">{isExpanded ? 'Collapse' : 'Expand'}</span>
       </button>
 
       {/* Builder Body */}
       {isExpanded && (
-        <div className="px-4 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+        <div className="px-4 py-4 border-t border-border bg-muted/50">
           {filters.length === 0 ? (
-            <p className="text-[13px] text-[#64748B] italic mb-3">No filters applied.</p>
+            <p className="text-[13px] text-muted-foreground italic mb-3">No filters applied.</p>
           ) : (
             <div className="space-y-3 mb-4">
               {filters.map((row) => (
@@ -156,7 +156,7 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
 
                   <button
                     onClick={() => removeFilter(row.id)}
-                    className="p-2 ml-1 text-[#94A3B8] hover:text-red-500 hover:bg-white rounded-md transition-colors border border-transparent hover:border-red-100"
+                    className="p-2 ml-1 text-muted-foreground hover:text-red-500 hover:bg-card rounded-md transition-colors border border-transparent hover:border-red-100"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -165,10 +165,10 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0] mt-4">
+          <div className="flex items-center justify-between pt-2 border-t border-border mt-4">
             <button
               onClick={addFilterRow}
-              className="flex items-center gap-1.5 text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8]"
+              className="flex items-center gap-1.5 text-[13px] font-medium text-primary hover:text-primary"
             >
               <Plus className="w-4 h-4" /> Add Rule
             </button>
@@ -176,14 +176,14 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
               {filters.length > 0 && (
                 <button
                   onClick={() => { onClear(); onChange([]); }}
-                  className="text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"
+                  className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
                 >
                   Clear All
                 </button>
               )}
               <button
                 onClick={onApply}
-                className="px-4 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white text-[13px] font-medium rounded-lg transition-colors"
+                className="px-4 py-1.5 bg-foreground hover:bg-foreground/90 text-background text-[13px] font-medium rounded-lg transition-colors"
               >
                 Apply Filters
               </button>

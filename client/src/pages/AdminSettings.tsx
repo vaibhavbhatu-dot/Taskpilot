@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Mail, UserCog, FolderKanban, Settings as SettingsIcon, Send, Trash2, Shield, X, Users, Pencil, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { invitationsApi, usersApi, projectsApi, teamsApi } from '../api';
@@ -62,14 +62,14 @@ function PlatformSettingsTab() {
   return (
     <div className="flex flex-col md:flex-row gap-6 animate-fade-in">
       <div className="w-full md:w-64 flex-shrink-0">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <nav className="flex flex-col p-2">
             {sections.map(s => (
               <button
                 key={s.id}
                 onClick={() => setSubTab(s.id)}
                 className={`text-left px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
-                  subTab === s.id ? 'bg-[#F1F5F9] text-[#0F172A]' : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+                  subTab === s.id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 }`}
               >
                 {s.label}
@@ -80,16 +80,16 @@ function PlatformSettingsTab() {
       </div>
       
       <div className="flex-1">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-          <h2 className="text-[16px] font-semibold text-[#0F172A] mb-4">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <h2 className="text-[16px] font-semibold text-foreground mb-4">
             {sections.find(s => s.id === subTab)?.label}
           </h2>
-          <p className="text-[13px] text-[#64748B] mb-6">
+          <p className="text-[13px] text-muted-foreground mb-6">
             Configure platform-wide {sections.find(s => s.id === subTab)?.label.toLowerCase()} settings here. (This functionality is a placeholder for the blueprint implementation).
           </p>
           
-          <div className="border-2 border-dashed border-[#E2E8F0] rounded-xl h-64 flex items-center justify-center">
-            <span className="text-[#94A3B8] text-[13px] font-medium uppercase tracking-widest px-4 text-center">
+          <div className="border-2 border-dashed border-border rounded-xl h-64 flex items-center justify-center">
+            <span className="text-muted-foreground text-[13px] font-medium uppercase tracking-widest px-4 text-center">
               {subTab} configuration coming soon
             </span>
           </div>
@@ -411,14 +411,14 @@ function ProjectsTab() {
             <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => { setEditProject(p); setEditName(p.name); setEditKey(p.key); }}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#2563EB] hover:border-[#2563EB] transition-colors shadow-sm"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-card border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors shadow-sm"
                 title="Edit project"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => { setDeleteProject(p); setDeleteConfirmText(''); }}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-card border border-border text-muted-foreground hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
                 title="Delete project"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -442,11 +442,11 @@ function ProjectsTab() {
       {/* ── Edit Modal ───────────────────────────────── */}
       {editProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
-              <h2 className="text-[16px] font-semibold text-[#0F172A]">Edit Project</h2>
-              <button onClick={() => setEditProject(null)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9]">
-                <X className="w-4 h-4 text-[#64748B]" />
+          <div className="bg-card rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h2 className="text-[16px] font-semibold text-foreground">Edit Project</h2>
+              <button onClick={() => setEditProject(null)} className="p-1.5 rounded-lg hover:bg-muted">
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
             {(() => {
@@ -462,7 +462,7 @@ function ProjectsTab() {
                           Editable — no tickets yet
                         </span>
                       ) : (
-                        <span className="text-[11px] font-medium text-[#94A3B8] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
+                        <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                           Locked — {editProject._count?.tickets} ticket{editProject._count?.tickets !== 1 ? 's' : ''} exist
                         </span>
                       )}
@@ -475,11 +475,11 @@ function ProjectsTab() {
                       className={`input font-mono tracking-widest uppercase ${
                         canEditKey
                           ? 'border-green-400 focus:border-green-500 focus:ring-green-500/20 bg-green-50/30'
-                          : 'bg-[#F8FAFC] text-[#94A3B8] cursor-not-allowed'
+                          : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
                       }`}
                     />
                     {!canEditKey && (
-                      <p className="text-[11px] text-[#94A3B8] mt-1">
+                      <p className="text-[11px] text-muted-foreground mt-1">
                         Key cannot be changed once tickets exist — it's used in all ticket numbers.
                       </p>
                     )}
@@ -491,7 +491,7 @@ function ProjectsTab() {
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
                     <button type="button" onClick={() => setEditProject(null)}
-                      className="h-9 px-4 text-[#64748B] text-[14px] font-medium hover:text-[#0F172A]">Cancel</button>
+                      className="h-9 px-4 text-muted-foreground text-[14px] font-medium hover:text-foreground">Cancel</button>
                     <button type="submit" disabled={saving || !editName.trim() || !editKey.trim() || unchanged}
                       className="btn-primary h-9 px-5">
                       {saving ? 'Saving...' : 'Save Changes'}
@@ -507,16 +507,16 @@ function ProjectsTab() {
       {/* ── Delete Confirmation Modal ─────────────────── */}
       {deleteProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+          <div className="bg-card rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                   <AlertTriangle className="w-4 h-4 text-red-600" />
                 </div>
-                <h2 className="text-[16px] font-semibold text-[#0F172A]">Delete Project</h2>
+                <h2 className="text-[16px] font-semibold text-foreground">Delete Project</h2>
               </div>
-              <button onClick={() => setDeleteProject(null)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9]">
-                <X className="w-4 h-4 text-[#64748B]" />
+              <button onClick={() => setDeleteProject(null)} className="p-1.5 rounded-lg hover:bg-muted">
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
             <div className="p-6 space-y-4">
@@ -529,8 +529,8 @@ function ProjectsTab() {
                 </p>
               </div>
               <div>
-                <label className="text-[13px] font-medium text-[#0F172A] mb-1.5 block">
-                  Type <span className="font-mono bg-[#F1F5F9] px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
+                <label className="text-[13px] font-medium text-foreground mb-1.5 block">
+                  Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
                 </label>
                 <input
                   value={deleteConfirmText}
@@ -542,7 +542,7 @@ function ProjectsTab() {
               </div>
               <div className="flex justify-end gap-3 pt-1">
                 <button onClick={() => setDeleteProject(null)}
-                  className="h-9 px-4 text-[#64748B] text-[14px] font-medium hover:text-[#0F172A]">Cancel</button>
+                  className="h-9 px-4 text-muted-foreground text-[14px] font-medium hover:text-foreground">Cancel</button>
                 <button
                   onClick={handleDelete}
                   disabled={deleteConfirmText !== deleteProject.key || deleting}

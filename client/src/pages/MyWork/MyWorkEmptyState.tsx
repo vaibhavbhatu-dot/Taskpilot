@@ -1,4 +1,4 @@
-import { CheckCircle2, CalendarCheck } from 'lucide-react';
+﻿import { CheckCircle2, CalendarCheck } from 'lucide-react';
 
 interface MyWorkEmptyStateProps {
   tab: 'due' | 'today';
@@ -28,7 +28,7 @@ export function MyWorkEmptyState({ tab, isTeamView }: MyWorkEmptyStateProps) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Icon className="w-12 h-12 mb-4" style={{ color: c.iconColor }} />
-        <p className="text-[16px] font-semibold text-[#1E293B]">No tasks for the team in this view.</p>
+        <p className="text-[16px] font-semibold text-foreground">No tasks for the team in this view.</p>
       </div>
     );
   }
@@ -36,8 +36,8 @@ export function MyWorkEmptyState({ tab, isTeamView }: MyWorkEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <Icon className="w-12 h-12 mb-4" style={{ color: c.iconColor }} />
-      <p className="text-[16px] font-semibold text-[#1E293B] mb-1">{c.heading}</p>
-      <p className="text-[14px] text-[#64748B]">{c.subtext}</p>
+      <p className="text-[16px] font-semibold text-foreground mb-1">{c.heading}</p>
+      <p className="text-[14px] text-muted-foreground">{c.subtext}</p>
     </div>
   );
 }

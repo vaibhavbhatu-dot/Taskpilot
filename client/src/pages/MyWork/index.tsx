@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../stores';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -83,11 +83,11 @@ export function MyWorkPage() {
         <MyWorkSkeleton />
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <AlertCircle className="w-12 h-12 text-[#EF4444] mb-4" />
-          <p className="text-[16px] font-semibold text-[#1E293B] mb-3">Failed to load tasks</p>
+          <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+          <p className="text-[16px] font-semibold text-foreground mb-3">Failed to load tasks</p>
           <button
             onClick={() => refetch()}
-            className="h-9 px-5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[14px] font-medium rounded-lg transition-colors"
+            className="h-9 px-5 bg-primary hover:bg-primary/90 text-white text-[14px] font-medium rounded-lg transition-colors"
           >
             Retry
           </button>
@@ -106,7 +106,7 @@ export function MyWorkPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-[#E2E8F0] rounded-[12px] overflow-hidden">
+        <div className="bg-card border border-border rounded-[12px] overflow-hidden">
           {tickets.map((ticket: any, i: number) => (
             <TicketRow key={ticket.id} ticket={ticket} tab={activeTab} isAlt={i % 2 === 1} />
           ))}

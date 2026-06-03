@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Bell, Check, CheckCheck, UserPlus, MessageSquare, Play, CheckCircle, AlertCircle } from 'lucide-react';
 import { notificationsApi } from '../api';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -68,7 +68,7 @@ export function NotificationsPage() {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-start gap-3">
+            <div key={i} className="bg-card rounded-xl border border-border p-4 flex items-start gap-3">
               <Skeleton variant="circle" className="w-8 h-8 flex-shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-48" />
@@ -91,17 +91,17 @@ export function NotificationsPage() {
           {notifications.map((notif) => (
             <div
               key={notif.id}
-              className={`bg-white rounded-xl border p-4 flex items-start gap-3 transition-colors ${
-                !notif.isRead ? 'border-[#BFDBFE] bg-[#EFF6FF]' : 'border-[#E2E8F0]'
+              className={`bg-card rounded-xl border p-4 flex items-start gap-3 transition-colors ${
+                !notif.isRead ? 'border-primary/30 bg-primary/10' : 'border-border'
               }`}
             >
               <div className="flex-shrink-0 mt-0.5">{getNotificationIcon(notif.type)}</div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[13px] ${!notif.isRead ? 'font-semibold text-[#0F172A]' : 'font-medium text-[#334155]'}`}>
+                <p className={`text-[13px] ${!notif.isRead ? 'font-semibold text-foreground' : 'font-medium text-foreground'}`}>
                   {notif.title}
                 </p>
-                <p className="text-[13px] text-[#64748B] mt-0.5 leading-relaxed">{notif.message}</p>
-                <p className="text-[11px] text-[#94A3B8] mt-1.5 font-medium">{timeAgo(notif.createdAt)}</p>
+                <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{notif.message}</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5 font-medium">{timeAgo(notif.createdAt)}</p>
               </div>
               {!notif.isRead && (
                 <button
@@ -109,7 +109,7 @@ export function NotificationsPage() {
                   className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors flex-shrink-0"
                   title="Mark as read"
                 >
-                  <Check className="w-4 h-4 text-[#2563EB]" />
+                  <Check className="w-4 h-4 text-primary" />
                 </button>
               )}
             </div>

@@ -8,9 +8,12 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/teams
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
+    const user = req.user!;
+    const orgFilter = user.organizationId ? { organizationId: user.organizationId } : {};
     const teams = await prisma.team.findMany({
+      where: orgFilter,
       include: {
         lead: { select: { id: true, fullName: true, avatar: true } },
         _count: { select: { members: true } },
@@ -69,7 +72,7 @@ router.post('/', requireRole('ADMIN', 'MANAGER'), async (req: Request, res: Resp
     }
 
     const team = await prisma.team.create({
-      data: { name, leadId: leadId || null },
+      data: { name, leadId: leadId || null, organizationId: req.user!.organizationId || null },
       include: {
         lead: { select: { id: true, fullName: true } },
       },

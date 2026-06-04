@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, AlertTriangle, Briefcase, ListTodo, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '../../stores';
+import { OnboardingCards } from './OnboardingCards';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 import { dashboardApi } from '../../api';
 import { Skeleton } from '../ui/Skeleton';
@@ -30,6 +32,7 @@ function DashboardSkeleton() {
 }
 
 export function ManagerDashboard() {
+  const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [workload, setWorkload] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +78,8 @@ export function ManagerDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {user && <OnboardingCards user={user} />}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-2 mb-2">

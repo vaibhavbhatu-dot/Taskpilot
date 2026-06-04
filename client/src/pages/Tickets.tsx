@@ -202,12 +202,21 @@ export function TicketsPage() {
             ) : tickets.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-16">
-                  <EmptyState
-                    icon={<ClipboardList className="w-12 h-12" />}
-                    title="No tickets yet"
-                    description="Create your first ticket to get started."
-                    action={{ label: 'Create Ticket', onClick: () => setShowCreate(true) }}
-                  />
+                  {advancedFilters.length > 0 ? (
+                    <EmptyState
+                      icon={<ClipboardList className="w-12 h-12" />}
+                      title="No tickets match your filters"
+                      description="Try adjusting or clearing your filters."
+                      action={{ label: 'Clear filters', onClick: () => setAdvancedFilters([]) }}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={<ClipboardList className="w-12 h-12" />}
+                      title="No tickets yet"
+                      description="Create your first ticket to start tracking tasks, bugs, and features."
+                      action={{ label: '+ Create ticket', onClick: () => setShowCreate(true) }}
+                    />
+                  )}
                 </td>
               </tr>
             ) : (

@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores';
 import { authApi } from './api';
 import { Spinner } from '@/design-system';
+import { ProductTour, TOUR_STEPS } from './components/ui/product-tour';
 
 // Layout
 import { Sidebar } from './components/layout/Sidebar';
@@ -12,6 +13,8 @@ import { CommandPalette } from './components/layout/CommandPalette';
 
 // Pages
 import { LoginPage } from './pages/Login';
+import { SignupPage } from './pages/Signup';
+import { VerifyEmailPage } from './pages/VerifyEmail';
 import { ProfileSetupPage } from './pages/ProfileSetup';
 import { DashboardPage } from './pages/Dashboard';
 import { TicketsPage } from './pages/Tickets';
@@ -30,6 +33,8 @@ import { ProjectsPage } from './pages/Projects';
 import { MyWorkPage } from './pages/MyWork';
 import { BacklogPage } from './pages/Backlog';
 import { NotFoundPage } from './pages/NotFound';
+import { OnboardingProfilePage } from './pages/onboarding/Profile';
+import { OnboardingWorkspacePage } from './pages/onboarding/Workspace';
 import { StyleGuideRouter } from './style-guide';
 import { Toaster } from './components/ui/sonner';
 
@@ -43,8 +48,44 @@ const queryClient = new QueryClient({
   },
 });
 
+// Passive checklist tracker — no UI, just marks items done after dwell time
+function ChecklistTracker() {
+  const { user } = useAuthStore();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!user?.onboardingCompleted) return;
+    const key = `checklist_${user.id}`;
+    const getCompleted = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
+    const markDone = (id: string) => {
+      const updated = { ...getCompleted(), [id]: true };
+      localStorage.setItem(key, JSON.stringify(updated));
+    };
+
+    const path = location.pathname;
+    const completed = getCompleted();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    if (path === '/tickets'       && !completed.create_ticket) timeouts.push(setTimeout(() => markDone('create_ticket'), 30000));
+    if (path === '/board'         && !completed.move_ticket)   timeouts.push(setTimeout(() => markDone('move_ticket'),   20000));
+    if (path === '/members'       && !completed.invite_member) timeouts.push(setTimeout(() => markDone('invite_member'), 15000));
+    if (path.includes('/sprints') && !completed.start_sprint)  timeouts.push(setTimeout(() => markDone('start_sprint'),  20000));
+
+    return () => timeouts.forEach(clearTimeout);
+  }, [location.pathname, user]);
+
+  return null;
+}
+
 // Protected layout with sidebar and topbar
 function AppLayout() {
+  const { user } = useAuthStore();
+  const [tourActive, setTourActive] = useState(() => {
+    return !localStorage.getItem('tour_completed');
+  });
+
+  const showTour = !!user?.onboardingCompleted && tourActive;
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -57,6 +98,13 @@ function AppLayout() {
         </main>
       </div>
       <CommandPalette />
+      <ChecklistTracker />
+      <ProductTour
+        steps={TOUR_STEPS}
+        isActive={showTour}
+        onComplete={() => setTourActive(false)}
+        onSkip={() => setTourActive(false)}
+      />
     </div>
   );
 }
@@ -81,6 +129,20 @@ function ProtectedRoute() {
   }
 
   return <AppLayout />;
+}
+
+// Onboarding guard — auth check without AppLayout
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuthStore();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
 
 // Admin guard
@@ -123,8 +185,17 @@ function App() {
             {/* Developer tools — no auth guard */}
             <Route path="/style-guide/*" element={<StyleGuideRouter />} />
 
+            {/* Onboarding — auth-guarded but no sidebar */}
+            <Route path="/onboarding/profile" element={<OnboardingGuard><OnboardingProfilePage /></OnboardingGuard>} />
+            <Route path="/onboarding/workspace" element={<OnboardingGuard><OnboardingWorkspacePage /></OnboardingGuard>} />
+
+            {/* Convenience redirect */}
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/invite" element={<ProfileSetupPage />} />
             <Route path="/invite/:token" element={<ProfileSetupPage />} />
 

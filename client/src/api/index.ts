@@ -19,6 +19,12 @@ export const authApi = {
     api.post<AuthResponse>('/auth/setup', data),
   getMe: () =>
     api.get<User>('/auth/me'),
+  register: (data: { fullName: string; email: string; password: string; companyName: string }) =>
+    api.post('/auth/register', data),
+  verifyOtp: (data: { email: string; otp: string }) =>
+    api.post('/auth/verify-otp', data),
+  resendOtp: (data: { email: string }) =>
+    api.post('/auth/resend-otp', data),
 };
 
 // ─── Users ───────────────────────────────────────────────
@@ -35,6 +41,8 @@ export const usersApi = {
     api.patch<User>(`/users/${id}`, { status: 'INACTIVE' }),
   deleteUser: (id: string) =>
     api.delete(`/users/${id}`),
+  updateProfile: (data: { designation?: string; role?: string; timezone?: string }) =>
+    api.patch('/users/profile', data),
 };
 
 // ─── Teams ───────────────────────────────────────────────
@@ -178,6 +186,12 @@ export const myWorkApi = {
     api.get('/my-work/teams'),
   getMembers: (teamId?: string) =>
     api.get('/my-work/members', { params: teamId ? { teamId } : {} }),
+};
+
+// ─── Onboarding ─────────────────────────────────────────
+export const onboardingApi = {
+  generate: (data: { teamType: string; workStyle: string; teamSize: string }) =>
+    api.post('/onboarding/generate', data),
 };
 
 // ─── Admin ──────────────────────────────────────────────

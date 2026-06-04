@@ -62,6 +62,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Build where clause
     const where: any = {
       status: { notIn: ['LIVE', 'NOT_REQUIRED'] },
+      ...(user.organizationId && { project: { organizationId: user.organizationId } }),
     };
 
     if (teamId && !userId) {
@@ -171,6 +172,7 @@ router.get('/teams', async (req: Request, res: Response) => {
 
     if (user.role === 'ADMIN') {
       const teams = await prisma.team.findMany({
+        where: user.organizationId ? { organizationId: user.organizationId } : {},
         select: { id: true, name: true },
         orderBy: { name: 'asc' },
       });
@@ -207,6 +209,7 @@ router.get('/members', async (req: Request, res: Response) => {
 
     if (user.role === 'ADMIN') {
       const where: any = { status: 'ACTIVE' };
+      if (user.organizationId) where.organizationId = user.organizationId;
       if (teamId) where.teamId = teamId;
 
       const members = await prisma.user.findMany({

@@ -28,6 +28,11 @@ router.get('/', async (req: Request, res: Response) => {
       ],
     };
 
+    // Org isolation
+    if (user.organizationId) {
+      ticketWhere.project = { organizationId: user.organizationId };
+    }
+
     // Apply role scoping
     if (user.role === 'MEMBER') {
       ticketWhere.assignedToId = user.userId;
@@ -61,6 +66,7 @@ router.get('/', async (req: Request, res: Response) => {
     const users = await prisma.user.findMany({
       where: {
         status: 'ACTIVE',
+        ...(user.organizationId && { organizationId: user.organizationId }),
         OR: [
           { fullName: { contains: query, mode: 'insensitive' } },
           { email: { contains: query, mode: 'insensitive' } },
@@ -83,6 +89,7 @@ router.get('/', async (req: Request, res: Response) => {
     const projects = await prisma.project.findMany({
       where: {
         status: 'ACTIVE',
+        ...(user.organizationId && { organizationId: user.organizationId }),
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { key: { contains: query, mode: 'insensitive' } },

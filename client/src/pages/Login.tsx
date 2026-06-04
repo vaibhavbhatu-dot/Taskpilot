@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api';
 import { useAuthStore } from '../stores';
@@ -124,7 +124,10 @@ export function LoginPage() {
           </form>
 
           <p className="text-[13px] text-center text-text-secondary mt-6">
-            Don't have an account? Ask your admin for an invitation.
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-[#2563EB] hover:underline font-medium">
+              Create account
+            </Link>
           </p>
         </div>
       </div>

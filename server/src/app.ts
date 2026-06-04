@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 import { errorHandler } from './middleware/error.middleware';
+import { authenticate } from './middleware/auth.middleware';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/users.routes';
 import teamRoutes from './routes/teams.routes';
@@ -19,6 +20,7 @@ import dashboardRoutes from './routes/dashboard.routes';
 import searchRoutes from './routes/search.routes';
 import adminRoutes from './routes/admin.routes';
 import myWorkRoutes from './routes/mywork.routes';
+import onboardingRoutes from './routes/onboarding.routes';
 
 dotenv.config();
 
@@ -61,6 +63,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/my-work', myWorkRoutes);
+app.use('/api/onboarding', authenticate, onboardingRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

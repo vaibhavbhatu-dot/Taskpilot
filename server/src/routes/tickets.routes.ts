@@ -28,6 +28,11 @@ router.get('/', async (req: Request, res: Response) => {
     const user = req.user!;
     const where: any = {};
 
+    // Org isolation
+    if (user.organizationId) {
+      where.project = { organizationId: user.organizationId };
+    }
+
     // Role-based scoping
     if (user.role === 'MEMBER') {
       where.assignedToId = user.userId;

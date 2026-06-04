@@ -10,7 +10,8 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: string[]; // if set, only these roles see it
+  roles?: string[];
+  tourId?: string;
 }
 
 interface NavSection {
@@ -23,17 +24,17 @@ const sections: NavSection[] = [
   {
     label: 'MAIN',
     items: [
-      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-      { name: 'Work Update', href: '/my-work', icon: ClipboardList },
-      { name: 'My Tickets', href: '/tickets', icon: Ticket },
-      { name: 'Backlog', href: '/backlog', icon: Inbox },
-      { name: 'Kanban Board', href: '/board', icon: Columns3 },
+      { name: 'Dashboard',   href: '/',         icon: LayoutDashboard, tourId: 'dashboard' },
+      { name: 'Work Update', href: '/my-work',  icon: ClipboardList },
+      { name: 'My Tickets',  href: '/tickets',  icon: Ticket,          tourId: 'tickets' },
+      { name: 'Backlog',     href: '/backlog',  icon: Inbox },
+      { name: 'Kanban Board',href: '/board',    icon: Columns3,        tourId: 'board' },
     ],
   },
   {
     label: 'SPRINTS',
     items: [
-      { name: 'Active Sprint', href: '/sprints/active', icon: Zap },
+      { name: 'Active Sprint', href: '/sprints/active', icon: Zap, tourId: 'sprints' },
       { name: 'Sprint Planning', href: '/sprints/planning', icon: Calendar },
       { name: 'Sprint Reports', href: '/sprints/reports', icon: BarChart3 },
     ],
@@ -44,7 +45,7 @@ const sections: NavSection[] = [
     items: [
       { name: 'Teams', href: '/teams', icon: Users },
       { name: 'Projects', href: '/projects', icon: FolderOpen },
-      { name: 'Members', href: '/members', icon: UserPlus, roles: ['ADMIN'] },
+      { name: 'Members', href: '/members', icon: UserPlus, roles: ['ADMIN'], tourId: 'invite' },
       { name: 'Activity Log', href: '/activity', icon: History, roles: ['ADMIN'] },
     ],
   },
@@ -119,6 +120,7 @@ export function Sidebar() {
                       key={item.name}
                       to={item.href}
                       onClick={() => setSidebarOpen(false)}
+                      {...(item.tourId ? { 'data-tour': item.tourId } : {})}
                       className={`group flex items-center gap-3 h-[44px] px-3 mx-1 rounded-lg text-[14px] font-medium transition-colors relative ${
                         isActive
                           ? 'bg-[#2563EB] text-white'

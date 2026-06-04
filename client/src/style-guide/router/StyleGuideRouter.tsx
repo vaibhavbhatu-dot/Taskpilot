@@ -15,6 +15,8 @@ import { FeedbackPage } from '../pages/components/FeedbackPage';
 import { ModalPage }         from '../pages/components/ModalPage';
 import { SelectPage }        from '../pages/components/SelectPage';
 import { AISuggestionPage } from '../pages/components/AISuggestionPage';
+import { OtpPage }          from '../pages/components/OtpPage';
+import { StepperPage }      from '../pages/components/StepperPage';
 
 import { ScoreBarPage }   from '../pages/product/ScoreBarPage';
 import { ResumeCardPage } from '../pages/product/ResumeCardPage';
@@ -44,6 +46,8 @@ export function StyleGuideRouter() {
         <Route path="components/modal"         element={<ModalPage />}         />
         <Route path="components/select"        element={<SelectPage />}        />
         <Route path="components/ai-suggestion" element={<AISuggestionPage />}  />
+        <Route path="components/otp-input"     element={<OtpPage />}           />
+        <Route path="components/stepper"       element={<StepperPage />}       />
 
         {/* Product */}
         <Route path="product/score-bar"   element={<ScoreBarPage />}   />

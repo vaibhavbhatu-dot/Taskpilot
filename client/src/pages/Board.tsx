@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
-import { Columns3, List, CheckCircle2, Plus } from 'lucide-react';
+import { Columns3, List, CheckCircle2, Plus, LayoutDashboard } from 'lucide-react';
+import { EmptyState } from '../components/ui/EmptyState';
 import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi, usersApi, projectsApi, teamsApi } from '../api';
 import type { Ticket, TicketStatus, Sprint, User, Project, Team } from '../types';
@@ -299,6 +300,15 @@ export function BoardPage() {
               </div>
             ))}
           </div>
+        </div>
+      ) : tickets.length === 0 && !sprintFilter && !assigneeFilter && !typeFilter ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            icon={<LayoutDashboard className="w-12 h-12" />}
+            title="Your board is empty"
+            description="Create tickets from the Tickets page and they'll appear here on the board."
+            action={{ label: 'Go to Tickets', onClick: () => navigate('/tickets') }}
+          />
         </div>
       ) : (
         <div className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>

@@ -81,6 +81,19 @@ enum NotificationType {
 
 // ─── MODELS ──────────────────────────────────────────────────────────
 
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  projects Project[]
+  teams    Team[]
+  sprints  Sprint[]
+}
+
 model User {
   id          String     @id @default(uuid())
   email       String     @unique
@@ -90,12 +103,17 @@ model User {
   role        UserRole   @default(MEMBER)
   managerId   String?
   teamId      String?
-  avatar      String?
-  status      UserStatus @default(ACTIVE)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  avatar                String?
+  status                UserStatus @default(ACTIVE)
+  emailVerified         Boolean    @default(false)
+  timezone              String?
+  onboardingCompleted   Boolean    @default(false)
+  organizationId        String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
 
   // Relations
+  organization  Organization?  @relation(fields: [organizationId], references: [id])
   manager       User?          @relation("UserManager", fields: [managerId], references: [id])
   subordinates  User[]         @relation("UserManager")
   team          Team?          @relation("TeamMembers", fields: [teamId], references: [id])
@@ -114,19 +132,25 @@ model User {
   @@index([email])
   @@index([teamId])
   @@index([managerId])
+  @@index([organizationId])
 }
 
 model Team {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  leadId    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  leadId         String?
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
-  lead    User?    @relation("TeamLead", fields: [leadId], references: [id])
-  members User[]   @relation("TeamMembers")
-  tickets Ticket[]
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  lead         User?          @relation("TeamLead", fields: [leadId], references: [id])
+  members      User[]         @relation("TeamMembers")
+  tickets      Ticket[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 model Invitation {
@@ -149,25 +173,28 @@ model Invitation {
 }
 
 model Project {
-  id        String        @id @default(uuid())
-  name      String
-  key       String        @unique
-  leadId    String?
-  status    ProjectStatus @default(ACTIVE)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id             String        @id @default(uuid())
+  name           String
+  key            String
+  leadId         String?
+  organizationId String?
+  status         ProjectStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   // Relations
-  lead    User?    @relation("ProjectLead", fields: [leadId], references: [id])
-  tickets Ticket[]
-  sprints Sprint[]
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  lead         User?          @relation("ProjectLead", fields: [leadId], references: [id])
+  tickets      Ticket[]
+  sprints      Sprint[]
 
-  @@index([key])
+  @@unique([organizationId, key])
+  @@index([organizationId])
 }
 
 model Ticket {
   id           String         @id @default(uuid())
-  ticketNumber String         @unique
+  ticketNumber String
   projectId    String
   title        String
   description  String?
@@ -195,31 +222,34 @@ model Ticket {
   assignees     TicketAssignee[]
   attachments   Attachment[]
 
+  @@unique([projectId, ticketNumber])
   @@index([projectId])
   @@index([assignedToId])
   @@index([status])
-  @@index([ticketNumber])
 }
 
 model Sprint {
-  id          String       @id @default(uuid())
-  name        String
-  projectId   String
-  startDate   DateTime?
-  endDate     DateTime?
-  goal        String?
-  status      SprintStatus @default(PLANNED)
-  createdById String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  name           String
+  projectId      String
+  startDate      DateTime?
+  endDate        DateTime?
+  goal           String?
+  status         SprintStatus @default(PLANNED)
+  createdById    String
+  organizationId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   // Relations
+  organization  Organization?  @relation(fields: [organizationId], references: [id])
   project       Project        @relation(fields: [projectId], references: [id])
   createdBy     User           @relation("SprintCreator", fields: [createdById], references: [id])
   sprintTickets SprintTicket[]
 
   @@index([projectId])
   @@index([status])
+  @@index([organizationId])
 }
 
 model SprintTicket {
@@ -300,6 +330,19 @@ model TicketAssignee {
   @@unique([ticketId, userId])
   @@index([ticketId])
   @@index([userId])
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  otp       String
+  type      String   @default("EMAIL_VERIFY")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  attempts  Int      @default(0)
+
+  @@index([email])
 }
 
 model Attachment {

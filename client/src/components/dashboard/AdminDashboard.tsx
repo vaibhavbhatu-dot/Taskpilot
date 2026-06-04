@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Bug, Layers, Calendar, ChevronRight, Activity, AlertCircle } from 'lucide-react';
 import { dashboardApi, sprintsApi } from '../../api';
+import { useAuthStore } from '../../stores';
 import { Skeleton } from '../ui/Skeleton';
 import type { DashboardData, Sprint } from '../../types';
 import { STATUS_CONFIG } from '../../constants/ticketStatus';
+import { OnboardingCards } from './OnboardingCards';
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: 'bg-red-500',
@@ -50,6 +52,7 @@ function DashboardSkeleton() {
 
 export function AdminDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +108,7 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {user && <OnboardingCards user={user} />}
 
       {/* ── Row 1: KPI Cards ────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

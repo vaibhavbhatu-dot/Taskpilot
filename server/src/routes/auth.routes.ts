@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../utils/prisma';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, TokenPayload } from '../utils/jwt';
@@ -33,6 +34,7 @@ router.post('/login', async (req: Request, res: Response) => {
       userId: user.id,
       email: user.email,
       role: user.role,
+      organizationId: user.organizationId ?? undefined,
     };
 
     const accessToken = generateAccessToken(payload);
@@ -55,6 +57,10 @@ router.post('/login', async (req: Request, res: Response) => {
         role: user.role,
         avatar: user.avatar,
         designation: user.designation,
+        organizationId: user.organizationId,
+        onboardingCompleted: user.onboardingCompleted,
+        emailVerified: user.emailVerified,
+        timezone: user.timezone,
       },
     });
   } catch (error) {
@@ -88,6 +94,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
       userId: user.id,
       email: user.email,
       role: user.role,
+      organizationId: user.organizationId ?? undefined,
     };
 
     const accessToken = generateAccessToken(newPayload);
@@ -166,6 +173,7 @@ router.post('/setup', async (req: Request, res: Response) => {
 
     const invitation = await prisma.invitation.findUnique({
       where: { token },
+      include: { invitedBy: { select: { organizationId: true } } },
     });
 
     if (!invitation || invitation.status !== 'PENDING') {
@@ -194,6 +202,9 @@ router.post('/setup', async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Inherit the inviter's organization
+    const inviterOrgId = invitation.invitedBy.organizationId;
+
     // Create user and update invitation in a transaction
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -207,6 +218,7 @@ router.post('/setup', async (req: Request, res: Response) => {
           teamId: invitation.presetTeamId || null,
           avatar: avatar || null,
           status: 'ACTIVE',
+          organizationId: inviterOrgId || null,
         },
       });
 
@@ -223,6 +235,7 @@ router.post('/setup', async (req: Request, res: Response) => {
       userId: user.id,
       email: user.email,
       role: user.role,
+      organizationId: user.organizationId ?? undefined,
     };
 
     const accessToken = generateAccessToken(payload);
@@ -244,6 +257,9 @@ router.post('/setup', async (req: Request, res: Response) => {
         role: user.role,
         avatar: user.avatar,
         designation: user.designation,
+        organizationId: user.organizationId,
+        onboardingCompleted: user.onboardingCompleted,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (error) {
@@ -285,6 +301,10 @@ router.get('/me', async (req: Request, res: Response) => {
         teamId: true,
         managerId: true,
         status: true,
+        emailVerified: true,
+        onboardingCompleted: true,
+        timezone: true,
+        organizationId: true,
       },
     });
 
@@ -297,6 +317,264 @@ router.get('/me', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Get me error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/register
+router.post('/register', async (req: Request, res: Response) => {
+  try {
+    const { fullName, email, password, companyName } = req.body;
+
+    if (!fullName || !email || !password || !companyName) {
+      res.status(400).json({ message: 'All fields are required' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ message: 'Password must be at least 8 characters' });
+      return;
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (existing) {
+      res.status(409).json({ message: 'An account with this email already exists' });
+      return;
+    }
+
+    const emailDomain = email.split('@')[1];
+    const domainExists = await prisma.user.findFirst({
+      where: { email: { endsWith: '@' + emailDomain }, emailVerified: true },
+    });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create org + user in a transaction
+    const user = await prisma.$transaction(async (tx) => {
+      const org = await tx.organization.create({
+        data: {
+          name: companyName,
+          domain: emailDomain || null,
+        },
+      });
+
+      return tx.user.create({
+        data: {
+          fullName,
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          role: 'ADMIN',
+          status: 'PENDING',
+          emailVerified: false,
+          organizationId: org.id,
+        },
+      });
+    });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await prisma.verificationToken.create({
+      data: {
+        email: email.toLowerCase(),
+        token: randomBytes(32).toString('hex'),
+        otp,
+        type: 'EMAIL_VERIFY',
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+
+    const devOtp = process.env.NODE_ENV !== 'production' ? otp : undefined;
+
+    if (process.env.NODE_ENV === 'production' && process.env.RESEND_API_KEY) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || 'noreply@taskpilot.com',
+          to: email,
+          subject: 'Verify your TaskPilot account',
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2>Verify your email</h2>
+            <p>Hi ${fullName},</p>
+            <p>Enter this code to verify your TaskPilot account:</p>
+            <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#2563EB;padding:24px;background:#EFF6FF;border-radius:8px;text-align:center;margin:24px 0">${otp}</div>
+            <p style="color:#94A3B8;font-size:14px">This code expires in 15 minutes. If you didn't sign up, ignore this email.</p>
+          </div>`,
+        }),
+      });
+    }
+
+    res.status(201).json({
+      message: 'Account created. Please verify your email.',
+      userId: user.id,
+      email: user.email,
+      companyDomainExists: !!domainExists,
+      existingCompanyName: domainExists ? emailDomain : null,
+      ...(devOtp && { devOtp }),
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Failed to create account' });
+  }
+});
+
+// POST /api/auth/verify-otp
+router.post('/verify-otp', async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      res.status(400).json({ message: 'Email and OTP are required' });
+      return;
+    }
+
+    const verification = await prisma.verificationToken.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        type: 'EMAIL_VERIFY',
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!verification) {
+      res.status(400).json({ message: 'OTP expired. Please request a new one.' });
+      return;
+    }
+
+    if (verification.attempts >= 5) {
+      await prisma.verificationToken.delete({ where: { id: verification.id } });
+      res.status(400).json({ message: 'Too many attempts. Please request a new OTP.' });
+      return;
+    }
+
+    const isDevBypass = process.env.NODE_ENV !== 'production' && otp === '000000';
+
+    if (!isDevBypass && verification.otp !== otp) {
+      await prisma.verificationToken.update({
+        where: { id: verification.id },
+        data: { attempts: { increment: 1 } },
+      });
+      const remaining = 5 - (verification.attempts + 1);
+      res.status(400).json({
+        message: `Invalid OTP. ${remaining} attempts remaining.`,
+        attemptsRemaining: remaining,
+      });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { email: email.toLowerCase() },
+      data: { emailVerified: true, status: 'ACTIVE' },
+    });
+
+    await prisma.verificationToken.delete({ where: { id: verification.id } });
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const payload: TokenPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      organizationId: user.organizationId ?? undefined,
+    };
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({
+      message: 'Email verified successfully',
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        emailVerified: true,
+        isNewUser: true,
+        organizationId: user.organizationId,
+      },
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Verification failed' });
+  }
+});
+
+// POST /api/auth/resend-otp
+router.post('/resend-otp', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) {
+      res.status(404).json({ message: 'No account found with this email' });
+      return;
+    }
+
+    await prisma.verificationToken.deleteMany({
+      where: { email: email.toLowerCase(), type: 'EMAIL_VERIFY' },
+    });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await prisma.verificationToken.create({
+      data: {
+        email: email.toLowerCase(),
+        token: randomBytes(32).toString('hex'),
+        otp,
+        type: 'EMAIL_VERIFY',
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+
+    const devOtp = process.env.NODE_ENV !== 'production' ? otp : undefined;
+
+    if (process.env.NODE_ENV === 'production' && process.env.RESEND_API_KEY) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || 'noreply@taskpilot.com',
+          to: email,
+          subject: 'Your new TaskPilot verification code',
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2>New verification code</h2>
+            <p>Here is your new verification code:</p>
+            <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#2563EB;padding:24px;background:#EFF6FF;border-radius:8px;text-align:center;margin:24px 0">${otp}</div>
+            <p style="color:#94A3B8;font-size:14px">This code expires in 15 minutes.</p>
+          </div>`,
+        }),
+      });
+    }
+
+    res.json({
+      message: 'New OTP sent to your email',
+      ...(devOtp && { devOtp }),
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ message: 'Failed to resend OTP' });
   }
 });
 

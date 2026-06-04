@@ -12,6 +12,9 @@ export interface User {
   teamId?: string;
   managerId?: string;
   status: UserStatus;
+  emailVerified?: boolean;
+  onboardingCompleted?: boolean;
+  timezone?: string;
   createdAt?: string;
   team?: { id: string; name: string };
   manager?: { id: string; fullName: string };

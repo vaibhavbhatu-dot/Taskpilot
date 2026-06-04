@@ -15,6 +15,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
+    if (req.user!.organizationId) where.organizationId = req.user!.organizationId;
 
     const sprints = await prisma.sprint.findMany({
       where,
@@ -85,6 +86,7 @@ router.post('/', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req:
         goal: goal || null,
         status: 'PLANNED',
         createdById: req.user!.userId,
+        organizationId: req.user!.organizationId || null,
       },
       include: {
         project: { select: { id: true, name: true, key: true } },

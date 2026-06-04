@@ -2,8 +2,9 @@
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket, Inbox } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { ticketsApi, sprintsApi, usersApi, projectsApi } from '../api';
 import type { Ticket, Sprint, User, Project } from '../types';
 import { toast } from 'sonner';
@@ -302,8 +303,20 @@ export function SprintPlanningPage() {
                       className={`min-h-[200px] transition-colors rounded-lg ${snapshot.isDraggingOver ? 'bg-primary-50/50' : ''}`}
                     >
                       {searchedBacklog.length === 0 && !snapshot.isDraggingOver ? (
-                        <div className="text-center mt-10">
-                          <p className="text-[14px] text-muted-foreground">No tickets found in backlog.</p>
+                        <div>
+                          {search ? (
+                            <div className="text-center mt-10">
+                              <p className="text-[14px] text-muted-foreground">No tickets match your search.</p>
+                            </div>
+                          ) : (
+                            <EmptyState
+                              icon={<Inbox className="w-12 h-12" />}
+                              title="Backlog is empty"
+                              description="Tickets you create will appear here. Drag them into a sprint to start planning."
+                              action={{ label: 'Create a ticket', onClick: () => navigate('/tickets') }}
+                              size="sm"
+                            />
+                          )}
                         </div>
                       ) : (
                         searchedBacklog.map((ticket, index) => (

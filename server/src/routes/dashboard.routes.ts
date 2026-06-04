@@ -13,6 +13,12 @@ router.get('/', async (req: Request, res: Response) => {
     const ticketWhere: any = {};
     const memberWhere: any = { status: 'ACTIVE' };
 
+    // Org isolation
+    if (user.organizationId) {
+      ticketWhere.project = { organizationId: user.organizationId };
+      memberWhere.organizationId = user.organizationId;
+    }
+
     // Role-based scoping
     if (user.role === 'MEMBER') {
       ticketWhere.assignedToId = user.userId;
@@ -64,9 +70,16 @@ router.get('/', async (req: Request, res: Response) => {
       LOW: await prisma.ticket.count({ where: { ...ticketWhere, priority: 'LOW' } }),
     };
 
-    // Recent activity
+    // Recent activity — scoped to org + optional role filter
+    const activityWhere: any = {};
+    if (user.organizationId) {
+      activityWhere.ticket = { project: { organizationId: user.organizationId } };
+    }
+    if (ticketWhere.assignedToId) {
+      activityWhere.ticket = { ...activityWhere.ticket, assignedToId: ticketWhere.assignedToId };
+    }
     const recentActivity = await prisma.ticketHistory.findMany({
-      where: ticketWhere.assignedToId ? { ticket: { assignedToId: ticketWhere.assignedToId } } : {},
+      where: activityWhere,
       include: {
         changedBy: { select: { id: true, fullName: true, avatar: true } },
         ticket: { select: { id: true, ticketNumber: true, title: true } },
@@ -122,8 +135,10 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/velocity', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.query;
+    const user = req.user!;
     const where: any = { status: 'COMPLETED' };
     if (projectId) where.projectId = projectId;
+    if (user.organizationId) where.organizationId = user.organizationId;
 
     const completedSprints = await prisma.sprint.findMany({
       where,
@@ -159,6 +174,7 @@ router.get('/workload', async (req: Request, res: Response) => {
   try {
     const user = req.user!;
     const memberWhere: any = { status: 'ACTIVE' };
+    if (user.organizationId) memberWhere.organizationId = user.organizationId;
 
     if (user.role === 'MANAGER') {
       const currentUser = await prisma.user.findUnique({ where: { id: user.userId } });
@@ -167,7 +183,11 @@ router.get('/workload', async (req: Request, res: Response) => {
       memberWhere.id = user.userId;
     }
 
-    const activeSprints = await prisma.sprint.findMany({ where: { status: 'ACTIVE' }, select: { id: true } });
+    const sprintOrgFilter = user.organizationId ? { organizationId: user.organizationId } : {};
+    const activeSprints = await prisma.sprint.findMany({
+      where: { status: 'ACTIVE', ...sprintOrgFilter },
+      select: { id: true },
+    });
     const sprintIds = activeSprints.map(s => s.id);
 
     const members = await prisma.user.findMany({

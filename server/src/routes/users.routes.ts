@@ -7,6 +7,40 @@ const router = Router();
 
 router.use(authenticate);
 
+// PATCH /api/users/profile — Self-service profile update (designation, role, timezone)
+router.patch('/profile', async (req: Request, res: Response) => {
+  try {
+    const { designation, role, timezone } = req.body;
+    const userId = req.user!.userId;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(designation !== undefined && { designation }),
+        ...(role && { role }),
+        ...(timezone !== undefined && { timezone }),
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        designation: true,
+        role: true,
+        avatar: true,
+        teamId: true,
+        managerId: true,
+        status: true,
+        timezone: true,
+      },
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/users — List users (scoped by role)
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -14,6 +48,9 @@ router.get('/', async (req: Request, res: Response) => {
     const user = req.user!;
 
     const where: any = { status: 'ACTIVE' };
+
+    // Org isolation
+    if (user.organizationId) where.organizationId = user.organizationId;
 
     // Role-based scoping
     if (user.role === 'MANAGER') {

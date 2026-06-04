@@ -2,7 +2,8 @@
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Calendar as CalendarIcon, Target, CheckCircle, CheckCircle2, Columns3, List } from 'lucide-react';
+import { Calendar as CalendarIcon, Target, CheckCircle, CheckCircle2, Columns3, List, Zap } from 'lucide-react';
+import { EmptyState } from '../components/ui/EmptyState';
 import { sprintsApi, ticketsApi } from '../api';
 import type { Sprint, Ticket, TicketStatus } from '../types';
 import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
@@ -205,8 +206,20 @@ export function ActiveSprintPage() {
         </div>
       </div>
 
+      {/* Empty sprint state */}
+      {tickets.length === 0 && (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            icon={<Zap className="w-12 h-12" />}
+            title="Sprint is empty"
+            description="Go to Sprint Planning to add tickets from your backlog into this sprint."
+            action={{ label: 'Go to Sprint Planning', onClick: () => navigate('/sprints/planning') }}
+          />
+        </div>
+      )}
+
       {/* View Toggle */}
-      <div className="flex items-center justify-end mb-4 flex-shrink-0">
+      {tickets.length > 0 && <div className="flex items-center justify-end mb-4 flex-shrink-0">
         <div className="flex bg-muted rounded-lg p-0.5 border border-border">
           <button
             onClick={() => setViewMode('list')}
@@ -225,10 +238,10 @@ export function ActiveSprintPage() {
             <Columns3 className="w-4 h-4" /> Board
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden min-h-0 bg-card border border-border rounded-xl shadow-sm">
+      {tickets.length > 0 && <div className="flex-1 overflow-hidden min-h-0 bg-card border border-border rounded-xl shadow-sm">
         {viewMode === 'board' ? (
           <div className="h-full overflow-auto p-4 flex gap-4" style={{ WebkitOverflowScrolling: 'touch' }}>
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -391,7 +404,7 @@ export function ActiveSprintPage() {
             </table>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Complete Sprint Modal */}
       <Modal

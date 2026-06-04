@@ -23,8 +23,14 @@ router.get('/activity', async (req: Request, res: Response) => {
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
 
+    const orgId = req.user!.organizationId;
+    const orgFilter = orgId
+      ? { ticket: { project: { organizationId: orgId } } }
+      : {};
+
     const [activities, total] = await Promise.all([
       prisma.ticketHistory.findMany({
+        where: orgFilter,
         include: {
           changedBy: { select: { id: true, fullName: true, avatar: true } },
           ticket: { select: { id: true, ticketNumber: true, title: true } },
@@ -33,7 +39,7 @@ router.get('/activity', async (req: Request, res: Response) => {
         skip: (pageNum - 1) * limitNum,
         take: limitNum,
       }),
-      prisma.ticketHistory.count(),
+      prisma.ticketHistory.count({ where: orgFilter }),
     ]);
 
     res.json({

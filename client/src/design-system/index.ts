@@ -58,7 +58,18 @@ export { EmptyState } from "@/components/ui/EmptyState"
 export type { EmptyStateProps } from "@/components/ui/EmptyState"
 
 export { StatCard } from "@/components/ui/stat-card"
+
+export { AISuggestionChip } from "@/components/ui/ai-suggestion-chip"
+export { ProductTour, TOUR_STEPS } from "@/components/ui/product-tour"
+export type { ProductTourProps, TourStep } from "@/components/ui/product-tour"
+export type { AISuggestionChipProps } from "@/components/ui/ai-suggestion-chip"
 export type { StatCardProps } from "@/components/ui/stat-card"
+
+export { OtpInput } from "@/components/ui/otp-input"
+export type { OtpInputProps } from "@/components/ui/otp-input"
+
+export { Stepper } from "@/components/ui/stepper"
+export type { StepperProps } from "@/components/ui/stepper"
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 export { Container, Stack, Grid, Divider, PageHeader } from "@/components/layout"

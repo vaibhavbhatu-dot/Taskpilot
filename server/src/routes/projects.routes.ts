@@ -15,6 +15,7 @@ router.get('/', async (req: Request, res: Response) => {
     const where: any = {};
 
     if (status) where.status = status;
+    if (user.organizationId) where.organizationId = user.organizationId;
 
     // PM can only see their projects
     if (user.role === 'PROJECT_MANAGER') {
@@ -81,6 +82,7 @@ router.post('/', requireRole('ADMIN', 'PROJECT_MANAGER'), async (req: Request, r
         name,
         key: key.toUpperCase(),
         leadId: leadId || req.user!.userId,
+        organizationId: req.user!.organizationId || null,
       },
       include: {
         lead: { select: { id: true, fullName: true } },

@@ -13,6 +13,7 @@ import { BadgePage }    from '../pages/components/BadgePage';
 import { AlertPage }    from '../pages/components/AlertPage';
 import { FeedbackPage } from '../pages/components/FeedbackPage';
 import { ModalPage }         from '../pages/components/ModalPage';
+import { SelectPage }        from '../pages/components/SelectPage';
 import { AISuggestionPage } from '../pages/components/AISuggestionPage';
 
 import { ScoreBarPage }   from '../pages/product/ScoreBarPage';
@@ -41,6 +42,7 @@ export function StyleGuideRouter() {
         <Route path="components/alert"    element={<AlertPage />}    />
         <Route path="components/feedback" element={<FeedbackPage />} />
         <Route path="components/modal"         element={<ModalPage />}         />
+        <Route path="components/select"        element={<SelectPage />}        />
         <Route path="components/ai-suggestion" element={<AISuggestionPage />}  />
 
         {/* Product */}

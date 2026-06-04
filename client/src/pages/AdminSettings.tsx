@@ -1,8 +1,10 @@
-﻿import { useEffect, useState } from 'react';
-import { Mail, UserCog, FolderKanban, Settings as SettingsIcon, Send, Trash2, Shield, X, Users, Pencil, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Mail, UserCog, FolderKanban, Settings as SettingsIcon, Send, Trash2, Shield, Users, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageHeader } from '../components/ui/PageHeader';
 import { invitationsApi, usersApi, projectsApi, teamsApi } from '../api';
 import type { Invitation, User, Project, Team } from '../types';
+import { Button, Badge, Modal, ConfirmModal, useModal, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 
 type Tab = 'invitations' | 'users' | 'projects' | 'teams' | 'platform';
 
@@ -21,15 +23,15 @@ export function AdminSettingsPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader title="Admin Settings" />
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 gap-1">
+      <div className="flex border-b border-border gap-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors
               ${activeTab === tab.id
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'}`}
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
@@ -78,16 +80,15 @@ function PlatformSettingsTab() {
           </nav>
         </div>
       </div>
-      
+
       <div className="flex-1">
         <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <h2 className="text-[16px] font-semibold text-foreground mb-4">
             {sections.find(s => s.id === subTab)?.label}
           </h2>
           <p className="text-[13px] text-muted-foreground mb-6">
-            Configure platform-wide {sections.find(s => s.id === subTab)?.label.toLowerCase()} settings here. (This functionality is a placeholder for the blueprint implementation).
+            Configure platform-wide {sections.find(s => s.id === subTab)?.label.toLowerCase()} settings here.
           </p>
-          
           <div className="border-2 border-dashed border-border rounded-xl h-64 flex items-center justify-center">
             <span className="text-muted-foreground text-[13px] font-medium uppercase tracking-widest px-4 text-center">
               {subTab} configuration coming soon
@@ -110,9 +111,11 @@ function InvitationsTab() {
   const [teamId, setTeamId] = useState('');
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const revokeModal = useModal();
+  const [revokeId, setRevokeId] = useState<string | null>(null);
+  const [revoking, setRevoking] = useState(false);
+
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     try {
@@ -132,41 +135,52 @@ function InvitationsTab() {
       await invitationsApi.create({ email, role, teamId: teamId || undefined });
       setEmail(''); setRole('MEMBER'); setTeamId('');
       setShowInvite(false);
+      toast.success(`Invitation sent to ${email}`);
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to send invitation');
+      toast.error(error.response?.data?.error || 'Failed to send invitation');
     } finally { setSending(false); }
   }
 
-  async function handleRevoke(id: string) {
-    if (!confirm('Revoke this invitation?')) return;
-    try {
-      await invitationsApi.revoke(id);
-      loadData();
-    } catch { /* ignore */ }
+  function openRevoke(id: string) {
+    setRevokeId(id);
+    revokeModal.open();
   }
 
-  const statusColor = (s: string) => {
-    switch (s) {
-      case 'PENDING': return 'badge-yellow';
-      case 'ACCEPTED': return 'badge-green';
-      case 'EXPIRED': return 'badge-gray';
-      case 'REVOKED': return 'badge-red';
-      default: return 'badge-gray';
+  async function doRevoke() {
+    if (!revokeId) return;
+    setRevoking(true);
+    try {
+      await invitationsApi.revoke(revokeId);
+      revokeModal.close();
+      toast.success('Invitation revoked');
+      loadData();
+    } catch {
+      toast.error('Failed to revoke invitation');
+    } finally {
+      setRevoking(false);
     }
+  }
+
+  type InvStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+  const STATUS_BADGE: Record<InvStatus, 'warning' | 'success' | 'secondary' | 'error'> = {
+    PENDING: 'warning',
+    ACCEPTED: 'success',
+    EXPIRED: 'secondary',
+    REVOKED: 'error',
   };
 
   return (
     <div className="space-y-5">
       <div className="flex justify-between items-center">
-        <h3 className="font-medium">Manage Invitations</h3>
-        <button onClick={() => setShowInvite(true)} className="btn-primary btn-sm">
-          <Send className="w-3.5 h-3.5 mr-1" /> Send Invitation
-        </button>
+        <h3 className="font-medium text-foreground">Manage Invitations</h3>
+        <Button size="sm" leftIcon={<Send className="w-3.5 h-3.5" />} onClick={() => setShowInvite(true)}>
+          Send Invitation
+        </Button>
       </div>
 
       {showInvite && (
-        <div className="card p-5 border-primary-200 bg-primary-50/30 animate-fade-in">
+        <div className="bg-[hsl(var(--color-info))]/5 border border-[hsl(var(--color-info))]/30 rounded-xl p-5 animate-fade-in">
           <form onSubmit={handleInvite} className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[200px]">
               <label className="label">Email *</label>
@@ -174,60 +188,78 @@ function InvitationsTab() {
             </div>
             <div className="w-40">
               <label className="label">Role</label>
-              <select value={role} onChange={(e) => setRole(e.target.value)} className="select">
-                <option value="MEMBER">Member</option>
-                <option value="MANAGER">Manager</option>
-                <option value="PROJECT_MANAGER">Project Manager</option>
-                <option value="ADMIN">Admin</option>
-              </select>
+              <Select value={role} onValueChange={(val) => setRole(val)}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MEMBER">Member</SelectItem>
+                  <SelectItem value="MANAGER">Manager</SelectItem>
+                  <SelectItem value="PROJECT_MANAGER">Project Manager</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="w-40">
               <label className="label">Team</label>
-              <select value={teamId} onChange={(e) => setTeamId(e.target.value)} className="select">
-                <option value="">No team</option>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select value={teamId || '_none'} onValueChange={(val) => setTeamId(val === '_none' ? '' : val)}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No team</SelectItem>
+                  {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-            <button type="submit" disabled={sending} className="btn-primary">
-              {sending ? 'Sending...' : 'Send'}
-            </button>
-            <button type="button" onClick={() => setShowInvite(false)} className="btn-ghost">
-              <X className="w-4 h-4" />
-            </button>
+            <Button type="submit" loading={sending}>Send</Button>
+            <Button type="button" variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
           </form>
         </div>
       )}
 
-      <div className="card overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Email</th>
-              <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Role</th>
-              <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Status</th>
-              <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Invited By</th>
-              <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Expires</th>
+            <tr className="bg-muted/50 border-b border-border">
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Email</th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Role</th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Status</th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Invited By</th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Expires</th>
               <th className="px-4 py-3 w-10"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-border">
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-text-muted text-sm">Loading...</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-muted-foreground text-sm">Loading...</td></tr>
             ) : invitations.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-text-muted text-sm">No invitations yet</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-muted-foreground text-sm">No invitations yet</td></tr>
             ) : (
               invitations.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm">{inv.email}</td>
-                  <td className="px-4 py-3"><span className="badge-blue text-xs">{inv.presetRole?.replace('_', ' ')}</span></td>
-                  <td className="px-4 py-3"><span className={statusColor(inv.status)}>{inv.status}</span></td>
-                  <td className="px-4 py-3 text-sm text-text-secondary">{inv.invitedBy?.fullName}</td>
-                  <td className="px-4 py-3 text-xs text-text-muted">{new Date(inv.expiresAt).toLocaleDateString()}</td>
+                <tr key={inv.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-4 py-3 text-sm text-foreground">{inv.email}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant="info" size="sm">{inv.presetRole?.replace('_', ' ')}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={STATUS_BADGE[inv.status as InvStatus] ?? 'secondary'} size="sm">
+                      {inv.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{inv.invitedBy?.fullName}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(inv.expiresAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     {inv.status === 'PENDING' && (
-                      <button onClick={() => handleRevoke(inv.id)} className="btn-ghost btn-sm text-red-500 hover:text-red-600">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => openRevoke(inv.id)}
+                        aria-label="Revoke invitation"
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -236,6 +268,17 @@ function InvitationsTab() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        {...revokeModal.props}
+        title="Revoke Invitation"
+        description="This invitation will be invalidated and the recipient will not be able to join."
+        confirmLabel="Revoke"
+        variant="destructive"
+        loading={revoking}
+        onConfirm={doRevoke}
+        onCancel={() => revokeModal.close()}
+      />
     </div>
   );
 }
@@ -245,9 +288,7 @@ function UsersTab() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  useEffect(() => { loadUsers(); }, []);
 
   async function loadUsers() {
     try {
@@ -259,54 +300,56 @@ function UsersTab() {
   async function handleRoleChange(userId: string, newRole: string) {
     try {
       await usersApi.updateRole(userId, newRole);
+      toast.success('Role updated');
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to update role');
+      toast.error(error.response?.data?.error || 'Failed to update role');
     }
   }
 
   return (
-    <div className="card overflow-hidden">
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
       <table className="w-full">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">User</th>
-            <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Email</th>
-            <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Designation</th>
-            <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Role</th>
-            <th className="text-left text-xs font-medium text-text-secondary uppercase px-4 py-3">Team</th>
+          <tr className="bg-muted/50 border-b border-border">
+            <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">User</th>
+            <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Email</th>
+            <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Designation</th>
+            <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Role</th>
+            <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Team</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-border">
           {loading ? (
-            <tr><td colSpan={5} className="text-center py-8 text-text-muted text-sm">Loading...</td></tr>
+            <tr><td colSpan={5} className="text-center py-8 text-muted-foreground text-sm">Loading...</td></tr>
           ) : (
             users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
+              <tr key={u.id} className="hover:bg-muted/50 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary-600">{u.fullName?.charAt(0)}</span>
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--color-info))]/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-[hsl(var(--color-info))]">{u.fullName?.charAt(0)}</span>
                     </div>
-                    <span className="text-sm font-medium">{u.fullName}</span>
-                    {u.role === 'ADMIN' && <Shield className="w-3.5 h-3.5 text-primary-600" />}
+                    <span className="text-sm font-medium text-foreground">{u.fullName}</span>
+                    {u.role === 'ADMIN' && <Shield className="w-3.5 h-3.5 text-[hsl(var(--color-info))]" />}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-text-secondary">{u.email}</td>
-                <td className="px-4 py-3 text-sm text-text-secondary">{u.designation || '—'}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{u.email}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{u.designation || '—'}</td>
                 <td className="px-4 py-3">
-                  <select
-                    value={u.role}
-                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                    className="select w-auto text-sm h-8"
-                  >
-                    <option value="MEMBER">Member</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="PROJECT_MANAGER">Project Manager</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
+                  <Select value={u.role} onValueChange={(val) => handleRoleChange(u.id, val)}>
+                    <SelectTrigger className="w-[160px] h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="MANAGER">Manager</SelectItem>
+                      <SelectItem value="PROJECT_MANAGER">Project Manager</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </td>
-                <td className="px-4 py-3 text-sm text-text-secondary">{u.team?.name || '—'}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{u.team?.name || '—'}</td>
               </tr>
             ))
           )}
@@ -323,13 +366,11 @@ function ProjectsTab() {
   const [key, setKey] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // Edit state
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [editName, setEditName] = useState('');
   const [editKey, setEditKey] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Delete state
   const [deleteProject, setDeleteProject] = useState<Project | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -349,9 +390,10 @@ function ProjectsTab() {
     try {
       await projectsApi.create({ name, key: key.toUpperCase() });
       setName(''); setKey('');
+      toast.success(`Project "${name}" created`);
       loadProjects();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create project');
+      toast.error(error.response?.data?.error || 'Failed to create project');
     } finally { setCreating(false); }
   }
 
@@ -366,9 +408,10 @@ function ProjectsTab() {
         ...(canEditKey && editKey.trim() !== editProject.key ? { key: editKey.trim().toUpperCase() } : {}),
       });
       setEditProject(null);
+      toast.success('Project updated');
       loadProjects();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to update project');
+      toast.error(error.response?.data?.error || 'Failed to update project');
     } finally { setSaving(false); }
   }
 
@@ -377,19 +420,20 @@ function ProjectsTab() {
     setDeleting(true);
     try {
       await projectsApi.delete(deleteProject.id);
+      toast.success(`Project "${deleteProject.name}" deleted`);
       setDeleteProject(null);
       setDeleteConfirmText('');
       loadProjects();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to delete project');
+      toast.error(error.response?.data?.error || 'Failed to delete project');
     } finally { setDeleting(false); }
   }
 
   return (
     <div className="space-y-5">
       {/* Create form */}
-      <div className="card p-5">
-        <h3 className="font-medium mb-3">Create Project</h3>
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h3 className="font-medium text-foreground mb-3">Create Project</h3>
         <form onSubmit={handleCreate} className="flex gap-3 items-end">
           <div className="flex-1">
             <label className="label">Name</label>
@@ -399,162 +443,156 @@ function ProjectsTab() {
             <label className="label">Key</label>
             <input value={key} onChange={(e) => setKey(e.target.value.toUpperCase())} className="input" required placeholder="KEY" maxLength={6} />
           </div>
-          <button type="submit" disabled={creating} className="btn-primary">{creating ? 'Creating...' : 'Create'}</button>
+          <Button type="submit" loading={creating}>Create</Button>
         </form>
       </div>
 
       {/* Project cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((p) => (
-          <div key={p.id} className="card p-4 group relative">
-            {/* Action buttons — visible on hover */}
+          <div key={p.id} className="bg-card rounded-xl border border-border p-4 group relative hover:border-border/60 transition-colors">
             <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => { setEditProject(p); setEditName(p.name); setEditKey(p.key); }}
                 className="w-7 h-7 flex items-center justify-center rounded-lg bg-card border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors shadow-sm"
-                title="Edit project"
+                aria-label="Edit project"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => { setDeleteProject(p); setDeleteConfirmText(''); }}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-card border border-border text-muted-foreground hover:text-red-500 hover:border-red-300 transition-colors shadow-sm"
-                title="Delete project"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-card border border-border text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors shadow-sm"
+                aria-label="Delete project"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
 
             <div className="flex items-center gap-2 mb-2">
-              <span className="badge-blue font-mono">{p.key}</span>
-              <h4 className="font-medium">{p.name}</h4>
+              <Badge variant="info" className="font-mono">{p.key}</Badge>
+              <h4 className="font-medium text-foreground">{p.name}</h4>
             </div>
-            <div className="flex items-center gap-3 text-xs text-text-muted">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{p._count?.tickets || 0} tickets</span>
               <span>•</span>
               <span>{p._count?.sprints || 0} sprints</span>
             </div>
-            {p.lead && <p className="text-xs text-text-secondary mt-2">Lead: {p.lead.fullName}</p>}
+            {p.lead && <p className="text-xs text-muted-foreground mt-2">Lead: {p.lead.fullName}</p>}
           </div>
         ))}
       </div>
 
-      {/* ── Edit Modal ───────────────────────────────── */}
-      {editProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
-          <div className="bg-card rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h2 className="text-[16px] font-semibold text-foreground">Edit Project</h2>
-              <button onClick={() => setEditProject(null)} className="p-1.5 rounded-lg hover:bg-muted">
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-            {(() => {
-              const canEditKey = (editProject._count?.tickets || 0) === 0;
-              const unchanged = editName.trim() === editProject.name && editKey.trim().toUpperCase() === editProject.key;
-              return (
-                <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="label mb-0">Project Key</label>
-                      {canEditKey ? (
-                        <span className="text-[11px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                          Editable — no tickets yet
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          Locked — {editProject._count?.tickets} ticket{editProject._count?.tickets !== 1 ? 's' : ''} exist
-                        </span>
-                      )}
-                    </div>
-                    <input
-                      value={canEditKey ? editKey : editProject.key}
-                      onChange={e => canEditKey && setEditKey(e.target.value.toUpperCase())}
-                      disabled={!canEditKey}
-                      maxLength={6}
-                      className={`input font-mono tracking-widest uppercase ${
-                        canEditKey
-                          ? 'border-green-400 focus:border-green-500 focus:ring-green-500/20 bg-green-50/30'
-                          : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
-                      }`}
-                    />
-                    {!canEditKey && (
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        Key cannot be changed once tickets exist — it's used in all ticket numbers.
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="label">Project Name *</label>
-                    <input value={editName} onChange={e => setEditName(e.target.value)}
-                      className="input" required autoFocus={!canEditKey} placeholder="Project name" />
-                  </div>
-                  <div className="flex justify-end gap-3 pt-2">
-                    <button type="button" onClick={() => setEditProject(null)}
-                      className="h-9 px-4 text-muted-foreground text-[14px] font-medium hover:text-foreground">Cancel</button>
-                    <button type="submit" disabled={saving || !editName.trim() || !editKey.trim() || unchanged}
-                      className="btn-primary h-9 px-5">
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </div>
-                </form>
-              );
-            })()}
+      {/* Edit Modal */}
+      <Modal
+        open={!!editProject}
+        onOpenChange={(open) => { if (!open) setEditProject(null); }}
+        title="Edit Project"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <button type="button" onClick={() => setEditProject(null)}
+              className="h-9 px-4 text-muted-foreground text-[14px] font-medium hover:text-foreground transition-colors">
+              Cancel
+            </button>
+            <Button
+              type="submit"
+              form="edit-project-form-settings"
+              loading={saving}
+              disabled={!editName.trim() || !editKey.trim()}
+            >
+              Save Changes
+            </Button>
           </div>
-        </div>
-      )}
-
-      {/* ── Delete Confirmation Modal ─────────────────── */}
-      {deleteProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
-          <div className="bg-card rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                </div>
-                <h2 className="text-[16px] font-semibold text-foreground">Delete Project</h2>
-              </div>
-              <button onClick={() => setDeleteProject(null)} className="p-1.5 rounded-lg hover:bg-muted">
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                <p className="text-[14px] text-red-800 font-medium mb-1">This action cannot be undone.</p>
-                <p className="text-[13px] text-red-700">
-                  Deleting <strong>{deleteProject.name}</strong> will permanently remove all{' '}
-                  <strong>{deleteProject._count?.tickets || 0} tickets</strong> and{' '}
-                  <strong>{deleteProject._count?.sprints || 0} sprints</strong> associated with this project.
-                </p>
-              </div>
+        }
+      >
+        {editProject && (() => {
+          const canEditKey = (editProject._count?.tickets || 0) === 0;
+          return (
+            <form id="edit-project-form-settings" onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="text-[13px] font-medium text-foreground mb-1.5 block">
-                  Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="label mb-0">Project Key</label>
+                  {canEditKey ? (
+                    <span className="text-[11px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                      Editable — no tickets yet
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      Locked — {editProject._count?.tickets} ticket{editProject._count?.tickets !== 1 ? 's' : ''} exist
+                    </span>
+                  )}
+                </div>
                 <input
-                  value={deleteConfirmText}
-                  onChange={e => setDeleteConfirmText(e.target.value)}
-                  placeholder={deleteProject.key}
-                  className="input font-mono"
-                  autoFocus
+                  value={canEditKey ? editKey : editProject.key}
+                  onChange={e => canEditKey && setEditKey(e.target.value.toUpperCase())}
+                  disabled={!canEditKey}
+                  maxLength={6}
+                  className={`input font-mono tracking-widest uppercase ${
+                    canEditKey
+                      ? 'border-green-400 focus:border-green-500 bg-green-50/30'
+                      : 'bg-muted/50 text-muted-foreground cursor-not-allowed'
+                  }`}
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-1">
-                <button onClick={() => setDeleteProject(null)}
-                  className="h-9 px-4 text-muted-foreground text-[14px] font-medium hover:text-foreground">Cancel</button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleteConfirmText !== deleteProject.key || deleting}
-                  className="h-9 px-5 bg-red-600 hover:bg-red-700 text-white text-[14px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {deleting ? 'Deleting...' : 'Delete Project'}
-                </button>
+              <div>
+                <label className="label">Project Name *</label>
+                <input value={editName} onChange={e => setEditName(e.target.value)}
+                  className="input" required placeholder="Project name" />
               </div>
+            </form>
+          );
+        })()}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={!!deleteProject}
+        onOpenChange={(open) => { if (!open) { setDeleteProject(null); setDeleteConfirmText(''); } }}
+        title="Delete Project"
+        description="This action cannot be undone."
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <button type="button" onClick={() => { setDeleteProject(null); setDeleteConfirmText(''); }}
+              className="h-9 px-4 text-muted-foreground text-[14px] font-medium hover:text-foreground transition-colors">
+              Cancel
+            </button>
+            <Button
+              variant="destructive"
+              loading={deleting}
+              disabled={deleteConfirmText !== deleteProject?.key}
+              onClick={handleDelete}
+            >
+              Delete Project
+            </Button>
+          </div>
+        }
+      >
+        {deleteProject && (
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-100 rounded-lg p-4">
+              <p className="text-[14px] text-red-800 font-medium mb-1">This action cannot be undone.</p>
+              <p className="text-[13px] text-red-700">
+                Deleting <strong>{deleteProject.name}</strong> will permanently remove all{' '}
+                <strong>{deleteProject._count?.tickets || 0} tickets</strong> and{' '}
+                <strong>{deleteProject._count?.sprints || 0} sprints</strong>.
+              </p>
+            </div>
+            <div>
+              <label className="text-[13px] font-medium text-foreground mb-1.5 block">
+                Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-destructive">{deleteProject.key}</span> to confirm
+              </label>
+              <input
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder={deleteProject.key}
+                className="input font-mono"
+                autoFocus
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }
@@ -565,9 +603,7 @@ function TeamsTab() {
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    loadTeams();
-  }, []);
+  useEffect(() => { loadTeams(); }, []);
 
   async function loadTeams() {
     try {
@@ -582,31 +618,32 @@ function TeamsTab() {
     try {
       await teamsApi.create({ name });
       setName('');
+      toast.success(`Team "${name}" created`);
       loadTeams();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create team');
+      toast.error(error.response?.data?.error || 'Failed to create team');
     } finally { setCreating(false); }
   }
 
   return (
     <div className="space-y-5">
-      <div className="card p-5">
-        <h3 className="font-medium mb-3">Create Team</h3>
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h3 className="font-medium text-foreground mb-3">Create Team</h3>
         <form onSubmit={handleCreate} className="flex gap-3 items-end">
           <div className="flex-1">
             <label className="label">Team Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="input" required placeholder="Team Name" />
           </div>
-          <button type="submit" disabled={creating} className="btn-primary">{creating ? 'Creating...' : 'Create'}</button>
+          <Button type="submit" loading={creating}>Create</Button>
         </form>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {teams.map((t) => (
-          <div key={t.id} className="card p-4">
-            <h4 className="font-medium">{t.name}</h4>
-            <p className="text-xs text-text-muted mt-1">{t._count?.members || 0} members</p>
-            {t.lead && <p className="text-xs text-text-secondary mt-1">Lead: {t.lead.fullName}</p>}
+          <div key={t.id} className="bg-card rounded-xl border border-border p-4">
+            <h4 className="font-medium text-foreground">{t.name}</h4>
+            <p className="text-xs text-muted-foreground mt-1">{t._count?.members || 0} members</p>
+            {t.lead && <p className="text-xs text-muted-foreground mt-1">Lead: {t.lead.fullName}</p>}
           </div>
         ))}
       </div>

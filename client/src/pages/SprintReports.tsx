@@ -1,27 +1,18 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
-import { Calendar as CalendarIcon, Target, TrendingUp, BarChart3, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Target, BarChart3, CheckCircle2, Clock } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
-import { sprintsApi, ticketsApi, dashboardApi } from '../api';
-import type { Sprint, Ticket, VelocityData } from '../types';
+import { sprintsApi, ticketsApi } from '../api';
+import type { Sprint, Ticket } from '../types';
 
-import { STATUS_CONFIG } from '../constants/ticketStatus';
-import { Badge, getInitials } from '@/design-system';
-
-type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
-const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'secondary', LOW: 'outline',
-};
-const PRIORITY_LABEL: Record<string, string> = {
-  CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
-};
+import { toast } from 'sonner';
+import { getInitials, Spinner, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
+import { STATUS_STYLES, PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 
 export function SprintReportsPage() {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [selectedSprintId, setSelectedSprintId] = useState<string>('');
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [velocityData, setVelocityData] = useState<VelocityData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,15 +21,11 @@ export function SprintReportsPage() {
 
   async function loadInitialData() {
     try {
-      const [sprintRes, velRes] = await Promise.all([
-        sprintsApi.list(),
-        dashboardApi.getVelocity().catch(() => ({ data: null }))
-      ]);
+      const sprintRes = await sprintsApi.list();
       const allSprints = sprintRes.data.sort((a, b) => new Date(b.startDate || b.id).getTime() - new Date(a.startDate || a.id).getTime());
-      
+
       setSprints(allSprints);
-      setVelocityData(velRes.data);
-      
+
       if (allSprints.length > 0) {
         // Find latest active or completed sprint
         const defaultSprint = allSprints.find(s => s.status === 'ACTIVE' || s.status === 'COMPLETED') || allSprints[0];
@@ -46,8 +33,8 @@ export function SprintReportsPage() {
       } else {
         setLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to load sprints:', error);
+    } catch {
+      toast.error('Failed to load sprints.');
       setLoading(false);
     }
   }
@@ -63,8 +50,8 @@ export function SprintReportsPage() {
       setLoading(true);
       const tixRes = await ticketsApi.list({ sprintId, limit: '500' }).catch(() => ({ data: { tickets: [] } }));
       setTickets(tixRes.data.tickets);
-    } catch (error) {
-      console.error('Failed to load report data:', error);
+    } catch {
+      toast.error('Failed to load report data.');
     } finally {
       setLoading(false);
     }
@@ -72,21 +59,13 @@ export function SprintReportsPage() {
 
   const selectedSprint = sprints.find(s => s.id === selectedSprintId);
 
-  // Status breakdown from tickets
-  const pieData = useMemo(() => {
+  // Status breakdown for inline stats
+  const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     tickets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
-    const colors: Record<string, string> = {
-      BACKLOG: '#94A3B8', REQUIREMENTS: '#7C3AED', DESIGN: '#A21CAF',
-      HTML: '#C2410C', ON_DEVELOPMENT: '#CA8A04', QA: '#4338CA',
-      BUGS: '#DC2626', ENHANCEMENT: '#2563EB', UAT: '#059669',
-      LIVE: '#16A34A', NOT_REQUIRED: '#6B7280',
-    };
-    return Object.entries(counts).map(([status, value]) => ({
-      name: STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]?.label || status,
-      value,
-      color: colors[status] || '#94A3B8',
-    }));
+    return Object.entries(counts)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
   }, [tickets]);
 
   // Process Individual Performance
@@ -150,21 +129,24 @@ export function SprintReportsPage() {
       <div className="flex justify-between items-center mb-6">
         <PageHeader title="Sprint Reports" subtitle="Analyze sprint performance and metrics." />
         <div className="w-64">
-          <select
-            value={selectedSprintId}
-            onChange={(e) => setSelectedSprintId(e.target.value)}
-            className="w-full h-10 px-3 text-[14px] font-medium border border-border rounded-lg bg-card outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-shadow shadow-sm"
-          >
-            {sprints.map(s => (
-              <option key={s.id} value={s.id}>{s.name} {s.status === 'ACTIVE' ? '(Active)' : s.status === 'COMPLETED' ? '(Done)' : '(Planned)'}</option>
-            ))}
-          </select>
+          <Select value={selectedSprintId} onValueChange={setSelectedSprintId}>
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue placeholder="Select sprint…" />
+            </SelectTrigger>
+            <SelectContent>
+              {sprints.map(s => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name} {s.status === 'ACTIVE' ? '(Active)' : s.status === 'COMPLETED' ? '(Done)' : '(Planned)'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-64 border border-border rounded-xl bg-card shadow-sm">
-           <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <Spinner size="lg" />
         </div>
       ) : selectedSprint ? (
         <div className="space-y-6">
@@ -191,76 +173,31 @@ export function SprintReportsPage() {
               )}
             </div>
             
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <p className="text-[12px] font-medium text-muted-foreground mb-1">Total Issues</p>
-                <p className="text-[24px] font-semibold text-foreground">{tickets.length}</p>
+            <div className="flex items-start divide-x divide-[#E2E8F0]">
+              <div className="px-6 pl-0">
+                <p className="text-xs text-[#94A3B8] mb-1">Total Issues</p>
+                <p className="text-2xl font-semibold text-[#0F172A]">{tickets.length}</p>
               </div>
-              <div>
-                <p className="text-[12px] font-medium text-muted-foreground mb-1">Completed</p>
-                <p className="text-[24px] font-semibold text-[hsl(var(--color-success))]">{tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length}</p>
+              <div className="px-6">
+                <p className="text-xs text-[#94A3B8] mb-1">Completed</p>
+                <p className="text-2xl font-semibold text-[#10B981]">{completedTickets.length}</p>
               </div>
-              <div>
-                <p className="text-[12px] font-medium text-muted-foreground mb-1">Completion Rate</p>
-                <p className="text-[24px] font-semibold text-foreground">
-                  {tickets.length > 0
-                    ? Math.round((tickets.filter(t => t.status === 'LIVE' || t.status === 'NOT_REQUIRED').length / tickets.length) * 100)
-                    : 0}%
+              <div className="px-6">
+                <p className="text-xs text-[#94A3B8] mb-1">Completion Rate</p>
+                <p className="text-2xl font-semibold text-[#0F172A]">
+                  {tickets.length > 0 ? Math.round((completedTickets.length / tickets.length) * 100) : 0}%
                 </p>
               </div>
-              <div>
-                <p className="text-[12px] font-medium text-muted-foreground mb-1">Remaining</p>
-                <p className="text-[24px] font-semibold text-[hsl(var(--color-warning))]">{tickets.filter(t => t.status !== 'LIVE' && t.status !== 'NOT_REQUIRED').length}</p>
+              <div className="px-6">
+                <p className="text-xs text-[#94A3B8] mb-1">Remaining</p>
+                <p className="text-2xl font-semibold text-[#F59E0B]">{remainingTickets.length}</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-12 gap-6">
-            {/* Status Breakdown */}
-            <div className="col-span-4 bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col">
-              <h3 className="text-[15px] font-semibold text-foreground mb-4">Issue Status</h3>
-              <div className="flex-1 min-h-[250px] flex flex-col justify-center items-center relative">
-                {pieData.length > 0 ? (
-                  <>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  
-                  {/* Legend */}
-                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
-                    {pieData.map(d => (
-                      <div key={d.name} className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                        {d.name} ({d.value})
-                      </div>
-                    ))}
-                  </div>
-                  </>
-                ) : (
-                  <div className="text-[13px] text-muted-foreground">No issues in sprint</div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-12 gap-6">
             {/* Individual Performance Table */}
-            <div className="col-span-8 bg-card border border-border rounded-xl p-5 shadow-sm">
+            <div className="col-span-12 bg-card border border-border rounded-xl p-5 shadow-sm">
               <h3 className="text-[15px] font-semibold text-foreground mb-4">Team Performance</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -279,7 +216,7 @@ export function SprintReportsPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
                               {stat.user.avatar ? (
-                                <img src={stat.user.avatar} className="w-8 h-8 rounded-full object-cover" alt="" />
+                                <img src={stat.user.avatar} className="w-8 h-8 rounded-full object-cover" alt={stat.user.fullName} />
                               ) : (
                                 <span className="text-[11px] font-bold text-primary">{getInitials(stat.user.fullName)}</span>
                               )}
@@ -306,65 +243,24 @@ export function SprintReportsPage() {
               </div>
             </div>
 
-            {/* Velocity Chart */}
-            <div className="col-span-4 bg-card border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="text-[15px] font-semibold text-foreground mb-1 flex items-center justify-between">
-                Velocity Trend
-                <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              </h3>
-              <p className="text-[12px] text-muted-foreground mb-5">Comparing last 6 sprints</p>
-              
-              <div className="h-[250px]">
-                {velocityData && velocityData.velocity.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={velocityData.velocity.slice(0, 6).reverse()} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                      <XAxis dataKey="sprintName" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748B' }} dy={10} 
-                             tickFormatter={(v) => v.length > 8 ? v.substring(0, 8) + '...' : v} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748B' }} />
-                      <Tooltip 
-                        cursor={{ fill: '#F1F5F9' }}
-                        contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      />
-                      <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} iconType="circle" />
-                      
-                      {velocityData.avgVelocity > 0 && (
-                        <ReferenceLine y={velocityData.avgVelocity} stroke="#94A3B8" strokeDasharray="3 3" />
-                      )}
-
-                      <Bar dataKey="totalTickets" name="Total" fill="#BFDBFE" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                      <Bar dataKey="completedTickets" name="Completed" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">No velocity data available</div>
-                )}
-              </div>
-              
-              {velocityData && velocityData.avgVelocity > 0 && (
-                <div className="mt-4 pt-4 border-t border-border flex justify-between items-center text-[13px]">
-                  <span className="text-muted-foreground font-medium">Average Velocity:</span>
-                  <span className="font-semibold text-foreground">{Math.round(velocityData.avgVelocity)} tickets</span>
-                </div>
-              )}
-            </div>
-            
           </div>
 
           {/* Sprint Tickets */}
           {tickets.length > 0 && (
             <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-                <h3 className="text-[15px] font-semibold text-foreground">Sprint Tickets</h3>
-                <div className="flex items-center gap-4 text-[13px]">
-                  <span className="flex items-center gap-1.5 text-[hsl(var(--color-success))] font-medium">
-                    <CheckCircle2 className="w-4 h-4" />
-                    {completedTickets.length} completed
-                  </span>
-                  <span className="flex items-center gap-1.5 text-[hsl(var(--color-warning))] font-medium">
-                    <Clock className="w-4 h-4" />
-                    {remainingTickets.length} remaining
-                  </span>
+              <div className="px-5 py-4 border-b border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[15px] font-semibold text-foreground">Sprint Tickets</h3>
+                  <div className="flex items-center gap-4 text-[13px]">
+                    <span className="flex items-center gap-1.5 text-[hsl(var(--color-success))] font-medium">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {completedTickets.length} completed
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[hsl(var(--color-warning))] font-medium">
+                      <Clock className="w-4 h-4" />
+                      {remainingTickets.length} remaining
+                    </span>
+                  </div>
                 </div>
               </div>
               <table className="w-full text-left">
@@ -380,8 +276,6 @@ export function SprintReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {[...completedTickets, ...remainingTickets].map((ticket, i) => {
-                    const statusCfg = STATUS_CONFIG[ticket.status as keyof typeof STATUS_CONFIG];
-                    const priorityVariant = PRIORITY_BADGE_VARIANT[ticket.priority] ?? 'secondary';
                     const isDone = ticket.status === 'LIVE' || ticket.status === 'NOT_REQUIRED';
                     return (
                       <tr key={ticket.id} className={`hover:bg-muted/50 transition-colors ${i % 2 === 1 ? 'bg-muted/30' : ''}`}>
@@ -394,19 +288,20 @@ export function SprintReportsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          {statusCfg && (
-                            <span
-                              className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold"
-                              style={{ backgroundColor: statusCfg.bg, color: statusCfg.text }}
-                            >
-                              {statusCfg.label}
-                            </span>
-                          )}
+                          <span className={STATUS_STYLES[ticket.status] ?? STATUS_STYLES['BACKLOG']}>
+                            {ticket.status.replace(/_/g, ' ')}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant={priorityVariant} size="sm">{PRIORITY_LABEL[ticket.priority] ?? ticket.priority}</Badge>
-                          </div>
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: PRIORITY_DOT_COLORS[ticket.priority] ?? PRIORITY_DOT_COLORS['LOW'] }}
+                            />
+                            <span className="text-xs font-semibold tracking-wider uppercase text-[#0F172A]">
+                              {ticket.priority}
+                            </span>
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-[13px] text-muted-foreground capitalize">{ticket.type?.toLowerCase().replace('_', ' ') || '—'}</span>

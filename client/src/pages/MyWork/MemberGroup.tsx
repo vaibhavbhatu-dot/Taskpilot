@@ -1,4 +1,5 @@
 ﻿import { TicketRow } from './TicketRow';
+import { getInitials } from '@/design-system';
 
 interface MemberGroupProps {
   member: {
@@ -18,9 +19,6 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
   PROJECT_MANAGER: 'bg-[hsl(var(--color-info))]/15 text-[hsl(var(--color-info))]',
   MEMBER: 'bg-muted text-muted-foreground',
 };
-
-const getInitials = (name: string) =>
-  name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
 export function MemberGroup({ member, tickets, tab }: MemberGroupProps) {
   return (

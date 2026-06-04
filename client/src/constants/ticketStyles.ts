@@ -24,3 +24,12 @@ export const PRIORITY_DOT_COLORS: Record<string, string> = {
   MEDIUM:   '#F59E0B',
   LOW:      '#94A3B8',
 };
+
+export type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
+
+export const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  CRITICAL: 'error',
+  HIGH:     'warning',
+  MEDIUM:   'secondary',
+  LOW:      'outline',
+};

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, AlertTriangle, Briefcase, ListTodo } from 'lucide-react';
+import { Users, AlertTriangle, Briefcase, ListTodo, AlertCircle } from 'lucide-react';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 import { dashboardApi } from '../../api';
 import { Skeleton } from '../ui/Skeleton';
@@ -33,26 +33,39 @@ export function ManagerDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [workload, setWorkload] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [dashRes, workRes] = await Promise.all([
-          dashboardApi.getData(),
-          dashboardApi.getWorkload(),
-        ]);
-        setData(dashRes.data);
-        setWorkload(workRes.data);
-      } catch (error) {
-        console.error('Manager dashboard load error:', error);
-      } finally {
-        setLoading(false);
-      }
+  async function load() {
+    setError(false);
+    setLoading(true);
+    try {
+      const [dashRes, workRes] = await Promise.all([
+        dashboardApi.getData(),
+        dashboardApi.getWorkload(),
+      ]);
+      setData(dashRes.data);
+      setWorkload(workRes.data);
+    } catch (err) {
+      console.error('Manager dashboard load error:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, []);
+  }
 
-  if (loading || !data) return <DashboardSkeleton />;
+  useEffect(() => { load(); }, []);
+
+  if (loading) return <DashboardSkeleton />;
+  if (error || !data) return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <AlertCircle className="w-10 h-10 text-destructive mb-3" />
+      <p className="text-[16px] font-semibold text-foreground mb-1">Failed to load dashboard</p>
+      <p className="text-[13px] text-muted-foreground mb-4">Check your connection and try again</p>
+      <button onClick={load} className="h-9 px-5 bg-primary text-primary-foreground text-[14px] font-medium rounded-lg hover:bg-primary/90 transition-colors">
+        Retry
+      </button>
+    </div>
+  );
 
   const priorityChartData = Object.entries(data.ticketsByPriority).map(([name, value]) => ({
     name,

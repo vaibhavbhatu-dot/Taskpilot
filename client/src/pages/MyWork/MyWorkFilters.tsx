@@ -1,4 +1,8 @@
-﻿import { useMyWorkTeams, useMyWorkMembers } from '../../hooks/useMyWork';
+import { useMyWorkTeams, useMyWorkMembers } from '../../hooks/useMyWork';
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from '@/design-system';
 
 interface MyWorkFiltersProps {
   teamId: string;
@@ -14,33 +18,41 @@ export function MyWorkFilters({ teamId, memberId, onTeamChange, onMemberChange, 
 
   return (
     <div className="flex items-center gap-3">
-      <select
-        value={teamId}
-        onChange={(e) => {
-          onTeamChange(e.target.value);
+      <Select
+        value={teamId || '_all'}
+        disabled={isManager}
+        onValueChange={(val) => {
+          onTeamChange(val === '_all' ? '' : val);
           onMemberChange('');
         }}
-        disabled={isManager}
-        className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary outline-none disabled:opacity-70 disabled:cursor-not-allowed"
       >
-        {!isManager && <option value="">All Teams</option>}
-        {(teams as any[]).map((t: any) => (
-          <option key={t.id} value={t.id}>{t.name}</option>
-        ))}
-      </select>
+        <SelectTrigger className="w-[160px] h-9 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {!isManager && <SelectItem value="_all">All Teams</SelectItem>}
+          {(teams as any[]).map((t: any) => (
+            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <select
-        value={memberId}
-        onChange={(e) => onMemberChange(e.target.value)}
-        className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary outline-none min-w-[200px]"
+      <Select
+        value={memberId || '_all'}
+        onValueChange={(val) => onMemberChange(val === '_all' ? '' : val)}
       >
-        <option value="">All Members</option>
-        {(members as any[]).map((m: any) => (
-          <option key={m.id} value={m.id}>
-            {m.fullName}{m.designation ? ` · ${m.designation}` : ''}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger className="w-[200px] h-9 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="_all">All Members</SelectItem>
+          {(members as any[]).map((m: any) => (
+            <SelectItem key={m.id} value={m.id}>
+              {m.fullName}{m.designation ? ` · ${m.designation}` : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

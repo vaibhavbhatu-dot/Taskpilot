@@ -22,9 +22,9 @@ import {
   SkeletonCard,
   EmptyState,
   Button,
-  ResumeCard,
   Divider,
 } from '@/design-system';
+import { ResumeCard } from '@/components/ui/resume-card';
 
 import { FileSearch, RefreshCw } from 'lucide-react';
 

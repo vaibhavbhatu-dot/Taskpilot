@@ -1,7 +1,9 @@
 ﻿import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { adminApi } from '../../api';
 import { Clock, User as UserIcon } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Spinner } from '@/design-system';
 
 interface ActivityRecord {
   id: string;
@@ -29,8 +31,8 @@ export function ActivityLog() {
       const { data } = await adminApi.getActivityLog({ page, limit: 30 });
       setActivities(data.activities);
       setTotalPages(data.pagination.totalPages);
-    } catch (error) {
-      console.error('Failed to load activity log', error);
+    } catch {
+      toast.error('Failed to load activity log. Please refresh.');
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,7 @@ export function ActivityLog() {
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden relative">
         {loading && (
           <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-10">
-            <div className="w-8 h-8 rounded-full border-2 border-orange-200 border-t-orange-600 animate-spin" />
+            <Spinner size="md" />
           </div>
         )}
 

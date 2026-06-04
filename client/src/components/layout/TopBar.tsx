@@ -5,6 +5,7 @@ import { useAuthStore, useUIStore } from '../../stores';
 import { notificationsApi } from '../../api';
 import type { Notification } from '../../types';
 import { SearchModal } from '../ui/SearchModal';
+import { getInitials } from '@/design-system';
 
 // Helper for relative time
 function timeAgo(dateString: string) {
@@ -99,15 +100,10 @@ export function TopBar() {
     }
   }
 
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
   return (
     <header className="sticky top-0 z-30 h-16 bg-card border-b border-border flex items-center px-6 gap-4">
       {/* Mobile menu button */}
-      <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-accent lg:hidden">
+      <button onClick={toggleSidebar} aria-label="Open menu" className="p-2 rounded-lg hover:bg-accent lg:hidden">
         <Menu className="w-5 h-5 text-foreground" />
       </button>
 
@@ -129,6 +125,7 @@ export function TopBar() {
       {/* Mobile Search Icon */}
       <button
         onClick={() => setShowSearch(true)}
+        aria-label="Search"
         className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
       >
         <Search className="w-5 h-5 text-muted-foreground" />
@@ -139,7 +136,7 @@ export function TopBar() {
         <button
           onClick={() => navigate('/settings')}
           className={`p-2 rounded-lg hover:bg-accent transition-colors ${location.pathname === '/settings' ? 'bg-primary/10' : ''}`}
-          title="Admin Settings"
+          aria-label="Settings"
         >
           <Settings className="w-5 h-5 text-muted-foreground" />
         </button>
@@ -149,6 +146,8 @@ export function TopBar() {
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => setShowNotifications(!showNotifications)}
+          aria-label="Notifications"
+          aria-expanded={showNotifications}
           className="relative p-2 rounded-lg hover:bg-accent transition-colors"
         >
           <Bell className="w-5 h-5 text-muted-foreground" />
@@ -216,13 +215,15 @@ export function TopBar() {
       <div className="relative" ref={userMenuRef}>
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
+          aria-label="User menu"
+          aria-expanded={showUserMenu}
           className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
         >
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             {user?.avatar ? (
               <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
-              <span className="text-xs font-semibold text-primary">{getInitials(user?.fullName)}</span>
+              <span className="text-xs font-semibold text-primary">{getInitials(user?.fullName ?? '')}</span>
             )}
           </div>
           <ChevronDown className="w-4 h-4 text-muted-foreground" />

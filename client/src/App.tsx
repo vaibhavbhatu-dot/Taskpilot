@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores';
 import { authApi } from './api';
+import { Spinner } from '@/design-system';
 
 // Layout
 import { Sidebar } from './components/layout/Sidebar';
@@ -27,6 +28,7 @@ import { NotificationsPage } from './pages/Notifications';
 import { MembersPage } from './pages/Members';
 import { ProjectsPage } from './pages/Projects';
 import { MyWorkPage } from './pages/MyWork';
+import { BacklogPage } from './pages/Backlog';
 import { NotFoundPage } from './pages/NotFound';
 import { StyleGuideRouter } from './style-guide';
 import { Toaster } from './components/ui/sonner';
@@ -67,7 +69,7 @@ function ProtectedRoute() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <Spinner size="lg" />
           <p className="text-sm text-muted-foreground">Loading TaskPilot...</p>
         </div>
       </div>
@@ -133,6 +135,7 @@ function App() {
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
               <Route path="/board" element={<BoardPage />} />
+              <Route path="/backlog" element={<BacklogPage />} />
               <Route path="/sprints/planning" element={<SprintPlanningPage />} />
               <Route path="/sprints/active" element={<ActiveSprintPage />} />
               <Route path="/sprints/reports" element={<SprintReportsPage />} />

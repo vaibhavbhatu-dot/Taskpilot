@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Bug, Layers, Calendar, ChevronRight, Activity } from 'lucide-react';
+import { AlertTriangle, Bug, Layers, Calendar, ChevronRight, Activity, AlertCircle } from 'lucide-react';
 import { dashboardApi, sprintsApi } from '../../api';
 import { Skeleton } from '../ui/Skeleton';
 import type { DashboardData, Sprint } from '../../types';
@@ -53,26 +53,39 @@ export function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [dashRes, sprintRes] = await Promise.all([
-          dashboardApi.getData(),
-          sprintsApi.list({ status: 'ACTIVE' }).catch(() => ({ data: [] })),
-        ]);
-        setData(dashRes.data);
-        setActiveSprint(sprintRes.data[0] || null);
-      } catch (error) {
-        console.error('Dashboard load error:', error);
-      } finally {
-        setLoading(false);
-      }
+  async function load() {
+    setError(false);
+    setLoading(true);
+    try {
+      const [dashRes, sprintRes] = await Promise.all([
+        dashboardApi.getData(),
+        sprintsApi.list({ status: 'ACTIVE' }).catch(() => ({ data: [] })),
+      ]);
+      setData(dashRes.data);
+      setActiveSprint(sprintRes.data[0] || null);
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, []);
+  }
 
-  if (loading || !data) return <DashboardSkeleton />;
+  useEffect(() => { load(); }, []);
+
+  if (loading) return <DashboardSkeleton />;
+  if (error || !data) return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <AlertCircle className="w-10 h-10 text-destructive mb-3" />
+      <p className="text-[16px] font-semibold text-foreground mb-1">Failed to load dashboard</p>
+      <p className="text-[13px] text-muted-foreground mb-4">Check your connection and try again</p>
+      <button onClick={load} className="h-9 px-5 bg-primary text-primary-foreground text-[14px] font-medium rounded-lg hover:bg-primary/90 transition-colors">
+        Retry
+      </button>
+    </div>
+  );
 
   const byStatus = data.ticketsByStatus as Record<string, number>;
 

@@ -1,22 +1,31 @@
 ﻿import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, Check, Tag as TagIcon, Clock, Users, Paperclip, Link as LinkIcon, ExternalLink, Trash2 } from 'lucide-react';
 import { ticketsApi, commentsApi, usersApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Ticket, Comment, TicketHistory, TicketPriority, User, Team } from '../types';
 import { TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
-import { Badge, Button, getInitials } from '@/design-system';
+import { PRIORITY_BADGE_VARIANT } from '../constants/ticketStyles';
+import { isOverdue } from '@/lib/utils';
+import { Badge, Button, Spinner, EmptyState, getInitials, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
+import { MentionTextarea } from '../components/ui/mention-textarea';
 
 const STATUS_OPTIONS = TICKET_STATUSES;
 const PRIORITY_OPTIONS: TicketPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-type BadgeVariant = 'info' | 'warning' | 'success' | 'secondary' | 'outline' | 'error' | 'default';
-const PRIORITY_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'secondary', LOW: 'outline',
-};
-
-const isOverdue = (d: string, status: string) =>
-  new Date(d) < new Date() && status !== 'DEPLOYED';
+function renderCommentWithMentions(content: string) {
+  const parts = content.split(/(@\w+)/g);
+  return parts.map((part, i) =>
+    part.startsWith('@') ? (
+      <span key={i} className="text-[#2563EB] font-medium hover:underline cursor-pointer">
+        {part}
+      </span>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +37,7 @@ export function TicketDetailPage() {
   const [history, setHistory] = useState<TicketHistory[]>([]);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [newComment, setNewComment] = useState('');
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
   
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -35,7 +45,6 @@ export function TicketDetailPage() {
   
   const [loading, setLoading] = useState(true);
   // saving state removed as optimistic update is fast
-  const [toast, setToast] = useState('');
 
   // Editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -82,8 +91,8 @@ export function TicketDetailPage() {
       setEditDesc(ticketRes.data.description || '');
       setComments(commentsRes.data);
       setHistory(historyRes.data);
-    } catch (error) {
-      console.error('Failed to load ticket:', error);
+    } catch {
+      // leave ticket as null; render error state below
     } finally {
       setLoading(false);
     }
@@ -114,27 +123,24 @@ export function TicketDetailPage() {
 
   async function handleFieldChange(field: string, value: any) {
     if (!ticket) return;
-    // removed setSaving
+    const previousTicket = { ...ticket };
     try {
       const payload: any = { [field]: value };
-      
-      // Handle special cases
       if (field === 'assignedToId' && !value) payload.assignedToId = null;
       if (field === 'teamId' && !value) payload.teamId = null;
       if (field === 'dueDate' && !value) payload.dueDate = null;
 
       const { data } = await ticketsApi.update(ticket.id, payload);
       setTicket((prev: any) => ({ ...prev, ...data }));
-      
-      setToast('Change saved');
-      setTimeout(() => setToast(''), 3000);
-      
+
+      toast.success('Change saved');
+
       const histRes = await ticketsApi.getHistory(ticket.id);
       setHistory(histRes.data);
-    } catch (error) {
-      console.error('Failed to update:', error);
-    } finally {
-      // no-op
+    } catch {
+      setTicket(previousTicket);
+      if (field === 'title') setEditTitle(previousTicket.title);
+      toast.error('Failed to update ticket', { description: 'Please try again.' });
     }
   }
 
@@ -195,7 +201,12 @@ export function TicketDetailPage() {
     try {
       // Always create a comment (use empty placeholder if text is blank but files exist)
       const commentContent = newComment.trim() || '📎 Attached files';
-      const { data: newCommentData } = await commentsApi.create(ticket.id, { content: commentContent });
+      // TODO: Backend notification support needed for mentions
+      const { data: newCommentData } = await commentsApi.create(ticket.id, {
+        content: commentContent,
+        mentionedUserIds: mentionedUserIds.filter((id) => id !== 'ALL'),
+        notifyAllAssignees: mentionedUserIds.includes('ALL'),
+      });
 
       // Upload files scoped to this comment
       if (commentFiles.length > 0) {
@@ -205,13 +216,14 @@ export function TicketDetailPage() {
       }
 
       setNewComment('');
+      setMentionedUserIds([]);
       commentPreviews.forEach(url => URL.revokeObjectURL(url));
       setCommentFiles([]);
       setCommentPreviews([]);
       const res = await commentsApi.list(ticket.id);
       setComments(res.data);
-    } catch (error) {
-      console.error('Failed to add comment:', error);
+    } catch {
+      toast.error('Failed to add comment. Please try again.');
     }
   }
 
@@ -236,29 +248,27 @@ export function TicketDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (!ticket) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Ticket not found</p>
-        <button onClick={() => navigate('/tickets')} className="btn-primary mt-4">Back to Tickets</button>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <EmptyState
+          icon={<Trash2 className="w-12 h-12" />}
+          title="Ticket not found"
+          description="This ticket may have been deleted or you don't have access."
+          action={{ label: 'Back to Tickets', onClick: () => navigate('/tickets') }}
+        />
       </div>
     );
   }
 
   return (
     <div className="animate-fade-in relative">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[hsl(var(--color-success))] text-white px-4 py-3 rounded-xl text-[14px] font-medium shadow-lg flex items-center gap-2 animate-fade-in">
-          <Check className="w-4 h-4" /> {toast}
-        </div>
-      )}
 
       {/* Breadcrumb & Back */}
       <div className="flex items-center gap-3 mb-5">
@@ -345,9 +355,9 @@ export function TicketDetailPage() {
             />
             {isDescChanged && (
               <div className="flex justify-end mt-3 animate-fade-in">
-                <button onClick={saveDescription} className="btn-primary btn-sm">
+                <Button size="sm" onClick={saveDescription}>
                   Save Description
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -382,11 +392,14 @@ export function TicketDetailPage() {
                     <span className="text-[11px] font-semibold text-primary">{getInitials(user?.fullName || 'U')}</span>
                   </div>
                   <div className="flex-1 border border-border rounded-xl overflow-hidden bg-card focus-within:ring-2 focus-within:ring-ring focus-within:border-ring transition-shadow">
-                    {/* Text area */}
-                    <textarea
+                    {/* Text area with @mention support */}
+                    <MentionTextarea
                       value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
+                      onChange={setNewComment}
+                      onMentionsChange={setMentionedUserIds}
+                      members={users}
+                      placeholder="Add a comment... use @ to mention someone"
+                      disabled={false}
                       onKeyDown={e => e.key === 'Enter' && e.metaKey && handleAddComment()}
                       className="w-full px-4 pt-3 pb-2 text-[14px] text-foreground outline-none resize-none placeholder:text-muted-foreground min-h-[80px] bg-transparent"
                     />
@@ -469,7 +482,9 @@ export function TicketDetailPage() {
                           </span>
                         </div>
                         {comment.content !== '📎 Attached files' && (
-                          <p className="text-[14px] text-foreground whitespace-pre-wrap">{comment.content}</p>
+                          <p className="text-[14px] text-foreground whitespace-pre-wrap">
+                            {renderCommentWithMentions(comment.content)}
+                          </p>
                         )}
                         {comment.attachments && comment.attachments.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
@@ -529,17 +544,27 @@ export function TicketDetailPage() {
             {/* Status */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Status</label>
-              <select value={ticket.status} onChange={(e) => handleFieldChange('status', e.target.value)} className="input text-[13px] font-medium h-9">
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
-              </select>
+              <Select value={ticket.status} onValueChange={(val) => handleFieldChange('status', val)}>
+                <SelectTrigger className="w-full h-9 text-sm font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Priority */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Priority</label>
-              <select value={ticket.priority} onChange={(e) => handleFieldChange('priority', e.target.value)} className="input text-[13px] font-medium h-9">
-                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <Select value={ticket.priority} onValueChange={(val) => handleFieldChange('priority', val)}>
+                <SelectTrigger className="w-full h-9 text-sm font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Assignees — multi */}
@@ -553,7 +578,7 @@ export function TicketDetailPage() {
                     <span key={a.userId} className="inline-flex items-center gap-1.5 px-2 py-1 bg-primary/15 text-primary text-[12px] font-medium rounded-full">
                       <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[9px] font-bold">{getInitials(a.user.fullName)}</span>
                       {a.user.fullName.split(' ')[0]}
-                      <button onClick={() => toggleAssignee(a.userId)} className="hover:text-red-500 leading-none text-[14px]">×</button>
+                      <button onClick={() => toggleAssignee(a.userId)} aria-label={`Remove ${a.user.fullName}`} className="hover:text-red-500 leading-none text-[14px]">×</button>
                     </span>
                   ))}
                 </div>
@@ -599,22 +624,31 @@ export function TicketDetailPage() {
             {/* Team */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Team</label>
-              <select value={ticket.teamId || ''} onChange={(e) => handleFieldChange('teamId', e.target.value)} className="input text-[13px] h-9">
-                <option value="">No team</option>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select
+                value={ticket.teamId || '_none'}
+                onValueChange={(val) => handleFieldChange('teamId', val === '_none' ? '' : val)}
+              >
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No team</SelectItem>
+                  {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Sprint */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Sprint</label>
-              {/* @ts-ignore - API doesn't return full sprint data on ticket right now so mapped by ID if not in list */}
-              <select value={ticket.sprintTickets?.[0]?.sprintId || ''} onChange={(e) => {
-                // Handling sprint change would require a separate API call to sprintsApi.addTickets
-                // For UI representation, keeping it read-only or placeholder if not fully implemented in API
-              }} className="input text-[13px] h-9" disabled>
-                <option value="">No sprint</option>
-              </select>
+              <Select disabled value={ticket.sprintTickets?.[0]?.sprintId || '_none'} onValueChange={() => {}}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No sprint</SelectItem>
+                </SelectContent>
+              </Select>
               <p className="text-[10px] text-muted-foreground mt-1">Managed via sprint board</p>
             </div>
 
@@ -662,7 +696,7 @@ export function TicketDetailPage() {
                       <a href={l} target="_blank" rel="noopener noreferrer"
                         className="flex-1 text-[12px] text-primary truncate hover:underline min-w-0"
                         title={l}>{l.replace(/^https?:\/\//, '')}</a>
-                      <button onClick={() => removeLink(l)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 flex-shrink-0">
+                      <button onClick={() => removeLink(l)} aria-label="Delete link" className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 flex-shrink-0">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
@@ -694,7 +728,7 @@ export function TicketDetailPage() {
                       <a href={`http://localhost:5000${a.url}`} target="_blank" rel="noopener noreferrer"
                         className="flex-1 text-[12px] text-foreground truncate hover:text-primary min-w-0" title={a.originalName}>{a.originalName}</a>
                       <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatFileSize(a.size)}</span>
-                      <button onClick={() => deleteAttachment(a.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 flex-shrink-0">
+                      <button onClick={() => deleteAttachment(a.id)} aria-label={`Delete ${a.originalName}`} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 flex-shrink-0">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ListTodo, Clock, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ListTodo, Clock, CheckCircle2, AlertTriangle, ArrowRight, AlertCircle } from 'lucide-react';
 import { dashboardApi, ticketsApi } from '../../api';
 import { useAuthStore } from '../../stores';
 import { Skeleton } from '../ui/Skeleton';
@@ -37,29 +37,46 @@ export function MemberDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [activeTickets, setActiveTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      if (!user) return;
-      try {
-        const [dashRes, myTicketsRes] = await Promise.all([
-          dashboardApi.getData(),
-          ticketsApi.list({ assignedToId: user.id, status: 'DEVELOPMENT_IN_PROGRESS,READY_FOR_DEVELOPMENT', limit: '4' }),
-        ]);
-        setData(dashRes.data);
-        if (myTicketsRes.data?.tickets) {
-          setActiveTickets(myTicketsRes.data.tickets.slice(0, 4));
-        }
-      } catch (error) {
-        console.error('Member dashboard load error:', error);
-      } finally {
-        setLoading(false);
+  async function load() {
+    if (!user) return;
+    setError(false);
+    setLoading(true);
+    try {
+      const [dashRes, myTicketsRes] = await Promise.all([
+        dashboardApi.getData(),
+        // Fetch user's tickets without status filter; filter client-side for active ones
+        ticketsApi.list({ assignedToId: user.id, limit: '20' }),
+      ]);
+      setData(dashRes.data);
+      if (myTicketsRes.data?.tickets) {
+        const inProgress = myTicketsRes.data.tickets.filter(
+          (t: Ticket) => !['LIVE', 'NOT_REQUIRED', 'BACKLOG'].includes(t.status)
+        );
+        setActiveTickets(inProgress.slice(0, 4));
       }
+    } catch (err) {
+      console.error('Member dashboard load error:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, [user]);
+  }
 
-  if (loading || !data) return <DashboardSkeleton />;
+  useEffect(() => { load(); }, [user]);
+
+  if (loading) return <DashboardSkeleton />;
+  if (error || !data) return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <AlertCircle className="w-10 h-10 text-destructive mb-3" />
+      <p className="text-[16px] font-semibold text-foreground mb-1">Failed to load dashboard</p>
+      <p className="text-[13px] text-muted-foreground mb-4">Check your connection and try again</p>
+      <button onClick={load} className="h-9 px-5 bg-primary text-primary-foreground text-[14px] font-medium rounded-lg hover:bg-primary/90 transition-colors">
+        Retry
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">

@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores';
 import { usersApi, teamsApi } from '../api';
 import { PageHeader } from '../components/ui/PageHeader';
 import type { User, Team } from '../types';
-import { getInitials } from '@/design-system';
+import { getInitials, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
@@ -144,12 +144,17 @@ export function ProfilePage() {
             {/* Manager */}
             <div>
               <label className="label">Manager</label>
-              <select value={managerId} onChange={(e) => setManagerId(e.target.value)} className="input">
-                <option value="">No manager</option>
-                {managers
-                  .filter(m => m.id !== user.id)
-                  .map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}
-              </select>
+              <Select value={managerId || '_none'} onValueChange={(val) => setManagerId(val === '_none' ? '' : val)}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No manager</SelectItem>
+                  {managers
+                    .filter(m => m.id !== user.id)
+                    .map((m) => <SelectItem key={m.id} value={m.id}>{m.fullName}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Role (read only) */}
@@ -175,9 +180,9 @@ export function ProfilePage() {
 
             {/* Submit */}
             <div className="pt-2">
-              <button type="submit" disabled={saving} className="btn-primary w-full">
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+              <Button type="submit" loading={saving} className="w-full">
+                Save Changes
+              </Button>
             </div>
           </form>
         </div>

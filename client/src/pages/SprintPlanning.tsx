@@ -6,7 +6,8 @@ import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket } from 'lucide-r
 import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi, usersApi, projectsApi } from '../api';
 import type { Ticket, Sprint, User, Project } from '../types';
-import { getInitials } from '@/design-system';
+import { toast } from 'sonner';
+import { getInitials, Spinner, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 
 
@@ -80,8 +81,8 @@ export function SprintPlanningPage() {
         setBacklogTickets(filteredBacklog);
       }
 
-    } catch (error) {
-      console.error('Failed to load planning data:', error);
+    } catch {
+      toast.error('Failed to load planning data. Please refresh.');
     } finally {
       setLoading(false);
     }
@@ -106,7 +107,7 @@ export function SprintPlanningPage() {
       setGoal('');
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create sprint');
+      toast.error(error.response?.data?.error || 'Failed to create sprint');
     } finally {
       setCreating(false);
     }
@@ -164,19 +165,17 @@ export function SprintPlanningPage() {
   const handleStartSprint = async () => {
     if (!plannedSprint) return;
     if (sprintTickets.length === 0) {
-      alert("Cannot start a sprint with 0 tickets.");
+      toast.error('Cannot start a sprint with 0 tickets.');
       return;
     }
-    
-    if (!confirm(`Start ${plannedSprint.name} with ${sprintTickets.length} tickets?`)) return;
 
     setStarting(true);
     try {
       await sprintsApi.start(plannedSprint.id);
-      alert(`${plannedSprint.name} has started with ${sprintTickets.length} tickets!`);
+      toast.success(`${plannedSprint.name} has started with ${sprintTickets.length} tickets!`);
       navigate('/sprints/active');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to start sprint. Note: Only 1 active sprint is allowed per project.');
+      toast.error(error.response?.data?.error || 'Failed to start sprint. Only 1 active sprint is allowed per project.');
     } finally {
       setStarting(false);
     }
@@ -190,9 +189,9 @@ export function SprintPlanningPage() {
 
 
   const renderTicketCard = (ticket: Ticket, removable: boolean = false) => (
-    <div className={`bg-card border border-border p-3 rounded-lg mb-2 flex flex-col gap-2 ${removable ? 'hover:border-primary-300' : ''} shadow-sm group`}>
+    <div className={`bg-card border border-border p-3 rounded-lg mb-2 flex flex-col gap-2 ${removable ? 'hover:border-[hsl(var(--color-info))]/30' : ''} shadow-sm group`}>
       <div className="flex justify-between items-start">
-        <span className="text-[12px] font-mono font-medium text-primary-600">{ticket.ticketNumber}</span>
+        <span className="text-[12px] font-mono font-medium text-[hsl(var(--color-info))]">{ticket.ticketNumber}</span>
         <div className="flex items-center gap-2">
           {removable && (
             <button 
@@ -252,24 +251,39 @@ export function SprintPlanningPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="flex-1 h-8 px-2 text-[12px] border border-border rounded-md bg-card outline-none">
-                  <option value="">Priority</option>
-                  <option value="CRITICAL">Critical</option>
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
-                </select>
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="flex-1 h-8 px-2 text-[12px] border border-border rounded-md bg-card outline-none">
-                  <option value="">Type</option>
-                  <option value="BUG">Bug</option>
-                  <option value="FEATURE">Feature</option>
-                  <option value="TASK">Task</option>
-                  <option value="IMPROVEMENT">Improvement</option>
-                </select>
-                <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="flex-1 h-8 px-2 text-[12px] border border-border rounded-md bg-card outline-none">
-                  <option value="">Assignee</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-                </select>
+                <Select value={priorityFilter || '_all'} onValueChange={(val) => setPriorityFilter(val === '_all' ? '' : val)}>
+                  <SelectTrigger className="flex-1 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all">Priority</SelectItem>
+                    <SelectItem value="CRITICAL">Critical</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="LOW">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter || '_all'} onValueChange={(val) => setTypeFilter(val === '_all' ? '' : val)}>
+                  <SelectTrigger className="flex-1 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all">Type</SelectItem>
+                    <SelectItem value="BUG">Bug</SelectItem>
+                    <SelectItem value="FEATURE">Feature</SelectItem>
+                    <SelectItem value="TASK">Task</SelectItem>
+                    <SelectItem value="IMPROVEMENT">Improvement</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={assigneeFilter || '_all'} onValueChange={(val) => setAssigneeFilter(val === '_all' ? '' : val)}>
+                  <SelectTrigger className="flex-1 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all">Assignee</SelectItem>
+                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -277,7 +291,7 @@ export function SprintPlanningPage() {
           <div className="flex-1 overflow-auto bg-muted/50 p-3">
             {loading ? (
               <div className="flex justify-center items-center h-full">
-                <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                <Spinner size="sm" />
               </div>
             ) : (
               <Droppable droppableId="backlog-list">
@@ -322,7 +336,7 @@ export function SprintPlanningPage() {
             // Form to Create Sprint
             <div className="p-8 flex-1 overflow-auto">
               <div className="max-w-md mx-auto">
-                <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center mb-6">
+                <div className="w-12 h-12 bg-[hsl(var(--color-info))]/10 text-[hsl(var(--color-info))] rounded-xl flex items-center justify-center mb-6">
                   <Rocket className="w-6 h-6" />
                 </div>
                 <h2 className="text-[20px] font-semibold text-foreground mb-2">Plan your next Sprint</h2>
@@ -331,14 +345,15 @@ export function SprintPlanningPage() {
                 <form onSubmit={handleCreateSprint} className="space-y-5">
                   <div>
                     <label className="block text-[13px] font-medium text-foreground mb-1.5">Project *</label>
-                    <select
-                      value={projectId}
-                      onChange={(e) => setProjectId(e.target.value)}
-                      required
-                      className="w-full h-10 px-3 text-[14px] border border-border rounded-lg bg-card outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-                    >
-                      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <Select value={projectId || '_none'} onValueChange={(val) => setProjectId(val === '_none' ? '' : val)}>
+                      <SelectTrigger className="w-full h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Select project</SelectItem>
+                        {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-[13px] font-medium text-foreground mb-1.5">Sprint Name *</label>
@@ -438,7 +453,7 @@ export function SprintPlanningPage() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`h-full min-h-[300px] rounded-lg transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-primary-50 border-2 border-dashed border-primary-300' : 'border-2 border-dashed border-transparent'
+                          snapshot.isDraggingOver ? 'bg-[hsl(var(--color-info))]/5 border-2 border-dashed border-[hsl(var(--color-info))]/30' : 'border-2 border-dashed border-transparent'
                         }`}
                       >
                         {sprintTickets.length === 0 && !snapshot.isDraggingOver ? (

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, AlertCircle, Tag as TagIcon, Paperclip, Link as LinkIcon, ExternalLink, Check, Users } from 'lucide-react';
-import { Button, Input, Textarea, Label, FormField, getInitials } from '@/design-system';
+import { Button, Input, Textarea, Label, FormField, getInitials, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 import { ticketsApi } from '../../api';
 import type { Project, User, Sprint, Team } from '../../types';
 
@@ -135,7 +135,7 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-[18px] font-semibold text-foreground">Create Ticket</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close panel">
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -154,10 +154,15 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
           )}
 
           <FormField label="Project" required>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="input" required>
-              <option value="">Select project</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.key})</option>)}
-            </select>
+            <Select value={projectId || '_none'} onValueChange={(val) => setProjectId(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">Select project</SelectItem>
+                {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.key})</SelectItem>)}
+              </SelectContent>
+            </Select>
           </FormField>
 
           <FormField label="Title" required>
@@ -172,20 +177,30 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
 
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Type">
-              <select value={type} onChange={(e) => setType(e.target.value)} className="input">
-                <option value="TASK">🔵 Task</option>
-                <option value="BUG">🔴 Bug</option>
-                <option value="FEATURE">🟢 Feature</option>
-                <option value="IMPROVEMENT">🟡 Improvement</option>
-              </select>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TASK">🔵 Task</SelectItem>
+                  <SelectItem value="BUG">🔴 Bug</SelectItem>
+                  <SelectItem value="FEATURE">🟢 Feature</SelectItem>
+                  <SelectItem value="IMPROVEMENT">🟡 Improvement</SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
             <FormField label="Priority">
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="input">
-                <option value="CRITICAL">🔴 Critical</option>
-                <option value="HIGH">🟠 High</option>
-                <option value="MEDIUM">🟡 Medium</option>
-                <option value="LOW">⚪ Low</option>
-              </select>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CRITICAL">🔴 Critical</SelectItem>
+                  <SelectItem value="HIGH">🟠 High</SelectItem>
+                  <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
+                  <SelectItem value="LOW">⚪ Low</SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
           </div>
 
@@ -265,10 +280,15 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
           </div>
 
           <FormField label="Team">
-            <select value={teamId} onChange={(e) => setTeamId(e.target.value)} className="input">
-              <option value="">No team</option>
-              {availableTeams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <Select value={teamId || '_none'} onValueChange={(val) => setTeamId(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">No team</SelectItem>
+                {availableTeams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
             {assigneeIds.length > 0 && availableTeams.length < teams.length && (
               <p className="text-[11px] text-muted-foreground mt-1">Showing {availableTeams.length} team{availableTeams.length !== 1 ? 's' : ''} matching selected assignees</p>
             )}
@@ -279,10 +299,15 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
           </FormField>
 
           <FormField label="Sprint">
-            <select value={sprintId} onChange={(e) => setSprintId(e.target.value)} className="input">
-              <option value="">No sprint</option>
-              {activeSprints.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.status})</option>)}
-            </select>
+            <Select value={sprintId || '_none'} onValueChange={(val) => setSprintId(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">No sprint</SelectItem>
+                {activeSprints.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.status})</SelectItem>)}
+              </SelectContent>
+            </Select>
           </FormField>
 
           <div className="flex flex-col gap-1.5">
@@ -380,7 +405,6 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
             className="flex-1"
             loading={submitting}
             disabled={!title || !projectId}
-            onClick={handleSubmit as any}
           >
             Create Ticket
           </Button>

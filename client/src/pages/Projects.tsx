@@ -1,16 +1,18 @@
 ﻿import { useEffect, useState } from 'react';
-import { Plus, X, AlertCircle, FolderOpen, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, AlertCircle, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { projectsApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Project, User } from '../types';
+import { toast } from 'sonner';
+import { Spinner, Button, Modal, useModal, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 
 export function ProjectsPage() {
   const { user: currentUser } = useAuthStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const createProjectModal = useModal();
 
   // Form
   const [name, setName] = useState('');
@@ -74,7 +76,7 @@ export function ProjectsPage() {
       setDeleteConfirmText('');
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete project');
+      toast.error(err.response?.data?.error || 'Failed to delete project');
     } finally { setDeleting(false); }
   }
 
@@ -115,7 +117,7 @@ export function ProjectsPage() {
     setSubmitting(true);
     try {
       await projectsApi.create({ name, key: key.toUpperCase(), leadId: leadId || undefined });
-      setShowModal(false);
+      createProjectModal.close();
       setName(''); setKey(''); setLeadId('');
       loadData();
     } catch (err: any) {
@@ -125,8 +127,8 @@ export function ProjectsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -137,10 +139,9 @@ export function ProjectsPage() {
         title="Projects"
         subtitle={`${projects.length} projects`}
         actions={canCreate ? (
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => createProjectModal.open()} leftIcon={<Plus className="w-4 h-4" />}>
             Create Project
-          </button>
+          </Button>
         ) : undefined}
       />
 
@@ -227,17 +228,24 @@ export function ProjectsPage() {
       </div>
 
       {/* ── Edit Project Modal ─────────────────────────── */}
-      {editProject && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setEditProject(null)} />
-          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in shadow-xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-foreground">Edit Project</h2>
-              <button onClick={() => setEditProject(null)} className="p-1 rounded-lg hover:bg-muted">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-            <form onSubmit={handleSaveEdit} className="space-y-4">
+      <Modal
+        open={!!editProject}
+        onOpenChange={(open) => { if (!open) setEditProject(null); }}
+        title="Edit Project"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <button type="button" onClick={() => setEditProject(null)} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
+              Cancel
+            </button>
+            <Button type="submit" form="edit-project-form" loading={saving} disabled={!editName.trim()}>
+              Save Changes
+            </Button>
+          </div>
+        }
+      >
+        {editProject && (
+        <form id="edit-project-form" onSubmit={handleSaveEdit} className="space-y-4">
               {editError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />{editError}
@@ -284,142 +292,136 @@ export function ProjectsPage() {
 
               <div>
                 <label className="label">Project Lead</label>
-                <select value={editLeadId} onChange={e => setEditLeadId(e.target.value)} className="input">
-                  <option value="">No lead</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-                </select>
+                <Select value={editLeadId || '_none'} onValueChange={(val) => setEditLeadId(val === '_none' ? '' : val)}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">No lead</SelectItem>
+                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="label">Status</label>
-                <select value={editStatus} onChange={e => setEditStatus(e.target.value as 'ACTIVE' | 'ARCHIVED')} className="input">
-                  <option value="ACTIVE">Active</option>
-                  <option value="ARCHIVED">Archived</option>
-                </select>
+                <Select value={editStatus} onValueChange={(val) => setEditStatus(val as 'ACTIVE' | 'ARCHIVED')}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="ARCHIVED">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving || !editName.trim()} className="btn-primary flex-1">
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button type="button" onClick={() => setEditProject(null)}
-                  className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        </form>
+        )}
+      </Modal>
 
       {/* ── Delete Confirmation Modal ───────────────────── */}
-      {deleteProject && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setDeleteProject(null)} />
-          <div className="relative bg-card rounded-2xl w-full max-w-[440px] p-7 animate-fade-in shadow-xl">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-[17px] font-semibold text-foreground">Delete Project</h2>
-                <p className="text-[13px] text-muted-foreground">This action cannot be undone</p>
-              </div>
-              <button onClick={() => setDeleteProject(null)} className="ml-auto p-1 rounded-lg hover:bg-muted">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
+      <Modal
+        open={!!deleteProject}
+        onOpenChange={(open) => { if (!open) { setDeleteProject(null); setDeleteConfirmText(''); } }}
+        title="Delete Project"
+        description="This action cannot be undone."
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <button type="button" onClick={() => { setDeleteProject(null); setDeleteConfirmText(''); }} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
+              Cancel
+            </button>
+            <Button
+              variant="destructive"
+              loading={deleting}
+              disabled={deleteConfirmText !== deleteProject?.key}
+              onClick={handleDelete}
+            >
+              Delete Project
+            </Button>
+          </div>
+        }
+      >
+        {deleteProject && (
+          <>
             <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-4 text-[13px] text-red-700">
               Deleting <strong>{deleteProject.name}</strong> will permanently remove{' '}
               <strong>{deleteProject._count?.tickets || 0} ticket{deleteProject._count?.tickets !== 1 ? 's' : ''}</strong> and{' '}
               <strong>{deleteProject._count?.sprints || 0} sprint{deleteProject._count?.sprints !== 1 ? 's' : ''}</strong>.
             </div>
-            <div className="mb-5">
+            <div>
               <label className="text-[13px] font-medium text-foreground mb-1.5 block">
                 Type <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-red-600">{deleteProject.key}</span> to confirm
               </label>
               <input value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)}
                 placeholder={deleteProject.key} className="input font-mono" autoFocus />
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleDelete}
-                disabled={deleteConfirmText !== deleteProject.key || deleting}
-                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white text-[14px] font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {deleting ? 'Deleting...' : 'Delete Project'}
-              </button>
-              <button onClick={() => setDeleteProject(null)}
-                className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Create Project Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
-          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-foreground">Create Project</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-muted">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-              <div>
-                <label className="label">Project Name *</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Web Platform"
-                  className="input"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">Project Key *</label>
-                <input
-                  type="text"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value.toUpperCase())}
-                  placeholder="WEB"
-                  maxLength={6}
-                  className="input font-mono uppercase"
-                  required
-                />
-                <p className="text-[12px] text-muted-foreground mt-1">2-6 uppercase letters, used in ticket IDs</p>
-              </div>
-              <div>
-                <label className="label">Project Lead</label>
-                <select value={leadId} onChange={(e) => setLeadId(e.target.value)} className="input">
-                  <option value="">Select lead</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={submitting} className="btn-primary flex-1">
-                  {submitting ? 'Creating...' : 'Create'}
-                </button>
-                <button type="button" onClick={() => setShowModal(false)} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
-                  Cancel
-                </button>
-              </div>
-            </form>
+      <Modal
+        {...createProjectModal.props}
+        title="Create Project"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <button type="button" onClick={() => createProjectModal.close()} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
+              Cancel
+            </button>
+            <Button type="submit" form="create-project-form" loading={submitting}>
+              Create
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="create-project-form" onSubmit={handleCreate} className="space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+          <div>
+            <label className="label">Project Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="Web Platform"
+              className="input"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Project Key *</label>
+            <input
+              type="text"
+              value={key}
+              onChange={(e) => setKey(e.target.value.toUpperCase())}
+              placeholder="WEB"
+              maxLength={6}
+              className="input font-mono uppercase"
+              required
+            />
+            <p className="text-[12px] text-muted-foreground mt-1">2-6 uppercase letters, used in ticket IDs</p>
+          </div>
+          <div>
+            <label className="label">Project Lead</label>
+            <Select value={leadId || '_none'} onValueChange={(val) => setLeadId(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">Select lead</SelectItem>
+                {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

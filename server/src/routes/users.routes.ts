@@ -99,7 +99,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // PATCH /api/users/:id
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
-    const { fullName, designation, avatar, teamId, managerId } = req.body;
+    const { fullName, designation, avatar, teamId, managerId, status } = req.body;
     const currentUser = req.user!;
 
     // Only admin or self can update
@@ -116,6 +116,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
         ...(avatar !== undefined && { avatar }),
         ...(teamId !== undefined && { teamId }),
         ...(managerId !== undefined && { managerId }),
+        // Admins can update status (e.g. deactivate/reactivate)
+        ...(currentUser.role === 'ADMIN' && status && { status }),
       },
       select: {
         id: true,
@@ -126,12 +128,32 @@ router.patch('/:id', async (req: Request, res: Response) => {
         avatar: true,
         teamId: true,
         managerId: true,
+        status: true,
       },
     });
 
     res.json(user);
   } catch (error) {
     console.error('Update user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/users/:id — Admin only, soft-delete (sets status INACTIVE, clears team)
+router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    if (currentUser.userId === req.params.id) {
+      res.status(400).json({ error: 'You cannot remove yourself' });
+      return;
+    }
+    await prisma.user.update({
+      where: { id: req.params.id },
+      data: { status: 'INACTIVE', teamId: null, managerId: null },
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

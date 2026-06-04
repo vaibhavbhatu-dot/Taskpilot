@@ -1,12 +1,13 @@
 ﻿import { useEffect, useState } from 'react';
-import { Search, Plus, MoreHorizontal, X, ChevronDown, ChevronRight, Mail, Clock, AlertCircle } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, ChevronDown, ChevronRight, Clock, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageHeader } from '../components/ui/PageHeader';
 import { usersApi, invitationsApi, teamsApi } from '../api';
 import type { User, Invitation, Team } from '../types';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Users as UsersIcon } from 'lucide-react';
-import { getInitials } from '@/design-system';
+import { Button, Modal, ConfirmModal, getInitials, useModal, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
@@ -25,9 +26,22 @@ export function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('All');
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const inviteModal = useModal();
   const [showInvites, setShowInvites] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+
+  // Edit Role modal
+  const [editRoleUser, setEditRoleUser] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState('');
+  const [roleLoading, setRoleLoading] = useState(false);
+
+  // Deactivate modal
+  const [deactivateUser, setDeactivateUser] = useState<User | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+
+  // Remove modal
+  const [removeUser, setRemoveUser] = useState<User | null>(null);
+  const [removeLoading, setRemoveLoading] = useState(false);
 
   // Invite form
   const [invEmail, setInvEmail] = useState('');
@@ -36,7 +50,6 @@ export function MembersPage() {
   const [invManager, setInvManager] = useState('');
   const [inviting, setInviting] = useState(false);
   const [invError, setInvError] = useState('');
-  const [toast, setToast] = useState('');
 
   useEffect(() => {
     loadData();
@@ -53,8 +66,8 @@ export function MembersPage() {
       setInvitations((invRes.data as Invitation[]).filter((i: Invitation) => i.status === 'PENDING'));
       setTeams(teamsRes.data as Team[]);
       setManagers(usersRes.data.filter((u: User) => ['ADMIN', 'MANAGER'].includes(u.role)));
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast.error('Failed to load members. Please refresh.');
     } finally {
       setLoading(false);
     }
@@ -81,11 +94,10 @@ export function MembersPage() {
         teamId: invTeam || undefined,
         managerId: invManager || undefined,
       });
-      setToast(`Invitation sent to ${invEmail}`);
-      setShowInviteModal(false);
+      toast.success(`Invitation sent to ${invEmail}`);
+      inviteModal.close();
       setInvEmail(''); setInvRole('MEMBER'); setInvTeam(''); setInvManager('');
       loadData();
-      setTimeout(() => setToast(''), 4000);
     } catch (err: any) {
       setInvError(err.response?.data?.error || 'Failed to send invitation');
     } finally {
@@ -98,6 +110,51 @@ export function MembersPage() {
       await invitationsApi.revoke(id);
       loadData();
     } catch { /* ignore */ }
+  }
+
+  async function handleEditRole() {
+    if (!editRoleUser || !newRole) return;
+    setRoleLoading(true);
+    try {
+      await usersApi.updateRole(editRoleUser.id, newRole);
+      setEditRoleUser(null);
+      await loadData();
+      toast.success(`Role updated to ${newRole.replace('_', ' ')}`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to update role');
+    } finally {
+      setRoleLoading(false);
+    }
+  }
+
+  async function handleDeactivate() {
+    if (!deactivateUser) return;
+    setDeactivateLoading(true);
+    try {
+      await usersApi.deactivate(deactivateUser.id);
+      setDeactivateUser(null);
+      await loadData();
+      toast.success(`${deactivateUser.fullName} has been deactivated`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to deactivate member');
+    } finally {
+      setDeactivateLoading(false);
+    }
+  }
+
+  async function handleRemove() {
+    if (!removeUser) return;
+    setRemoveLoading(true);
+    try {
+      await usersApi.deleteUser(removeUser.id);
+      setRemoveUser(null);
+      await loadData();
+      toast.success(`${removeUser.fullName} has been removed`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to remove member');
+    } finally {
+      setRemoveLoading(false);
+    }
   }
 
   if (loading && users.length === 0) {
@@ -122,22 +179,14 @@ export function MembersPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[hsl(var(--color-success))] text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg animate-fade-in flex items-center gap-2">
-          <Mail className="w-4 h-4" />
-          {toast}
-        </div>
-      )}
 
       <PageHeader
         title="Team Members"
         subtitle={`${users.length} members total`}
         actions={
-          <button onClick={() => setShowInviteModal(true)} className="btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => inviteModal.open()} leftIcon={<Plus className="w-4 h-4" />}>
             Invite Member
-          </button>
+          </Button>
         }
       />
 
@@ -226,16 +275,36 @@ export function MembersPage() {
                   <td className="px-5 text-right relative">
                     <button
                       onClick={() => setActionMenuId(actionMenuId === user.id ? null : user.id)}
+                      aria-label={`${user.fullName} actions`}
+                      aria-expanded={actionMenuId === user.id}
                       className="p-1.5 rounded-lg hover:bg-muted transition-colors"
                     >
                       <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                     </button>
                     {actionMenuId === user.id && (
-                      <div className="absolute right-5 top-full mt-1 w-40 bg-card rounded-lg border border-border z-20 text-left overflow-hidden">
-                        <button className="w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 text-left">Edit Role</button>
-                        <button className="w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 text-left">Deactivate</button>
-                        <button className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-left">Remove</button>
-                      </div>
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setActionMenuId(null)} />
+                        <div className="absolute right-5 top-full mt-1 w-40 bg-card rounded-lg border border-border z-20 text-left overflow-hidden shadow-lg">
+                          <button
+                            className="w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 text-left"
+                            onClick={() => { setEditRoleUser(user); setNewRole(user.role); setActionMenuId(null); }}
+                          >
+                            Edit Role
+                          </button>
+                          <button
+                            className="w-full px-3 py-2 text-sm text-foreground hover:bg-muted/50 text-left"
+                            onClick={() => { setDeactivateUser(user); setActionMenuId(null); }}
+                          >
+                            Deactivate
+                          </button>
+                          <button
+                            className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 text-left"
+                            onClick={() => { setRemoveUser(user); setActionMenuId(null); }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </>
                     )}
                   </td>
                 </tr>
@@ -248,7 +317,7 @@ export function MembersPage() {
             icon={<UsersIcon className="w-12 h-12" />}
             title="No members found"
             description="Adjust your search filters or invite new team members."
-            action={{ label: 'Invite Member', onClick: () => setShowInviteModal(true) }}
+            action={{ label: 'Invite Member', onClick: () => inviteModal.open() }}
           />
         )}
       </div>
@@ -310,70 +379,135 @@ export function MembersPage() {
         </div>
       )}
 
-      {/* Invite Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowInviteModal(false)} />
-          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-foreground">Invite New Member</h2>
-              <button onClick={() => setShowInviteModal(false)} className="p-1 rounded-lg hover:bg-muted">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-
-            <form onSubmit={handleInvite} className="space-y-4">
-              {invError && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {invError}
-                </div>
-              )}
-              <div>
-                <label className="label">Email Address *</label>
-                <input
-                  type="email"
-                  value={invEmail}
-                  onChange={(e) => setInvEmail(e.target.value)}
-                  placeholder="colleague@company.com"
-                  className="input"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">Role</label>
-                <select value={invRole} onChange={(e) => setInvRole(e.target.value)} className="input">
-                  <option value="MEMBER">Member</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="PROJECT_MANAGER">Project Manager</option>
-                </select>
-              </div>
-              <div>
-                <label className="label">Team (optional)</label>
-                <select value={invTeam} onChange={(e) => setInvTeam(e.target.value)} className="input">
-                  <option value="">No team</option>
-                  {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Manager (optional)</label>
-                <select value={invManager} onChange={(e) => setInvManager(e.target.value)} className="input">
-                  <option value="">No manager</option>
-                  {managers.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={inviting} className="btn-primary flex-1">
-                  {inviting ? 'Sending...' : 'Send Invitation'}
-                </button>
-                <button type="button" onClick={() => setShowInviteModal(false)} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
-                  Cancel
-                </button>
-              </div>
-            </form>
+      {/* Edit Role Modal */}
+      <Modal
+        open={!!editRoleUser}
+        onOpenChange={(open) => { if (!open) setEditRoleUser(null); }}
+        title="Edit Role"
+        description={editRoleUser ? `Change role for ${editRoleUser.fullName}` : undefined}
+        size="sm"
+        footer={
+          <div className="flex gap-2 justify-end w-full">
+            <Button variant="outline" size="sm" onClick={() => setEditRoleUser(null)} disabled={roleLoading}>Cancel</Button>
+            <Button size="sm" onClick={handleEditRole} loading={roleLoading}>Save Changes</Button>
           </div>
+        }
+      >
+        <div className="py-2">
+          <label className="text-[13px] font-medium text-foreground block mb-2">New Role</label>
+          <Select value={newRole} onValueChange={setNewRole}>
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ADMIN">Admin</SelectItem>
+              <SelectItem value="MANAGER">Manager</SelectItem>
+              <SelectItem value="PROJECT_MANAGER">Project Manager</SelectItem>
+              <SelectItem value="MEMBER">Member</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      )}
+      </Modal>
+
+      {/* Deactivate Modal */}
+      <ConfirmModal
+        open={!!deactivateUser}
+        onOpenChange={(open) => { if (!open) setDeactivateUser(null); }}
+        title="Deactivate Member"
+        description="This will prevent them from logging in. You can reactivate them later."
+        confirmLabel="Deactivate"
+        variant="destructive"
+        loading={deactivateLoading}
+        onConfirm={handleDeactivate}
+        onCancel={() => setDeactivateUser(null)}
+      />
+
+      {/* Remove Modal */}
+      <ConfirmModal
+        open={!!removeUser}
+        onOpenChange={(open) => { if (!open) setRemoveUser(null); }}
+        title="Remove Member"
+        description={`Remove ${removeUser?.fullName ?? 'this member'} from the project? This cannot be undone.`}
+        confirmLabel="Remove"
+        variant="destructive"
+        loading={removeLoading}
+        onConfirm={handleRemove}
+        onCancel={() => setRemoveUser(null)}
+      />
+
+      {/* Invite Modal */}
+      <Modal
+        {...inviteModal.props}
+        title="Invite New Member"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <button type="button" onClick={() => inviteModal.close()} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
+              Cancel
+            </button>
+            <Button type="submit" form="invite-member-form" loading={inviting}>
+              Send Invitation
+            </Button>
+          </div>
+        }
+      >
+        <form id="invite-member-form" onSubmit={handleInvite} className="space-y-4">
+          {invError && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {invError}
+            </div>
+          )}
+          <div>
+            <label className="label">Email Address *</label>
+            <input
+              type="email"
+              value={invEmail}
+              onChange={(e) => setInvEmail(e.target.value)}
+              placeholder="colleague@company.com"
+              className="input"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Role</label>
+            <Select value={invRole} onValueChange={setInvRole}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MEMBER">Member</SelectItem>
+                <SelectItem value="MANAGER">Manager</SelectItem>
+                <SelectItem value="PROJECT_MANAGER">Project Manager</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="label">Team (optional)</label>
+            <Select value={invTeam || '_none'} onValueChange={(val) => setInvTeam(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">No team</SelectItem>
+                {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="label">Manager (optional)</label>
+            <Select value={invManager || '_none'} onValueChange={(val) => setInvManager(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">No manager</SelectItem>
+                {managers.map((m) => <SelectItem key={m.id} value={m.id}>{m.fullName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

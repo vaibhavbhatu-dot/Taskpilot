@@ -31,6 +31,7 @@ export const navGroups: NavGroup[] = [
       { label: 'Alert',    path: '/style-guide/components/alert'    },
       { label: 'Feedback',      path: '/style-guide/components/feedback'       },
       { label: 'Modal',         path: '/style-guide/components/modal'          },
+      { label: 'Select',        path: '/style-guide/components/select'         },
       { label: 'AI Suggestion', path: '/style-guide/components/ai-suggestion'  },
     ],
   },

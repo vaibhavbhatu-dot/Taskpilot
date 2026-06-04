@@ -120,4 +120,86 @@ router.delete('/:id', requireRole('ADMIN'), async (req: Request, res: Response) 
   }
 });
 
+const TEAM_MEMBER_INCLUDE = {
+  lead: { select: { id: true, fullName: true, email: true, avatar: true, designation: true } },
+  members: {
+    select: {
+      id: true, fullName: true, email: true, avatar: true,
+      designation: true, role: true,
+      _count: { select: { assignedTickets: true } },
+    },
+  },
+} as const;
+
+// POST /api/teams/:id/members — Admin/Manager only
+router.post('/:id/members', requireRole('ADMIN', 'MANAGER'), async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.id as string;
+    const { userIds } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      res.status(400).json({ error: 'userIds must be a non-empty array' });
+      return;
+    }
+
+    const team = await prisma.team.findUnique({ where: { id: teamId } });
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    await prisma.user.updateMany({
+      where: { id: { in: userIds as string[] } },
+      data: { teamId },
+    });
+
+    const updated = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: TEAM_MEMBER_INCLUDE,
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Add members error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/teams/:id/members/:userId — Admin/Manager only
+router.delete('/:id/members/:userId', requireRole('ADMIN', 'MANAGER'), async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.id as string;
+    const userId = req.params.userId as string;
+
+    const team = await prisma.team.findUnique({ where: { id: teamId } });
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' });
+      return;
+    }
+
+    if (team.leadId === userId) {
+      res.status(400).json({ error: 'Cannot remove team lead' });
+      return;
+    }
+
+    const member = await prisma.user.findFirst({ where: { id: userId, teamId } });
+    if (!member) {
+      res.status(404).json({ error: 'User is not in this team' });
+      return;
+    }
+
+    await prisma.user.update({ where: { id: userId }, data: { teamId: null } });
+
+    const updated = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: TEAM_MEMBER_INCLUDE,
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Remove member error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

@@ -5,6 +5,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import type { Notification } from '../types';
+import { Button } from '@/design-system';
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -59,9 +60,9 @@ export function NotificationsPage() {
     <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
       <PageHeader title="Notifications" actions={
         !loading && notifications.some((n) => !n.isRead) ? (
-          <button onClick={handleMarkAllRead} className="btn-secondary btn-sm">
-            <CheckCheck className="w-4 h-4 mr-1" />Mark All Read
-          </button>
+          <Button variant="outline" size="sm" onClick={handleMarkAllRead} leftIcon={<CheckCheck className="w-4 h-4" />}>
+            Mark All Read
+          </Button>
         ) : undefined
       } />
 
@@ -106,8 +107,8 @@ export function NotificationsPage() {
               {!notif.isRead && (
                 <button
                   onClick={() => handleMarkRead(notif.id)}
+                  aria-label="Mark as read"
                   className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors flex-shrink-0"
-                  title="Mark as read"
                 >
                   <Check className="w-4 h-4 text-primary" />
                 </button>

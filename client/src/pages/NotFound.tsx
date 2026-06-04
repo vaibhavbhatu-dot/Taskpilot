@@ -1,5 +1,6 @@
 ﻿import { useNavigate } from 'react-router-dom';
 import { Home, AlertCircle } from 'lucide-react';
+import { Button } from '@/design-system';
 
 export function NotFoundPage() {
   const navigate = useNavigate();
@@ -15,13 +16,9 @@ export function NotFoundPage() {
         <p className="text-[14px] text-muted-foreground mb-8">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <button
-          onClick={() => navigate('/')}
-          className="btn-primary inline-flex items-center gap-2"
-        >
-          <Home className="w-4 h-4" />
+        <Button onClick={() => navigate('/')} leftIcon={<Home className="w-4 h-4" />}>
           Go to Dashboard
-        </button>
+        </Button>
       </div>
     </div>
   );

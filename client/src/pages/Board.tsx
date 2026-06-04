@@ -2,12 +2,14 @@
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Check, Columns3, List, CheckCircle2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { Columns3, List, CheckCircle2, Plus } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { ticketsApi, sprintsApi, usersApi, projectsApi, teamsApi } from '../api';
 import type { Ticket, TicketStatus, Sprint, User, Project, Team } from '../types';
 import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
-import { Button, getInitials } from '@/design-system';
+import { Button, getInitials, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
+import { isOverdue } from '@/lib/utils';
 import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 import { CreateTicketPanel } from '../components/tickets/CreateTicketPanel';
 
@@ -31,9 +33,6 @@ const COLUMN_TOP_BORDER_COLOR: Record<string, string> = {
   NOT_REQUIRED:   'hsl(var(--muted-foreground))',
 };
 
-const isOverdue = (d: string, status: string) =>
-  new Date(d) < new Date() && status !== 'LIVE';
-
 export function BoardPage() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -43,7 +42,6 @@ export function BoardPage() {
   const [teams, setTeams] = useState<Team[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
   // Filters
@@ -85,8 +83,8 @@ export function BoardPage() {
 
       const { data } = await ticketsApi.list(params);
       setTickets(data.tickets);
-    } catch (error) {
-      console.error('Failed to load board:', error);
+    } catch {
+      toast.error('Failed to load board. Please refresh.');
     } finally {
       setLoading(false);
     }
@@ -122,9 +120,7 @@ export function BoardPage() {
 
     try {
       await ticketsApi.update(draggableId, { status: newStatus });
-      const label = getStatusLabel(newStatus);
-      setToast(`${ticket.ticketNumber} moved to ${label}`);
-      setTimeout(() => setToast(''), 3000);
+      toast.success(`${ticket.ticketNumber} moved to ${getStatusLabel(newStatus)}`);
     } catch {
       // Revert on error
       loadTickets();
@@ -193,13 +189,6 @@ export function BoardPage() {
 
   return (
     <div className="animate-fade-in h-[calc(100vh-140px)] flex flex-col relative">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[100] bg-[hsl(var(--color-success))] text-white px-4 py-3 rounded-xl text-[14px] font-medium shadow-lg flex items-center gap-2 animate-fade-in">
-          <Check className="w-4 h-4" /> {toast}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between mb-5 flex-shrink-0">
         <PageHeader title="Kanban Board" />
@@ -236,37 +225,53 @@ export function BoardPage() {
 
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3 mb-6 p-3 bg-card border border-border rounded-xl flex-shrink-0">
-        <select value={sprintFilter} onChange={(e) => setSprintFilter(e.target.value)}
-          className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-ring outline-none">
-          <option value="">All Sprints</option>
-          {sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <Select value={sprintFilter || '_all'} onValueChange={(val) => setSprintFilter(val === '_all' ? '' : val)}>
+          <SelectTrigger className="w-[160px] h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">All Sprints</SelectItem>
+            {sprints.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
 
-        <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}
-          className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-ring outline-none">
-          <option value="">All Assignees</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-        </select>
+        <Select value={assigneeFilter || '_all'} onValueChange={(val) => setAssigneeFilter(val === '_all' ? '' : val)}>
+          <SelectTrigger className="w-[160px] h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">All Assignees</SelectItem>
+            {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+          </SelectContent>
+        </Select>
 
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-          className="h-9 px-3 text-[13px] border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-ring outline-none">
-          <option value="">All Types</option>
-          <option value="BUG">Bug</option>
-          <option value="FEATURE">Feature</option>
-          <option value="TASK">Task</option>
-          <option value="IMPROVEMENT">Improvement</option>
-        </select>
+        <Select value={typeFilter || '_all'} onValueChange={(val) => setTypeFilter(val === '_all' ? '' : val)}>
+          <SelectTrigger className="w-[140px] h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">All Types</SelectItem>
+            <SelectItem value="BUG">Bug</SelectItem>
+            <SelectItem value="FEATURE">Feature</SelectItem>
+            <SelectItem value="TASK">Task</SelectItem>
+            <SelectItem value="IMPROVEMENT">Improvement</SelectItem>
+          </SelectContent>
+        </Select>
 
         <div className="h-6 w-px bg-border mx-1" />
 
         <div className="flex items-center gap-2 text-[13px]">
           <span className="text-muted-foreground font-medium">Swimlane:</span>
-          <select value={swimlaneBy} onChange={(e) => setSwimlaneBy(e.target.value as any)}
-            className="h-9 px-2 text-[13px] border border-transparent hover:border-border rounded-lg bg-transparent hover:bg-card text-foreground font-medium outline-none cursor-pointer">
-            <option value="NONE">None</option>
-            <option value="ASSIGNEE">Assignee</option>
-            <option value="PRIORITY">Priority</option>
-          </select>
+          <Select value={swimlaneBy} onValueChange={(val) => setSwimlaneBy(val as any)}>
+            <SelectTrigger className="w-[120px] h-9 text-sm border-transparent bg-transparent hover:bg-card hover:border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NONE">None</SelectItem>
+              <SelectItem value="ASSIGNEE">Assignee</SelectItem>
+              <SelectItem value="PRIORITY">Priority</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -364,7 +369,15 @@ export function BoardPage() {
                                           ref={provided.innerRef}
                                           {...provided.draggableProps}
                                           {...provided.dragHandleProps}
+                                          role="button"
+                                          tabIndex={0}
                                           onClick={() => navigate(`/tickets/${ticket.id}`)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                              e.preventDefault();
+                                              navigate(`/tickets/${ticket.id}`);
+                                            }
+                                          }}
                                           className={`bg-card border p-[14px] rounded-[10px] mb-2 cursor-pointer transition-all relative ${
                                             snapshot.isDragging
                                               ? 'border-[hsl(var(--color-info))] shadow-lg rotate-1 scale-105 opacity-90'

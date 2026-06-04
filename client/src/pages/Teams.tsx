@@ -1,11 +1,15 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users as UsersIcon, Plus, Crown, X, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Users as UsersIcon, Plus, Crown, AlertCircle, ArrowLeft, UserPlus, Search } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { teamsApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
 import type { Team, User } from '../types';
-import { getInitials } from '@/design-system';
+import {
+  getInitials, Spinner, Button, Modal, ConfirmModal, useModal,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/design-system';
+import { toast } from 'sonner';
 
 const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
   ADMIN: { bg: 'bg-red-100', text: 'text-red-600' },
@@ -20,17 +24,36 @@ export function TeamsPage() {
   const { user: currentUser } = useAuthStore();
   const [teams, setTeams] = useState<Team[]>([]);
   const [detail, setDetail] = useState<Team | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [managers, setManagers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const createTeamModal = useModal();
+  const confirmRemoveModal = useModal();
 
-  // Form
+  // Create form
   const [teamName, setTeamName] = useState('');
   const [teamLead, setTeamLead] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const canCreate = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER';
+  // Member management
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [addingMemberId, setAddingMemberId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<User | null>(null);
+  const [removingMember, setRemovingMember] = useState(false);
+  const addMemberRef = useRef<HTMLDivElement>(null);
+
+  const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER';
+
+  const availableMembers = allUsers.filter(
+    u => !detail?.members?.some(m => m.id === u.id)
+  );
+
+  const filteredAvailable = availableMembers.filter(m =>
+    m.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
+    m.email.toLowerCase().includes(memberSearch.toLowerCase())
+  );
 
   useEffect(() => { loadData(); }, []);
 
@@ -39,6 +62,18 @@ export function TeamsPage() {
     else setDetail(null);
   }, [id, teams]);
 
+  useEffect(() => {
+    if (!showAddMember) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (addMemberRef.current && !addMemberRef.current.contains(e.target as Node)) {
+        setShowAddMember(false);
+        setMemberSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAddMember]);
+
   async function loadData() {
     try {
       const [teamsRes, usersRes] = await Promise.all([
@@ -46,6 +81,7 @@ export function TeamsPage() {
         usersApi.list().catch(() => ({ data: [] })),
       ]);
       setTeams(teamsRes.data);
+      setAllUsers(usersRes.data);
       setManagers(usersRes.data.filter((u: User) => ['ADMIN', 'MANAGER'].includes(u.role)));
     } catch { /* ignore */ } finally { setLoading(false); }
   }
@@ -63,7 +99,7 @@ export function TeamsPage() {
     setSubmitting(true);
     try {
       await teamsApi.create({ name: teamName, leadId: teamLead || undefined });
-      setShowModal(false);
+      createTeamModal.close();
       setTeamName(''); setTeamLead('');
       loadData();
     } catch (err: any) {
@@ -71,15 +107,58 @@ export function TeamsPage() {
     } finally { setSubmitting(false); }
   }
 
+  async function handleAddMember(userId: string) {
+    if (!detail) return;
+    setAddingMemberId(userId);
+    try {
+      await teamsApi.addMembers(detail.id, [userId]);
+      const member = allUsers.find(u => u.id === userId)!;
+      setDetail(prev => prev ? {
+        ...prev,
+        members: [...(prev.members || []), member],
+        _count: { members: (prev._count?.members || 0) + 1 },
+      } : prev);
+      toast.success(`${member.fullName} added to team`);
+      if (availableMembers.length === 1) {
+        setShowAddMember(false);
+        setMemberSearch('');
+      }
+    } catch {
+      toast.error('Failed to add member');
+    } finally {
+      setAddingMemberId(null);
+    }
+  }
+
+  async function handleRemoveMember() {
+    if (!detail || !removeTarget) return;
+    setRemovingMember(true);
+    try {
+      await teamsApi.removeMember(detail.id, removeTarget.id);
+      setDetail(prev => prev ? {
+        ...prev,
+        members: (prev.members || []).filter(m => m.id !== removeTarget.id),
+        _count: { members: Math.max(0, (prev._count?.members || 0) - 1) },
+      } : prev);
+      toast.success(`${removeTarget.fullName} removed from team`);
+      confirmRemoveModal.close();
+      setRemoveTarget(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to remove member');
+    } finally {
+      setRemovingMember(false);
+    }
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spinner size="lg" />
       </div>
     );
   }
 
-  // Detail view
+  // ── Detail view ────────────────────────────────────────────────────────────
   if (detail) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -98,7 +177,7 @@ export function TeamsPage() {
           </div>
         </div>
 
-        {/* Team Lead */}
+        {/* Team Lead card */}
         {detail.lead && (
           <div className="bg-card rounded-xl border border-border p-5">
             <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Team Lead</h3>
@@ -114,11 +193,83 @@ export function TeamsPage() {
           </div>
         )}
 
-        {/* Members */}
+        {/* Members section */}
         <div>
-          <h3 className="text-[15px] font-semibold text-foreground mb-3">
-            Members ({detail.members?.length || 0})
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[15px] font-semibold text-foreground">
+              Members ({detail.members?.length || 0})
+            </h3>
+
+            {canManage && (
+              <div className="relative" ref={addMemberRef}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<UserPlus className="w-4 h-4" />}
+                  onClick={() => {
+                    setShowAddMember(prev => !prev);
+                    setMemberSearch('');
+                  }}
+                >
+                  Add Member
+                </Button>
+
+                {showAddMember && (
+                  <div className="absolute right-0 top-full mt-1 z-50 w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden">
+                    {/* Search input */}
+                    <div className="p-3 border-b border-border">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <input
+                          autoFocus
+                          type="text"
+                          placeholder="Search members..."
+                          value={memberSearch}
+                          onChange={e => setMemberSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    {/* User list */}
+                    <div className="max-h-[220px] overflow-y-auto py-1">
+                      {filteredAvailable.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          {availableMembers.length === 0 ? 'All members already added' : 'No results'}
+                        </p>
+                      ) : (
+                        filteredAvailable.map(member => (
+                          <button
+                            key={member.id}
+                            disabled={addingMemberId === member.id}
+                            onClick={() => handleAddMember(member.id)}
+                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted transition-colors text-left disabled:opacity-50"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                              <span className="text-[11px] font-semibold text-primary">{getInitials(member.fullName)}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">{member.fullName}</p>
+                              <p className="text-xs text-muted-foreground truncate">{member.designation || member.role}</p>
+                            </div>
+                            {addingMemberId === member.id
+                              ? <Spinner size="sm" color="muted" />
+                              : <Plus className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            }
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-2 border-t border-border">
+                      <p className="text-xs text-muted-foreground text-center">Click a member to add instantly</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <table className="w-full">
               <thead>
@@ -127,13 +278,18 @@ export function TeamsPage() {
                   <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Designation</th>
                   <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Role</th>
                   <th className="text-left px-5 py-3 text-[12px] font-semibold text-muted-foreground uppercase">Tickets</th>
+                  {canManage && <th className="px-5 py-3 w-20" />}
                 </tr>
               </thead>
               <tbody>
                 {detail.members?.map((member, i) => {
                   const badge = ROLE_BADGES[member.role] || ROLE_BADGES.MEMBER;
+                  const isLead = detail.leadId === member.id;
                   return (
-                    <tr key={member.id} className={`h-[52px] hover:bg-muted ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                    <tr
+                      key={member.id}
+                      className={`group h-[52px] hover:bg-muted transition-colors ${i % 2 === 1 ? 'bg-muted/50' : ''}`}
+                    >
                       <td className="px-5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
@@ -152,6 +308,18 @@ export function TeamsPage() {
                         </span>
                       </td>
                       <td className="px-5 text-sm text-muted-foreground">{member._count?.assignedTickets || 0}</td>
+                      {canManage && (
+                        <td className="px-5 text-right">
+                          {!isLead && (
+                            <button
+                              onClick={() => { setRemoveTarget(member); confirmRemoveModal.open(); }}
+                              className="text-xs text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -162,25 +330,33 @@ export function TeamsPage() {
             )}
           </div>
         </div>
+
+        <ConfirmModal
+          {...confirmRemoveModal.props}
+          title="Remove member"
+          description={`Remove ${removeTarget?.fullName} from ${detail.name}?`}
+          confirmLabel="Remove"
+          variant="destructive"
+          loading={removingMember}
+          onConfirm={handleRemoveMember}
+        />
       </div>
     );
   }
 
-  // List view
+  // ── List view ──────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Teams"
         subtitle={`${teams.length} teams`}
-        actions={canCreate ? (
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
+        actions={canManage ? (
+          <Button onClick={() => createTeamModal.open()} leftIcon={<Plus className="w-4 h-4" />}>
             Create Team
-          </button>
+          </Button>
         ) : undefined}
       />
 
-      {/* Teams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {teams.map((team) => (
           <div key={team.id} className="bg-card rounded-xl border border-border p-5 hover:border-primary/30 transition-colors">
@@ -220,54 +396,53 @@ export function TeamsPage() {
       )}
 
       {/* Create Team Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
-          <div className="relative bg-card rounded-2xl w-full max-w-[480px] p-7 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-semibold text-foreground">Create Team</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-muted">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-              <div>
-                <label className="label">Team Name *</label>
-                <input
-                  type="text"
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="Engineering"
-                  className="input"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">Team Lead</label>
-                <select value={teamLead} onChange={(e) => setTeamLead(e.target.value)} className="input">
-                  <option value="">Select lead</option>
-                  {managers.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={submitting} className="btn-primary flex-1">
-                  {submitting ? 'Creating...' : 'Create'}
-                </button>
-                <button type="button" onClick={() => setShowModal(false)} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
-                  Cancel
-                </button>
-              </div>
-            </form>
+      <Modal
+        {...createTeamModal.props}
+        title="Create Team"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <button type="button" onClick={() => createTeamModal.close()} className="text-sm text-muted-foreground hover:text-foreground font-medium px-4">
+              Cancel
+            </button>
+            <Button type="submit" form="create-team-form" loading={submitting}>
+              Create
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="create-team-form" onSubmit={handleCreate} className="space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-lg">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+          <div>
+            <label className="label">Team Name *</label>
+            <input
+              type="text"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              placeholder="Engineering"
+              className="input"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Team Lead</label>
+            <Select value={teamLead || '_none'} onValueChange={(val) => setTeamLead(val === '_none' ? '' : val)}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">Select lead</SelectItem>
+                {managers.map((m) => <SelectItem key={m.id} value={m.id}>{m.fullName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

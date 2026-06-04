@@ -1,9 +1,10 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardList, Ticket, Columns3, Zap, Calendar, BarChart3,
-  Users, FolderOpen, UserPlus, LogOut, X, History
+  Users, FolderOpen, UserPlus, LogOut, X, History, Inbox
 } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../stores';
+import { getInitials } from '@/design-system';
 
 interface NavItem {
   name: string;
@@ -25,6 +26,7 @@ const sections: NavSection[] = [
       { name: 'Dashboard', href: '/', icon: LayoutDashboard },
       { name: 'Work Update', href: '/my-work', icon: ClipboardList },
       { name: 'My Tickets', href: '/tickets', icon: Ticket },
+      { name: 'Backlog', href: '/backlog', icon: Inbox },
       { name: 'Kanban Board', href: '/board', icon: Columns3 },
     ],
   },
@@ -69,11 +71,6 @@ export function Sidebar() {
   const canSeeItem = (item: NavItem) => {
     if (!item.roles) return true;
     return item.roles.includes(userRole);
-  };
-
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   return (
@@ -150,7 +147,7 @@ export function Sidebar() {
                 <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
                 <span className="text-xs font-semibold text-[#2563EB]">
-                  {getInitials(user?.fullName)}
+                  {getInitials(user?.fullName ?? '')}
                 </span>
               )}
             </div>

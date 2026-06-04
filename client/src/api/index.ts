@@ -1,7 +1,7 @@
 import api from './client';
 import type {
   AuthResponse, User, Team, Project, Ticket, Sprint, Comment,
-  Invitation, Notification, DashboardData, VelocityData, Attachment,
+  Invitation, Notification, DashboardData, Attachment,
   PaginatedResponse, SearchResults,
 } from '../types';
 
@@ -31,6 +31,10 @@ export const usersApi = {
     api.patch<User>(`/users/${id}`, data),
   updateRole: (id: string, role: string) =>
     api.patch<User>(`/users/${id}/role`, { role }),
+  deactivate: (id: string) =>
+    api.patch<User>(`/users/${id}`, { status: 'INACTIVE' }),
+  deleteUser: (id: string) =>
+    api.delete(`/users/${id}`),
 };
 
 // ─── Teams ───────────────────────────────────────────────
@@ -45,6 +49,10 @@ export const teamsApi = {
     api.patch<Team>(`/teams/${id}`, data),
   delete: (id: string) =>
     api.delete(`/teams/${id}`),
+  addMembers: (teamId: string, userIds: string[]) =>
+    api.post<Team>(`/teams/${teamId}/members`, { userIds }),
+  removeMember: (teamId: string, userId: string) =>
+    api.delete<Team>(`/teams/${teamId}/members/${userId}`),
 };
 
 // ─── Projects ────────────────────────────────────────────
@@ -113,7 +121,12 @@ export const sprintsApi = {
 export const commentsApi = {
   list: (ticketId: string) =>
     api.get<Comment[]>(`/comments/${ticketId}`),
-  create: (ticketId: string, data: { content: string; parentId?: string }) =>
+  create: (ticketId: string, data: {
+    content: string;
+    parentId?: string;
+    mentionedUserIds?: string[];
+    notifyAllAssignees?: boolean;
+  }) =>
     api.post<Comment>(`/comments/${ticketId}`, data),
   update: (ticketId: string, commentId: string, content: string) =>
     api.patch<Comment>(`/comments/${ticketId}/${commentId}`, { content }),
@@ -147,8 +160,6 @@ export const notificationsApi = {
 export const dashboardApi = {
   getData: () =>
     api.get<DashboardData>('/dashboard'),
-  getVelocity: (projectId?: string) =>
-    api.get<VelocityData>('/dashboard/velocity', { params: projectId ? { projectId } : {} }),
   getWorkload: () =>
     api.get('/dashboard/workload'),
 };

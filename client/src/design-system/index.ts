@@ -15,6 +15,12 @@ export { FormField } from "@/components/ui/form-field"
 export type { FormFieldProps } from "@/components/ui/form-field"
 
 export {
+  Select, SelectContent, SelectItem,
+  SelectLabel, SelectSeparator, SelectTrigger, SelectValue,
+  SelectGroup,
+} from "@/components/ui/select"
+
+export {
   Card, CardHeader, CardTitle, CardDescription,
   CardContent, CardFooter, CardAction,
 } from "@/components/ui/card"
@@ -50,21 +56,6 @@ export type { DrawerProps } from "@/components/ui/drawer"
 // ── Product components ────────────────────────────────────────────────────────
 export { EmptyState } from "@/components/ui/EmptyState"
 export type { EmptyStateProps } from "@/components/ui/EmptyState"
-
-export { ScoreBar } from "@/components/ui/score-bar"
-export type { ScoreBarProps } from "@/components/ui/score-bar"
-
-export { JobMatchBadge } from "@/components/ui/job-match-badge"
-export type { JobMatchBadgeProps } from "@/components/ui/job-match-badge"
-
-export { ResumeCard } from "@/components/ui/resume-card"
-export type { ResumeCardProps } from "@/components/ui/resume-card"
-
-export { UploadZone } from "@/components/ui/upload-zone"
-export type { UploadZoneProps } from "@/components/ui/upload-zone"
-
-export { AISuggestionChip } from "@/components/ui/ai-suggestion-chip"
-export type { AISuggestionChipProps } from "@/components/ui/ai-suggestion-chip"
 
 export { StatCard } from "@/components/ui/stat-card"
 export type { StatCardProps } from "@/components/ui/stat-card"

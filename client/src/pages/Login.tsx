@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api';
 import { useAuthStore } from '../stores';
+import { Button } from '@/design-system';
 
 const DEMO_CREDENTIALS = [
   { role: 'Admin', email: 'admin@taskpilot.com', password: 'admin123', color: 'bg-blue-50 border-blue-200 text-blue-700' },
@@ -52,23 +53,25 @@ export function LoginPage() {
           <p className="text-text-secondary mt-1 text-sm">Sign in to manage your projects</p>
         </div>
 
-        {/* Demo credentials */}
-        <div className="mb-5 bg-muted/50 border border-border rounded-xl p-4">
-          <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Demo Credentials — click to fill</p>
-          <div className="flex flex-col gap-2">
-            {DEMO_CREDENTIALS.map((cred) => (
-              <button
-                key={cred.role}
-                type="button"
-                onClick={() => fillCredentials(cred)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left hover:opacity-80 transition-opacity ${cred.color}`}
-              >
-                <span className="text-[12px] font-semibold">{cred.role}</span>
-                <span className="text-[12px] font-mono opacity-75">{cred.email}</span>
-              </button>
-            ))}
+        {/* TODO: Remove before customer production deploy */}
+        {import.meta.env.DEV && (
+          <div className="mb-5 bg-muted/50 border border-border rounded-xl p-4">
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Demo Credentials — click to fill</p>
+            <div className="flex flex-col gap-2">
+              {DEMO_CREDENTIALS.map((cred) => (
+                <button
+                  key={cred.role}
+                  type="button"
+                  onClick={() => fillCredentials(cred)}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left hover:opacity-80 transition-opacity ${cred.color}`}
+                >
+                  <span className="text-[12px] font-semibold">{cred.role}</span>
+                  <span className="text-[12px] font-mono opacity-75">{cred.email}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Card */}
         <div className="card">
@@ -115,13 +118,9 @@ export function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                'Sign In'
-              )}
-            </button>
+            <Button type="submit" loading={loading} className="w-full mt-2">
+              Sign In
+            </Button>
           </form>
 
           <p className="text-[13px] text-center text-text-secondary mt-6">

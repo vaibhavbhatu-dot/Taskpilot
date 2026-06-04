@@ -1,5 +1,9 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Plus, ListFilter, Trash2 } from 'lucide-react';
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from '@/design-system';
 
 export type FilterField = 'status' | 'priority' | 'type' | 'assignedToId' | 'teamId' | 'sprintId';
 export type FilterOperator = 'equals' | 'not_equals';
@@ -59,49 +63,83 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
     onChange(filters.filter(f => f.id !== id));
   };
 
-  const renderValueInput = (row: FilterRow) => {
+  const renderValueSelect = (row: FilterRow) => {
+    // Shared props: controlled value with _none sentinel for empty
+    const val = row.value || '_none';
+    const onVal = (v: string) => updateFilter(row.id, { value: v === '_none' ? '' : v });
+
     switch (row.field) {
       case 'status':
         return (
-          <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
-            <option value="">Select status...</option>
-            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
-          </select>
+          <Select value={val} onValueChange={onVal}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue placeholder="Select status…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select status…</SelectItem>
+              {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       case 'priority':
         return (
-          <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
-            <option value="">Select priority...</option>
-            {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <Select value={val} onValueChange={onVal}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue placeholder="Select priority…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select priority…</SelectItem>
+              {PRIORITY_OPTIONS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       case 'type':
         return (
-          <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
-            <option value="">Select type...</option>
-            {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <Select value={val} onValueChange={onVal}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue placeholder="Select type…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select type…</SelectItem>
+              {TYPE_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       case 'assignedToId':
         return (
-          <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
-            <option value="">Select user...</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-          </select>
+          <Select value={val} onValueChange={onVal}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue placeholder="Select user…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select user…</SelectItem>
+              {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       case 'teamId':
         return (
-          <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
-            <option value="">Select team...</option>
-            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          <Select value={val} onValueChange={onVal}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue placeholder="Select team…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select team…</SelectItem>
+              {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       case 'sprintId':
         return (
-          <select value={row.value} onChange={(e) => updateFilter(row.id, { value: e.target.value })} className="input h-9 text-[13px] w-48">
-            <option value="">Select sprint...</option>
-            {sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <Select value={val} onValueChange={onVal}>
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue placeholder="Select sprint…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">Select sprint…</SelectItem>
+              {sprints.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         );
       default:
         return null;
@@ -136,23 +174,33 @@ export function FilterBuilder({ filters, onChange, users, teams, sprints, onAppl
             <div className="space-y-3 mb-4">
               {filters.map((row) => (
                 <div key={row.id} className="flex items-center gap-2">
-                  <select
+                  {/* Field selector */}
+                  <Select
                     value={row.field}
-                    onChange={(e) => updateFilter(row.id, { field: e.target.value as FilterField })}
-                    className="input h-9 text-[13px] w-40"
+                    onValueChange={(val) => updateFilter(row.id, { field: val as FilterField })}
                   >
-                    {FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-                  </select>
+                    <SelectTrigger className="w-40 h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FIELDS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
 
-                  <select
+                  {/* Operator selector */}
+                  <Select
                     value={row.operator}
-                    onChange={(e) => updateFilter(row.id, { operator: e.target.value as FilterOperator })}
-                    className="input h-9 text-[13px] w-28"
+                    onValueChange={(val) => updateFilter(row.id, { operator: val as FilterOperator })}
                   >
-                    {OPERATORS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                    <SelectTrigger className="w-28 h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPERATORS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
 
-                  {renderValueInput(row)}
+                  {renderValueSelect(row)}
 
                   <button
                     onClick={() => removeFilter(row.id)}

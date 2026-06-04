@@ -6,7 +6,8 @@ import { Calendar as CalendarIcon, Target, CheckCircle, CheckCircle2, Columns3, 
 import { sprintsApi, ticketsApi } from '../api';
 import type { Sprint, Ticket, TicketStatus } from '../types';
 import { STATUS_CONFIG, TICKET_STATUSES, getStatusLabel } from '../constants/ticketStatus';
-import { getInitials } from '@/design-system';
+import { toast } from 'sonner';
+import { getInitials, Spinner, Button, Modal, useModal } from '@/design-system';
 import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 
 // Active sprint board excludes BACKLOG column
@@ -24,7 +25,7 @@ export function ActiveSprintPage() {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
 
   // Complete Sprint Modal
-  const [showComplete, setShowComplete] = useState(false);
+  const completeSprintModal = useModal();
   const [completing, setCompleting] = useState(false);
   const [incompleteAction, setIncompleteAction] = useState<'next' | 'backlog'>('next');
 
@@ -43,8 +44,8 @@ export function ActiveSprintPage() {
         const ticketsRes = await ticketsApi.list({ sprintId: active.id, limit: '500' });
         setTickets(ticketsRes.data.tickets);
       }
-    } catch (error) {
-      console.error('Failed to load active sprint:', error);
+    } catch {
+      toast.error('Failed to load active sprint. Please refresh.');
     } finally {
       setLoading(false);
     }
@@ -102,10 +103,10 @@ export function ActiveSprintPage() {
       }
 
       await sprintsApi.complete(activeSprint.id, nextSprintId);
-      setShowComplete(false);
+      completeSprintModal.close();
       navigate('/sprints/reports');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to complete sprint');
+      toast.error(error.response?.data?.error || 'Failed to complete sprint');
     } finally {
       setCompleting(false);
     }
@@ -113,8 +114,8 @@ export function ActiveSprintPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
-        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -172,13 +173,14 @@ export function ActiveSprintPage() {
           )}
         </div>
 
-        <button
-          onClick={() => setShowComplete(true)}
-          className="flex items-center gap-2 h-9 px-4 border border-border hover:bg-muted/50 text-foreground text-[13px] font-medium rounded-lg transition-colors"
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<CheckCircle className="w-4 h-4 text-green-500" />}
+          onClick={() => completeSprintModal.open()}
         >
-          <CheckCircle className="w-4 h-4 text-green-500" />
           Complete Sprint
-        </button>
+        </Button>
       </div>
 
       {/* KPI Row */}
@@ -258,7 +260,15 @@ export function ActiveSprintPage() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={() => navigate(`/tickets/${ticket.id}`)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      navigate(`/tickets/${ticket.id}`);
+                                    }
+                                  }}
                                   className={`bg-card border p-[14px] rounded-[10px] mb-2 cursor-pointer transition-all relative ${
                                     snapshot.isDragging
                                       ? 'border-primary shadow-lg rotate-1 scale-105 opacity-90'
@@ -327,7 +337,7 @@ export function ActiveSprintPage() {
                 {tickets.map(ticket => (
                   <tr key={ticket.id} className="hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/tickets/${ticket.id}`)}>
                     <td className="px-5 py-3">
-                      <span className="text-[13px] font-mono text-primary-600 font-medium">{ticket.ticketNumber}</span>
+                      <span className="text-[13px] font-mono text-[hsl(var(--color-info))] font-medium">{ticket.ticketNumber}</span>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
@@ -384,92 +394,64 @@ export function ActiveSprintPage() {
       </div>
 
       {/* Complete Sprint Modal */}
-      {showComplete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-card rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-slide-up">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="text-[18px] font-semibold text-foreground">Complete {activeSprint.name}</h2>
-            </div>
-
-            <div className="p-6">
-              <div className="bg-muted/50 border border-border rounded-lg p-5 mb-6 flex divide-x divide-border">
-                <div className="flex-1 text-center px-4">
-                  <p className="text-[32px] font-semibold text-[hsl(var(--color-success))] leading-none mb-1">{completedTickets.length}</p>
-                  <p className="text-[13px] font-medium text-muted-foreground">Done</p>
-                </div>
-                <div className="flex-1 text-center px-4">
-                  <p className="text-[32px] font-semibold text-[hsl(var(--color-warning))] leading-none mb-1">{incompleteTickets.length}</p>
-                  <p className="text-[13px] font-medium text-muted-foreground">Incomplete issues</p>
-                </div>
-              </div>
-
-              {incompleteTickets.length > 0 && (
-                <div className="space-y-4">
-                  <p className="text-[14px] font-medium text-foreground">What should happen to the incomplete issues?</p>
-
-                  <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${incompleteAction === 'next' ? 'border-primary bg-primary/10' : 'border-border hover:border-border'}`}>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="incompleteAction"
-                        checked={incompleteAction === 'next'}
-                        onChange={() => setIncompleteAction('next')}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <div>
-                        <p className="text-[14px] font-semibold text-foreground">Move to next sprint</p>
-                        <p className="text-[13px] text-muted-foreground">A new sprint will be created automatically</p>
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${incompleteAction === 'backlog' ? 'border-primary bg-primary/10' : 'border-border hover:border-border'}`}>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="incompleteAction"
-                        checked={incompleteAction === 'backlog'}
-                        onChange={() => setIncompleteAction('backlog')}
-                        className="w-4 h-4 text-primary focus:ring-primary"
-                      />
-                      <div>
-                        <p className="text-[14px] font-semibold text-foreground">Move to backlog</p>
-                        <p className="text-[13px] text-muted-foreground">Issues will be returned to the general backlog</p>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              {incompleteTickets.length === 0 && (
-                <div className="flex items-center gap-2 text-[hsl(var(--color-success))] bg-[hsl(var(--color-success))]/15 p-4 rounded-lg">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-[14px] font-medium">All issues are deployed! Great job!</p>
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-muted/50">
-              <button
-                type="button"
-                onClick={() => setShowComplete(false)}
-                className="h-10 px-4 text-muted-foreground font-medium text-[14px] hover:text-foreground transition-colors"
-                disabled={completing}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCompleteSprint}
-                disabled={completing}
-                className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-medium text-[14px] rounded-lg transition-colors disabled:opacity-50"
-              >
-                {completing ? 'Completing...' : 'Complete Sprint'}
-              </button>
-            </div>
+      <Modal
+        {...completeSprintModal.props}
+        title={`Complete ${activeSprint.name}`}
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <button type="button" onClick={() => completeSprintModal.close()} disabled={completing}
+              className="h-10 px-4 text-muted-foreground font-medium text-[14px] hover:text-foreground transition-colors">
+              Cancel
+            </button>
+            <Button onClick={handleCompleteSprint} loading={completing}>
+              Complete Sprint
+            </Button>
+          </div>
+        }
+      >
+        <div className="bg-muted/50 border border-border rounded-lg p-5 mb-6 flex divide-x divide-border">
+          <div className="flex-1 text-center px-4">
+            <p className="text-[32px] font-semibold text-[hsl(var(--color-success))] leading-none mb-1">{completedTickets.length}</p>
+            <p className="text-[13px] font-medium text-muted-foreground">Done</p>
+          </div>
+          <div className="flex-1 text-center px-4">
+            <p className="text-[32px] font-semibold text-[hsl(var(--color-warning))] leading-none mb-1">{incompleteTickets.length}</p>
+            <p className="text-[13px] font-medium text-muted-foreground">Incomplete issues</p>
           </div>
         </div>
-      )}
+
+        {incompleteTickets.length > 0 && (
+          <div className="space-y-4">
+            <p className="text-[14px] font-medium text-foreground">What should happen to the incomplete issues?</p>
+            <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${incompleteAction === 'next' ? 'border-primary bg-primary/10' : 'border-border hover:border-border'}`}>
+              <div className="flex items-center gap-3">
+                <input type="radio" name="incompleteAction" checked={incompleteAction === 'next'} onChange={() => setIncompleteAction('next')} className="w-4 h-4 text-primary focus:ring-primary" />
+                <div>
+                  <p className="text-[14px] font-semibold text-foreground">Move to next sprint</p>
+                  <p className="text-[13px] text-muted-foreground">A new sprint will be created automatically</p>
+                </div>
+              </div>
+            </label>
+            <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${incompleteAction === 'backlog' ? 'border-primary bg-primary/10' : 'border-border hover:border-border'}`}>
+              <div className="flex items-center gap-3">
+                <input type="radio" name="incompleteAction" checked={incompleteAction === 'backlog'} onChange={() => setIncompleteAction('backlog')} className="w-4 h-4 text-primary focus:ring-primary" />
+                <div>
+                  <p className="text-[14px] font-semibold text-foreground">Move to backlog</p>
+                  <p className="text-[13px] text-muted-foreground">Issues will be returned to the general backlog</p>
+                </div>
+              </div>
+            </label>
+          </div>
+        )}
+
+        {incompleteTickets.length === 0 && (
+          <div className="flex items-center gap-2 text-[hsl(var(--color-success))] bg-[hsl(var(--color-success))]/15 p-4 rounded-lg">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-[14px] font-medium">All issues are deployed! Great job!</p>
+          </div>
+        )}
+      </Modal>
 
     </div>
   );

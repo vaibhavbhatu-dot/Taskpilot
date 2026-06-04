@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { UserCircle, Eye, EyeOff } from 'lucide-react';
 import { authApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
+import { Button, Card, Spinner, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
 
 export function ProfileSetupPage() {
   const [searchParams] = useSearchParams();
@@ -83,25 +84,25 @@ export function ProfileSetupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (!inviteData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface p-4">
-        <div className="card max-w-md w-full text-center">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="max-w-md w-full text-center p-8">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <span className="text-error text-xl font-bold">!</span>
+            <span className="text-destructive text-xl font-bold">!</span>
           </div>
-          <h2 className="text-xl font-semibold text-text-primary mb-2">Invalid Invitation</h2>
-          <p className="text-sm text-text-secondary">{error || 'This invitation link is invalid or has expired.'}</p>
-          <button onClick={() => navigate('/login')} className="btn-primary mt-8 w-full">
+          <h2 className="text-xl font-semibold text-foreground mb-2">Invalid Invitation</h2>
+          <p className="text-sm text-muted-foreground">{error || 'This invitation link is invalid or has expired.'}</p>
+          <Button onClick={() => navigate('/login')} className="mt-8 w-full">
             Go to Login
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -112,19 +113,19 @@ export function ProfileSetupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-600 mb-4">
-            <UserCircle className="w-6 h-6 text-white" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary mb-4">
+            <UserCircle className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-semibold text-text-primary">Set Up Your Account</h1>
-          <p className="text-text-secondary mt-1 text-sm">
-            Invited by <span className="font-medium text-text-primary">{inviteData.invitedBy}</span>
+          <h1 className="text-2xl font-semibold text-foreground">Set Up Your Account</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Invited by <span className="font-medium text-foreground">{inviteData.invitedBy}</span>
           </p>
         </div>
 
-        <div className="card">
+        <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-btn animate-fade-in">
@@ -156,33 +157,33 @@ export function ProfileSetupPage() {
 
             <div>
               <label htmlFor="designation" className="label">Designation</label>
-              <select
-                id="designation"
-                value={designation}
-                onChange={(e) => setDesignation(e.target.value)}
-                className="select"
-              >
-                <option value="">Select your designation</option>
-                {designations.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+              <Select value={designation || '_none'} onValueChange={(val) => setDesignation(val === '_none' ? '' : val)}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Select your designation</SelectItem>
+                  {designations.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {managers.length > 0 && (
               <div>
                 <label htmlFor="managerId" className="label">Manager</label>
-                <select
-                  id="managerId"
-                  value={managerId}
-                  onChange={(e) => setManagerId(e.target.value)}
-                  className="select"
-                >
-                  <option value="">Select your manager</option>
-                  {managers.map((m: any) => (
-                    <option key={m.id} value={m.id}>{m.fullName}</option>
-                  ))}
-                </select>
+                <Select value={managerId || '_none'} onValueChange={(val) => setManagerId(val === '_none' ? '' : val)}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Select your manager</SelectItem>
+                    {managers.map((m: any) => (
+                      <SelectItem key={m.id} value={m.id}>{m.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -222,19 +223,11 @@ export function ProfileSetupPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary w-full"
-            >
-              {submitting ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                'Complete Setup'
-              )}
-            </button>
+            <Button type="submit" loading={submitting} className="w-full">
+              Complete Setup
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, List, Columns3, X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
-import { Button } from '@/design-system';
+import { toast } from 'sonner';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
+import { isOverdue } from '@/lib/utils';
 import { STATUS_STYLES, PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 import { ticketsApi, projectsApi, usersApi, sprintsApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
@@ -23,9 +25,6 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-const isOverdue = (d: string, status: string) =>
-  new Date(d) < new Date() && status !== 'LIVE';
-
 export function TicketsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -39,6 +38,9 @@ export function TicketsPage() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
   const [bulkActionLoad, setBulkActionLoad] = useState(false);
+  const [bulkStatusSel, setBulkStatusSel] = useState<string | undefined>();
+  const [bulkPrioritySel, setBulkPrioritySel] = useState<string | undefined>();
+  const [bulkAssigneeSel, setBulkAssigneeSel] = useState<string | undefined>();
 
   // Data for filters
   const [projects, setProjects] = useState<Project[]>([]);
@@ -78,7 +80,7 @@ export function TicketsPage() {
       setTickets(data.tickets);
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total);
-    } catch (err) { console.error(err); }
+    } catch { toast.error('Failed to load tickets. Please refresh.'); }
     finally { setLoading(false); }
   }
 
@@ -89,11 +91,19 @@ export function TicketsPage() {
         <PageHeader title={isAdmin ? 'All Tickets' : 'My Tickets'} />
         <div className="flex items-center gap-3">
           {/* View toggle */}
-          <div className="flex bg-muted rounded-lg p-0.5">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-medium bg-card text-foreground shadow-sm">
+          <div role="tablist" aria-label="View mode" className="flex bg-muted rounded-lg p-0.5">
+            <button
+              role="tab"
+              aria-selected={true}
+              aria-label="List view"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-medium bg-card text-foreground shadow-sm"
+            >
               <List className="w-4 h-4" /> List
             </button>
             <button
+              role="tab"
+              aria-selected={false}
+              aria-label="Board view"
               onClick={() => navigate('/board')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-medium text-muted-foreground hover:text-foreground"
             >
@@ -323,63 +333,69 @@ export function TicketsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
-              className="bg-muted border border-border text-foreground text-[13px] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
-              onChange={async (e) => {
-                const status = e.target.value;
-                if (!status) return;
+            <Select
+              value={bulkStatusSel}
+              disabled={bulkActionLoad}
+              onValueChange={async (status) => {
                 setBulkActionLoad(true);
                 try {
                   await ticketsApi.bulkUpdate(Array.from(selectedTickets), { status: status as any });
                   setSelectedTickets(new Set());
                   loadTickets();
-                } catch (err) { console.error('Bulk update error', err); }
-                finally { setBulkActionLoad(false); e.target.value = ''; }
+                } catch { toast.error('Bulk action failed. Please try again.'); }
+                finally { setBulkActionLoad(false); setBulkStatusSel(undefined); }
               }}
-              disabled={bulkActionLoad}
             >
-              <option value="">Set Status...</option>
-              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
-            </select>
+              <SelectTrigger className="h-9 w-[150px] text-sm">
+                <SelectValue placeholder="Set Status…" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            <select
-              className="bg-muted border border-border text-foreground text-[13px] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
-              onChange={async (e) => {
-                const priority = e.target.value;
-                if (!priority) return;
+            <Select
+              value={bulkPrioritySel}
+              disabled={bulkActionLoad}
+              onValueChange={async (priority) => {
                 setBulkActionLoad(true);
                 try {
                   await ticketsApi.bulkUpdate(Array.from(selectedTickets), { priority: priority as any });
                   setSelectedTickets(new Set());
                   loadTickets();
-                } catch (err) { console.error('Bulk update error', err); }
-                finally { setBulkActionLoad(false); e.target.value = ''; }
+                } catch { toast.error('Bulk action failed. Please try again.'); }
+                finally { setBulkActionLoad(false); setBulkPrioritySel(undefined); }
               }}
-              disabled={bulkActionLoad}
             >
-              <option value="">Set Priority...</option>
-              {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+              <SelectTrigger className="h-9 w-[140px] text-sm">
+                <SelectValue placeholder="Set Priority…" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRIORITY_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            <select
-              className="bg-muted border border-border text-foreground text-[13px] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
-              onChange={async (e) => {
-                const assigneeId = e.target.value;
-                if (assigneeId === undefined) return;
+            <Select
+              value={bulkAssigneeSel}
+              disabled={bulkActionLoad}
+              onValueChange={async (assigneeId) => {
                 setBulkActionLoad(true);
                 try {
-                  await ticketsApi.bulkUpdate(Array.from(selectedTickets), { assignedToId: assigneeId === 'unassigned' ? undefined : assigneeId } as any);
+                  await ticketsApi.bulkUpdate(Array.from(selectedTickets), { assignedToId: assigneeId === '_unassigned' ? undefined : assigneeId } as any);
                   setSelectedTickets(new Set());
                   loadTickets();
-                } catch (err) { console.error('Bulk update error', err); }
-                finally { setBulkActionLoad(false); e.target.value = ''; }
+                } catch { toast.error('Bulk action failed. Please try again.'); }
+                finally { setBulkActionLoad(false); setBulkAssigneeSel(undefined); }
               }}
-              disabled={bulkActionLoad}
             >
-              <option value="">Assign to...</option>
-              <option value="unassigned">Unassigned</option>
-              {users.map(u => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select>
+              <SelectTrigger className="h-9 w-[150px] text-sm">
+                <SelectValue placeholder="Assign to…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_unassigned">Unassigned</SelectItem>
+                {users.map(u => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button

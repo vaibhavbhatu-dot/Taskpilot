@@ -4,7 +4,7 @@ import {
   Users, FolderOpen, UserPlus, LogOut, X, History, Inbox,
 } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../stores';
-import { OnboardingChecklist } from './OnboardingChecklist';
+
 import { getInitials } from '@/design-system';
 
 interface NavItem {
@@ -141,8 +141,6 @@ export function Sidebar() {
             </div>
           ))}
         </nav>
-
-        <OnboardingChecklist />
 
         {/* User section */}
         <div className="p-3 border-t border-white/10">

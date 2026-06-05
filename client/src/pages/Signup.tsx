@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Users } from 'lucide-react';
+import { Eye, EyeOff, Users, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -126,6 +126,14 @@ export function SignupPage() {
           {/* Stepper */}
           <div className="mb-8">
             <Stepper steps={STEPS} currentStep={0} />
+          </div>
+
+          {/* Admin account info note */}
+          <div className="flex items-start gap-2 p-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg mb-4 text-sm">
+            <Info className="w-4 h-4 text-[#2563EB] flex-shrink-0 mt-0.5" />
+            <p className="text-[#1D4ED8] text-xs">
+              Signing up creates an <strong>Admin</strong> account for your organisation. Invite team members after setup.
+            </p>
           </div>
 
           {/* Domain exists banner */}

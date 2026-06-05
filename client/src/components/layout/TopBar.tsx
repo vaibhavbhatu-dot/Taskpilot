@@ -2,15 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu, Bell, ChevronDown, LogOut, User, UserPlus, MessageSquare, AlertCircle,
-  Play, CheckCircle, Search, Settings, HelpCircle, X, FileText, BookOpen,
-  PlayCircle, Plus, ChevronRight, LifeBuoy,
+  Play, CheckCircle, Search, Settings, FileText, BookOpen, PlayCircle, LifeBuoy,
 } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../stores';
 import { notificationsApi } from '../../api';
 import type { Notification } from '../../types';
 import { SearchModal } from '../ui/SearchModal';
-import { getInitials, cn } from '@/design-system';
-import { SubmitTicketModal } from '../support/SubmitTicketModal';
+import { getInitials } from '@/design-system';
 
 // Helper for relative time
 function timeAgo(dateString: string) {
@@ -34,22 +32,9 @@ function getNotificationIcon(type: string) {
   }
 }
 
-
-const HELP_QUICK_LINKS: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  desc: string;
-  action: 'faq' | 'docs' | 'tour' | 'tickets';
-}[] = [
-  { icon: FileText,    label: 'FAQ',         desc: 'Common questions', action: 'faq' },
-  { icon: BookOpen,    label: 'Docs',        desc: 'How-to guides',    action: 'docs' },
-  { icon: PlayCircle,  label: 'Replay tour', desc: 'App walkthrough',  action: 'tour' },
-  { icon: MessageSquare, label: 'My tickets', desc: 'Track support',  action: 'tickets' },
-];
-
 export function TopBar() {
   const { user, clearAuth } = useAuthStore();
-  const { toggleSidebar } = useUIStore();
+  const { toggleSidebar, triggerReplayTour } = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -57,12 +42,9 @@ export function TopBar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [showHelp, setShowHelp]           = useState(false);
-  const [showTicketForm, setShowTicketForm] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Get page title
   useEffect(() => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000);
@@ -171,15 +153,6 @@ export function TopBar() {
         </button>
       )}
 
-      {/* Help button */}
-      <button
-        onClick={() => setShowHelp(true)}
-        aria-label="Help"
-        className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-accent transition-colors"
-      >
-        <HelpCircle className="w-5 h-5 text-muted-foreground" />
-      </button>
-
       {/* Notification bell */}
       <div className="relative" ref={notifRef}>
         <button
@@ -280,6 +253,32 @@ export function TopBar() {
               <User className="w-4 h-4 text-muted-foreground" />
               My Profile
             </button>
+            <div className="border-t border-border">
+              <button
+                onClick={() => { navigate('/help'); setShowUserMenu(false); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
+              >
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                FAQ
+              </button>
+              <button
+                onClick={() => { navigate('/docs'); setShowUserMenu(false); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                Docs
+              </button>
+              <button
+                onClick={() => {
+                  triggerReplayTour();
+                  setShowUserMenu(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
+              >
+                <PlayCircle className="w-4 h-4 text-muted-foreground" />
+                Replay tour
+              </button>
+            </div>
             <button
               onClick={() => { clearAuth(); navigate('/login'); setShowUserMenu(false); }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors border-t border-border"
@@ -293,95 +292,6 @@ export function TopBar() {
 
       {/* Global Search Modal */}
       <SearchModal isOpen={showSearch} onClose={() => setShowSearch(false)} />
-
-      {/* Help panel overlay */}
-      {showHelp && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setShowHelp(false)}
-        />
-      )}
-
-      {/* Help slide-in panel */}
-      <div
-        className={cn(
-          'fixed right-0 top-0 h-full w-[400px] z-50',
-          'bg-white border-l border-[#E2E8F0] shadow-xl',
-          'transition-transform duration-300',
-          showHelp ? 'translate-x-0' : 'translate-x-full',
-        )}
-      >
-        <div className="relative z-50 h-full flex flex-col bg-white">
-          {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-[#E2E8F0]">
-            <div>
-              <h2 className="text-base font-semibold text-[#0F172A]">Help &amp; Support</h2>
-              <p className="text-xs text-[#64748B] mt-0.5">How can we help you?</p>
-            </div>
-            <button
-              onClick={() => setShowHelp(false)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#F1F5F9]"
-            >
-              <X className="w-4 h-4 text-[#64748B]" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
-            {/* Quick links grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {HELP_QUICK_LINKS.map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => {
-                    if (item.action === 'tour') {
-                      localStorage.removeItem('tour_completed');
-                      setShowHelp(false);
-                      window.location.reload();
-                    } else if (item.action === 'tickets') {
-                      navigate('/support/my-tickets');
-                      setShowHelp(false);
-                    } else {
-                      navigate('/help');
-                      setShowHelp(false);
-                    }
-                  }}
-                  className="flex flex-col items-start p-3 rounded-xl border border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#EFF6FF] transition-all text-left"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center mb-2 text-[#2563EB]">
-                    <item.icon className="w-4 h-4" />
-                  </div>
-                  <p className="text-sm font-medium text-[#0F172A]">{item.label}</p>
-                  <p className="text-xs text-[#94A3B8]">{item.desc}</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Submit ticket CTA */}
-            <button
-              onClick={() => { setShowHelp(false); setShowTicketForm(true); }}
-              className="w-full flex items-center gap-3 p-4 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-colors"
-            >
-              <Plus className="w-5 h-5 flex-shrink-0" />
-              <div className="text-left">
-                <p className="text-sm font-semibold">Submit a support ticket</p>
-                <p className="text-xs text-blue-200">Bug, feature request, or question</p>
-              </div>
-              <ChevronRight className="w-4 h-4 ml-auto" />
-            </button>
-
-            {/* Contact info */}
-            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wider mb-2">Direct contact</p>
-              <p className="text-sm text-[#0F172A]">support@taskpilot.com</p>
-              <p className="text-xs text-[#94A3B8] mt-1">Response within 24 hours</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Ticket submission modal (triggered from help panel) */}
-      <SubmitTicketModal open={showTicketForm} onClose={() => setShowTicketForm(false)} />
     </header>
   );
 }

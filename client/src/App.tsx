@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from './stores';
+import { useAuthStore, useUIStore } from './stores';
 import { authApi } from './api';
 import { Spinner } from '@/design-system';
 import { ProductTour, TOUR_STEPS } from './components/ui/product-tour';
@@ -36,6 +36,8 @@ import { NotFoundPage } from './pages/NotFound';
 import { OnboardingProfilePage } from './pages/onboarding/Profile';
 import { OnboardingWorkspacePage } from './pages/onboarding/Workspace';
 import { MyTicketsPage } from './pages/support/MyTickets';
+import HelpPage from './pages/Help';
+import DocsPage from './pages/Docs';
 import { StyleGuideRouter } from './style-guide';
 import { Toaster } from './components/ui/sonner';
 
@@ -81,11 +83,11 @@ function ChecklistTracker() {
 // Protected layout with sidebar and topbar
 function AppLayout() {
   const { user } = useAuthStore();
-  const [tourActive, setTourActive] = useState(() => {
-    return !localStorage.getItem('tour_completed');
-  });
+  const { replayTour, tourKey, setReplayTour } = useUIStore();
 
-  const showTour = !!user?.onboardingCompleted && tourActive;
+  const showTour = !!user?.onboardingCompleted && (
+    replayTour || !localStorage.getItem('tour_completed')
+  );
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -101,10 +103,11 @@ function AppLayout() {
       <CommandPalette />
       <ChecklistTracker />
       <ProductTour
+        key={tourKey}
         steps={TOUR_STEPS}
         isActive={showTour}
-        onComplete={() => setTourActive(false)}
-        onSkip={() => setTourActive(false)}
+        onComplete={() => setReplayTour(false)}
+        onSkip={() => setReplayTour(false)}
       />
     </div>
   );
@@ -199,6 +202,8 @@ function App() {
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/invite" element={<ProfileSetupPage />} />
             <Route path="/invite/:token" element={<ProfileSetupPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            <Route path="/docs" element={<DocsPage />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

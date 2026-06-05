@@ -1,8 +1,10 @@
 ﻿import { useEffect, useState } from 'react';
-import { Search, Plus, MoreHorizontal, ChevronDown, ChevronRight, Clock, AlertCircle } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, ChevronDown, ChevronRight, Clock, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/ui/PageHeader';
 import { usersApi, invitationsApi, teamsApi } from '../api';
+import { useAuthStore } from '../stores';
+import { markChecklistDone } from '../lib/checklist';
 import type { User, Invitation, Team } from '../types';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -19,6 +21,7 @@ const ROLE_BADGES: Record<string, { bg: string; text: string }> = {
 const ROLE_FILTERS = ['All', 'ADMIN', 'MANAGER', 'PROJECT_MANAGER', 'MEMBER'] as const;
 
 export function MembersPage() {
+  const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -97,6 +100,7 @@ export function MembersPage() {
       toast.success(`Invitation sent to ${invEmail}`);
       inviteModal.close();
       setInvEmail(''); setInvRole('MEMBER'); setInvTeam(''); setInvManager('');
+      if (currentUser?.id) markChecklistDone(currentUser.id, 'invite_member');
       loadData();
     } catch (err: any) {
       setInvError(err.response?.data?.error || 'Failed to send invitation');
@@ -468,6 +472,10 @@ export function MembersPage() {
               className="input"
               required
             />
+          </div>
+          <div className="flex items-start gap-2 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-xs text-[#64748B]">
+            <Info className="w-3.5 h-3.5 text-[#94A3B8] flex-shrink-0 mt-0.5" />
+            <p>Invited users will set up their own password and profile. Their role will be set to what you select below.</p>
           </div>
           <div>
             <label className="label">Role</label>

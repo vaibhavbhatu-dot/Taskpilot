@@ -1,11 +1,13 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket, Inbox } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Play, Trash2, Rocket, Inbox, ChevronDown, Check } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ticketsApi, sprintsApi, usersApi, projectsApi } from '../api';
+import { useAuthStore } from '../stores';
+import { markChecklistDone } from '../lib/checklist';
 import type { Ticket, Sprint, User, Project } from '../types';
 import { toast } from 'sonner';
 import { getInitials, Spinner, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
@@ -13,6 +15,7 @@ import { PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 
 
 export function SprintPlanningPage() {
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   
   const [backlogTickets, setBacklogTickets] = useState<Ticket[]>([]);
@@ -31,16 +34,29 @@ export function SprintPlanningPage() {
 
   // Create Form
   const [sprintName, setSprintName] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]); // empty = All
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [goal, setGoal] = useState('');
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
-  }, [priorityFilter, typeFilter, assigneeFilter]);
+  }, [priorityFilter, typeFilter, assigneeFilter, selectedProjectIds]);
+
+  useEffect(() => {
+    if (!projectDropdownOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target as Node)) {
+        setProjectDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [projectDropdownOpen]);
 
   async function loadData() {
     try {
@@ -54,15 +70,15 @@ export function SprintPlanningPage() {
 
       setUsers(usersRes.data);
       setProjects(projsRes.data);
-      if (projsRes.data.length > 0 && !projectId) {
-        setProjectId(projsRes.data[0].id);
-      }
 
-      // Filter backlog tickets manually for priority/type/assignee since search isn't in API out of box
+      // Filter backlog tickets manually for priority/type/assignee/project
       let filteredBacklog = ticketsRes.data.tickets;
       if (priorityFilter) filteredBacklog = filteredBacklog.filter(t => t.priority === priorityFilter);
       if (typeFilter) filteredBacklog = filteredBacklog.filter(t => t.type === typeFilter);
       if (assigneeFilter) filteredBacklog = filteredBacklog.filter(t => t.assignedToId === assigneeFilter);
+      if (selectedProjectIds.length > 0) {
+        filteredBacklog = filteredBacklog.filter(t => selectedProjectIds.includes((t as any).projectId));
+      }
       
       const planned = sprintsRes.data[0] || null;
       setPlannedSprint(planned);
@@ -89,19 +105,29 @@ export function SprintPlanningPage() {
     }
   }
 
+  // For creation, use first selected project or fall back to first available
+  const sprintProjectId = selectedProjectIds[0] || projects[0]?.id || '';
+
   const handleCreateSprint = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sprintName || !projectId) return;
+    if (!sprintName || !sprintProjectId) return;
     setCreating(true);
     try {
-      await sprintsApi.create({
-        name: sprintName,
-        projectId,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        goal: goal || undefined,
-        status: 'PLANNED'
-      });
+      // If multiple specific projects selected, create one sprint per project
+      const projectsToCreate = selectedProjectIds.length > 1
+        ? selectedProjectIds
+        : [sprintProjectId];
+
+      for (const pid of projectsToCreate) {
+        await sprintsApi.create({
+          name: sprintName,
+          projectId: pid,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          goal: goal || undefined,
+          status: 'PLANNED'
+        });
+      }
       setSprintName('');
       setStartDate('');
       setEndDate('');
@@ -174,6 +200,7 @@ export function SprintPlanningPage() {
     try {
       await sprintsApi.start(plannedSprint.id);
       toast.success(`${plannedSprint.name} has started with ${sprintTickets.length} tickets!`);
+      if (user?.id) markChecklistDone(user.id, 'start_sprint');
       navigate('/sprints/active');
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to start sprint. Only 1 active sprint is allowed per project.');
@@ -356,17 +383,76 @@ export function SprintPlanningPage() {
                 <p className="text-[14px] text-muted-foreground mb-8">Create a new sprint to start dragging tickets from the backlog.</p>
                 
                 <form onSubmit={handleCreateSprint} className="space-y-5">
-                  <div>
+                  <div ref={projectDropdownRef} className="relative">
                     <label className="block text-[13px] font-medium text-foreground mb-1.5">Project *</label>
-                    <Select value={projectId || '_none'} onValueChange={(val) => setProjectId(val === '_none' ? '' : val)}>
-                      <SelectTrigger className="w-full h-9 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">Select project</SelectItem>
-                        {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    {/* Multi-select trigger */}
+                    <button
+                      type="button"
+                      onClick={() => setProjectDropdownOpen(v => !v)}
+                      className="w-full h-9 px-3 text-[14px] border border-border rounded-lg bg-card outline-none flex items-center justify-between hover:border-primary/50 transition-colors"
+                    >
+                      <span className={selectedProjectIds.length === 0 ? 'text-muted-foreground' : 'text-foreground'}>
+                        {selectedProjectIds.length === 0
+                          ? 'All Projects'
+                          : selectedProjectIds.length === 1
+                            ? projects.find(p => p.id === selectedProjectIds[0])?.name ?? '1 project'
+                            : `${selectedProjectIds.length} projects selected`}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown */}
+                    {projectDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+                        {/* All Projects option */}
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedProjectIds([]); setProjectDropdownOpen(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors"
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selectedProjectIds.length === 0 ? 'bg-primary border-primary' : 'border-border'}`}>
+                            {selectedProjectIds.length === 0 && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                          <span className="text-[13px] font-medium text-foreground">All Projects</span>
+                        </button>
+
+                        <div className="border-t border-border" />
+
+                        {/* Individual projects */}
+                        {projects.map(p => {
+                          const isSelected = selectedProjectIds.includes(p.id);
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedProjectIds(prev =>
+                                  prev.includes(p.id)
+                                    ? prev.filter(x => x !== p.id)
+                                    : [...prev, p.id]
+                                );
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors"
+                            >
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary border-primary' : 'border-border'}`}>
+                                {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                              </div>
+                              <span className="text-[13px] text-foreground">{p.name}</span>
+                            </button>
+                          );
+                        })}
+
+                        <div className="border-t border-border px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => setProjectDropdownOpen(false)}
+                            className="w-full text-[12px] text-muted-foreground hover:text-foreground py-0.5"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[13px] font-medium text-foreground mb-1.5">Sprint Name *</label>
@@ -410,7 +496,7 @@ export function SprintPlanningPage() {
                   </div>
                   <button
                     type="submit"
-                    disabled={creating || !projectId}
+                    disabled={creating || !sprintProjectId}
                     className="w-full h-10 bg-primary hover:bg-primary/90 text-white text-[14px] font-medium rounded-lg transition-colors disabled:opacity-50"
                   >
                     {creating ? 'Creating...' : 'Create Sprint'}

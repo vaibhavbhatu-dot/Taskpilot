@@ -12,9 +12,11 @@ router.use(authenticate);
 router.use(requireAdmin);
 
 // GET /api/invitations
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
+    const orgId = req.user!.organizationId;
     const invitations = await prisma.invitation.findMany({
+      where: { organizationId: orgId ?? undefined },
       include: {
         invitedBy: { select: { id: true, fullName: true } },
       },
@@ -54,11 +56,15 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Enforce 2-admin cap on invitations too
+    const orgId = req.user!.organizationId;
+
+    // Enforce 2-admin cap on invitations too (scoped to this org)
     if (role === 'ADMIN') {
-      const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+      const adminCount = await prisma.user.count({
+        where: { role: 'ADMIN', ...(orgId && { organizationId: orgId }) },
+      });
       const pendingAdminInvites = await prisma.invitation.count({
-        where: { presetRole: 'ADMIN', status: 'PENDING' },
+        where: { presetRole: 'ADMIN', status: 'PENDING', ...(orgId && { organizationId: orgId }) },
       });
       if (adminCount + pendingAdminInvites >= 2) {
         res.status(400).json({ error: 'Maximum of 2 admins allowed' });
@@ -74,6 +80,7 @@ router.post('/', async (req: Request, res: Response) => {
         email,
         token,
         invitedById: req.user!.userId,
+        organizationId: orgId || null,
         presetRole: role || 'MEMBER',
         presetManagerId: managerId || null,
         presetTeamId: teamId || null,

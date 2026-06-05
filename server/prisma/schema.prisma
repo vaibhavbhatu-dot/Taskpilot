@@ -110,11 +110,12 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users    User[]
-  projects Project[]
-  teams    Team[]
-  sprints  Sprint[]
+  users          User[]
+  projects       Project[]
+  teams          Team[]
+  sprints        Sprint[]
   supportTickets SupportTicket[]
+  invitations    Invitation[]
 }
 
 model User {
@@ -183,6 +184,7 @@ model Invitation {
   email           String
   token           String           @unique
   invitedById     String
+  organizationId  String?
   presetRole      UserRole         @default(MEMBER)
   presetManagerId String?
   presetTeamId    String?
@@ -191,10 +193,12 @@ model Invitation {
   createdAt       DateTime         @default(now())
 
   // Relations
-  invitedBy User @relation("InvitationSender", fields: [invitedById], references: [id])
+  invitedBy    User          @relation("InvitationSender", fields: [invitedById], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([token])
   @@index([email])
+  @@index([organizationId])
 }
 
 model Project {

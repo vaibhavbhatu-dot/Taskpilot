@@ -210,13 +210,16 @@ router.patch('/:id/role', requireAdmin, async (req: Request, res: Response) => {
       return;
     }
 
-    // Enforce 2-admin maximum
+    // Enforce 2-admin maximum (scoped to this org)
     if (role === 'ADMIN') {
-      const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+      const orgId = req.user!.organizationId;
+      const adminCount = await prisma.user.count({
+        where: { role: 'ADMIN', ...(orgId && { organizationId: orgId }) },
+      });
       const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
 
       if (targetUser?.role !== 'ADMIN' && adminCount >= 2) {
-        res.status(400).json({ error: 'Maximum of 2 admins allowed in the system' });
+        res.status(400).json({ error: 'Maximum of 2 admins allowed in the organisation' });
         return;
       }
     }

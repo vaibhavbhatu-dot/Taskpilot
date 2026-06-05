@@ -59,15 +59,26 @@ export const useToastStore = create<ToastState>((set) => ({
 interface UIState {
   sidebarOpen: boolean;
   commandPaletteOpen: boolean;
+  replayTour: boolean;
+  tourKey: number;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
+  setReplayTour: (val: boolean) => void;
+  triggerReplayTour: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
   sidebarOpen: true,
   commandPaletteOpen: false,
+  replayTour: false,
+  tourKey: 0,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  setReplayTour: (val) => set({ replayTour: val }),
+  triggerReplayTour: () => {
+    localStorage.removeItem('tour_completed');
+    set((state) => ({ replayTour: true, tourKey: state.tourKey + 1 }));
+  },
 }));

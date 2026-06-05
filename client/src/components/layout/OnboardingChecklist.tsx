@@ -6,10 +6,10 @@ import { cn } from '@/design-system';
 import { useAuthStore } from '../../stores';
 
 const CHECKLIST_ITEMS = [
-  { id: 'create_ticket',  label: 'Create your first ticket',    link: '/tickets',       minutes: 2 },
-  { id: 'move_ticket',    label: 'Move a ticket on the board',  link: '/board',         minutes: 1 },
-  { id: 'invite_member',  label: 'Invite a team member',        link: '/members',       minutes: 1 },
-  { id: 'start_sprint',   label: 'Check your active sprint',    link: '/sprints/active',minutes: 2 },
+  { id: 'invite_member',  label: 'Invite a team member',        link: '/members',          minutes: 1 },
+  { id: 'create_project', label: 'Create a project',            link: '/projects',         minutes: 1 },
+  { id: 'create_ticket',  label: 'Create your first ticket',    link: '/tickets',          minutes: 2 },
+  { id: 'start_sprint',   label: 'Plan your sprints',           link: '/sprints/planning', minutes: 2 },
 ];
 
 type ChecklistState = Record<string, boolean>;
@@ -25,6 +25,16 @@ export function OnboardingChecklist() {
     if (!storageKey) return {};
     try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch { return {}; }
   });
+
+  // Sync when another page calls markChecklistDone
+  useEffect(() => {
+    if (!storageKey) return;
+    function handleUpdate() {
+      try { setCompleted(JSON.parse(localStorage.getItem(storageKey!) || '{}')); } catch { /* ignore */ }
+    }
+    window.addEventListener('checklist-updated', handleUpdate);
+    return () => window.removeEventListener('checklist-updated', handleUpdate);
+  }, [storageKey]);
 
   const doneCount = CHECKLIST_ITEMS.filter((i) => completed[i.id]).length;
   const totalCount = CHECKLIST_ITEMS.length;
@@ -51,10 +61,10 @@ export function OnboardingChecklist() {
     const path = location.pathname;
     const timeouts: ReturnType<typeof setTimeout>[] = [];
 
-    if (path === '/tickets'          && !completed.create_ticket) timeouts.push(setTimeout(() => markDone('create_ticket'),  30000));
-    if (path === '/board'            && !completed.move_ticket)   timeouts.push(setTimeout(() => markDone('move_ticket'),    20000));
-    if (path === '/members'          && !completed.invite_member) timeouts.push(setTimeout(() => markDone('invite_member'),  15000));
-    if (path.includes('/sprints')    && !completed.start_sprint)  timeouts.push(setTimeout(() => markDone('start_sprint'),   20000));
+    if (path === '/members'              && !completed.invite_member)  timeouts.push(setTimeout(() => markDone('invite_member'),  15000));
+    if (path === '/projects'             && !completed.create_project) timeouts.push(setTimeout(() => markDone('create_project'), 15000));
+    if (path === '/tickets'              && !completed.create_ticket)  timeouts.push(setTimeout(() => markDone('create_ticket'),  30000));
+    if (path.includes('/sprints/planning') && !completed.start_sprint) timeouts.push(setTimeout(() => markDone('start_sprint'),  20000));
 
     return () => timeouts.forEach(clearTimeout);
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps

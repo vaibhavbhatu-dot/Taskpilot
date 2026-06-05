@@ -8,6 +8,7 @@ import { isOverdue } from '@/lib/utils';
 import { STATUS_STYLES, PRIORITY_DOT_COLORS } from '../constants/ticketStyles';
 import { ticketsApi, projectsApi, usersApi, sprintsApi, teamsApi } from '../api';
 import { useAuthStore } from '../stores';
+import { markChecklistDone } from '../lib/checklist';
 import type { Ticket, TicketPriority, Project, User, Sprint, Team } from '../types';
 import { FilterBuilder, type FilterRow } from '../components/tickets/FilterBuilder';
 import { CreateTicketPanel } from '../components/tickets/CreateTicketPanel';
@@ -426,7 +427,7 @@ export function TicketsPage() {
           teams={teams}
           sprints={sprints}
           onClose={() => setShowCreate(false)}
-          onCreated={() => { setShowCreate(false); loadTickets(); }}
+          onCreated={() => { setShowCreate(false); loadTickets(); if (user?.id) markChecklistDone(user.id, 'create_ticket'); }}
         />
       )}
     </div>

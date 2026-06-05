@@ -141,7 +141,7 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <form id="create-ticket-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {toast && (
             <div className="bg-[hsl(var(--color-success))]/10 border border-[hsl(var(--color-success))]/20 text-[hsl(var(--color-success))] text-sm px-4 py-3 rounded-lg">
               {toast}
@@ -402,6 +402,7 @@ export function CreateTicketPanel({ projects, users, teams, sprints, onClose, on
           </Button>
           <Button
             type="submit"
+            form="create-ticket-form"
             className="flex-1"
             loading={submitting}
             disabled={!title || !projectId}

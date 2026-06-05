@@ -3,6 +3,7 @@ import { Plus, AlertCircle, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { projectsApi, usersApi } from '../api';
 import { useAuthStore } from '../stores';
+import { markChecklistDone } from '../lib/checklist';
 import type { Project, User } from '../types';
 import { toast } from 'sonner';
 import { Spinner, Button, Modal, useModal, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/design-system';
@@ -119,6 +120,7 @@ export function ProjectsPage() {
       await projectsApi.create({ name, key: key.toUpperCase(), leadId: leadId || undefined });
       createProjectModal.close();
       setName(''); setKey(''); setLeadId('');
+      if (currentUser?.id) markChecklistDone(currentUser.id, 'create_project');
       loadData();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create project');

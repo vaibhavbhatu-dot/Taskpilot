@@ -59,15 +59,6 @@ export function SprintReportsPage() {
 
   const selectedSprint = sprints.find(s => s.id === selectedSprintId);
 
-  // Status breakdown for inline stats
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    tickets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
-    return Object.entries(counts)
-      .map(([status, count]) => ({ status, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [tickets]);
-
   // Process Individual Performance
   const performanceStats = useMemo(() => {
     if (!tickets.length) return [];

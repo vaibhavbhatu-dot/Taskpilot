@@ -35,6 +35,7 @@ import { BacklogPage } from './pages/Backlog';
 import { NotFoundPage } from './pages/NotFound';
 import { OnboardingProfilePage } from './pages/onboarding/Profile';
 import { OnboardingWorkspacePage } from './pages/onboarding/Workspace';
+import { MyTicketsPage } from './pages/support/MyTickets';
 import { StyleGuideRouter } from './style-guide';
 import { Toaster } from './components/ui/sonner';
 
@@ -228,6 +229,7 @@ function App() {
                 path="/activity"
                 element={<AdminRoute><ActivityLog /></AdminRoute>}
               />
+              <Route path="/support/my-tickets" element={<MyTicketsPage />} />
             </Route>
 
             {/* 404 */}

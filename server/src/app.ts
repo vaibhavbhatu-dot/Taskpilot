@@ -21,6 +21,8 @@ import searchRoutes from './routes/search.routes';
 import adminRoutes from './routes/admin.routes';
 import myWorkRoutes from './routes/mywork.routes';
 import onboardingRoutes from './routes/onboarding.routes';
+import supportRoutes from './routes/support.routes';
+import adminSupportRoutes from './routes/admin.support.routes';
 
 dotenv.config();
 
@@ -64,6 +66,8 @@ app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/my-work', myWorkRoutes);
 app.use('/api/onboarding', authenticate, onboardingRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/admin/support', adminSupportRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

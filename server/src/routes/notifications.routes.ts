@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -49,8 +50,9 @@ router.patch('/read', async (req: Request, res: Response) => {
 // PATCH /api/notifications/:id/read — Mark one as read
 router.patch('/:id/read', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     await prisma.notification.update({
-      where: { id: req.params.id },
+      where: { id },
       data: { isRead: true },
     });
 

@@ -4,6 +4,7 @@ import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireAdmin } from '../middleware/rbac.middleware';
 import { sendInvitationEmail } from '../utils/email';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -102,8 +103,9 @@ router.post('/', async (req: Request, res: Response) => {
 // DELETE /api/invitations/:id — Revoke invitation
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     await prisma.invitation.update({
-      where: { id: req.params.id },
+      where: { id },
       data: { status: 'REVOKED' },
     });
 

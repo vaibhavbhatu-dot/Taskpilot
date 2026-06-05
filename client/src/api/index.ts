@@ -199,3 +199,38 @@ export const adminApi = {
   getActivityLog: (params?: { page?: number; limit?: number }) =>
     api.get('/admin/activity', { params }),
 };
+
+// ─── Support (user-facing) ───────────────────────────────
+export const supportApi = {
+  createTicket: (data: {
+    category: string;
+    subject: string;
+    description: string;
+    attachmentUrl?: string;
+    metadata?: object;
+  }) => api.post('/support/tickets', data),
+
+  getMyTickets: () =>
+    api.get('/support/tickets'),
+
+  getTicket: (id: string) =>
+    api.get(`/support/tickets/${id}`),
+
+  replyToTicket: (id: string, data: { content: string; attachmentUrl?: string }) =>
+    api.post(`/support/tickets/${id}/reply`, data),
+};
+
+// ─── Admin Support ───────────────────────────────────────
+export const adminSupportApi = {
+  getAllTickets: (params?: { status?: string; category?: string; organizationId?: string; page?: number; limit?: number }) =>
+    api.get('/admin/support/tickets', { params }),
+
+  getStats: () =>
+    api.get('/admin/support/stats'),
+
+  updateStatus: (id: string, data: { status: string; expectedResolutionDate?: string; priority?: string }) =>
+    api.patch(`/admin/support/tickets/${id}/status`, data),
+
+  replyToTicket: (id: string, data: { content: string; attachmentUrl?: string }) =>
+    api.post(`/admin/support/tickets/${id}/reply`, data),
+};

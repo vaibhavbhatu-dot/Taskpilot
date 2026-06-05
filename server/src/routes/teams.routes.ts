@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRole } from '../middleware/rbac.middleware';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -31,8 +32,9 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/teams/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const team = await prisma.team.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         lead: { select: { id: true, fullName: true, email: true, avatar: true, designation: true } },
         members: {
@@ -92,10 +94,11 @@ router.post('/', requireRole('ADMIN', 'MANAGER'), async (req: Request, res: Resp
 // PATCH /api/teams/:id — Admin/Manager only
 router.patch('/:id', requireRole('ADMIN', 'MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const { name, leadId } = req.body;
 
     const team = await prisma.team.update({
-      where: { id: req.params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(leadId !== undefined && { leadId }),
@@ -115,7 +118,8 @@ router.patch('/:id', requireRole('ADMIN', 'MANAGER'), async (req: Request, res: 
 // DELETE /api/teams/:id — Admin only
 router.delete('/:id', requireRole('ADMIN'), async (req: Request, res: Response) => {
   try {
-    await prisma.team.delete({ where: { id: req.params.id } });
+    const id = getString(req.params.id);
+    await prisma.team.delete({ where: { id } });
     res.json({ message: 'Team deleted' });
   } catch (error) {
     console.error('Delete team error:', error);

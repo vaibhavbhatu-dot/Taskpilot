@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRole } from '../middleware/rbac.middleware';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -37,8 +38,9 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/sprints/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const sprint = await prisma.sprint.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         project: { select: { id: true, name: true, key: true } },
         createdBy: { select: { id: true, fullName: true } },
@@ -104,8 +106,9 @@ router.post('/', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req:
 // POST /api/sprints/:id/start — Start a sprint (enforce only 1 active per project)
 router.post('/:id/start', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const sprint = await prisma.sprint.findUnique({
-      where: { id: req.params.id },
+      where: { id },
     });
 
     if (!sprint) {
@@ -133,7 +136,7 @@ router.post('/:id/start', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), as
     const { startDate, endDate } = req.body || {};
 
     const updated = await prisma.sprint.update({
-      where: { id: req.params.id },
+      where: { id },
       data: {
         status: 'ACTIVE',
         startDate: startDate ? new Date(startDate) : new Date(),
@@ -174,10 +177,11 @@ router.post('/:id/start', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), as
 // POST /api/sprints/:id/complete — Complete a sprint with carryover
 router.post('/:id/complete', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const { carryOverToSprintId } = req.body; // optional: move incomplete tickets to this sprint, or null = move to backlog
 
     const sprint = await prisma.sprint.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         sprintTickets: {
           include: { ticket: true },
@@ -198,7 +202,7 @@ router.post('/:id/complete', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'),
     await prisma.$transaction(async (tx) => {
       // Complete the sprint
       await tx.sprint.update({
-        where: { id: req.params.id },
+        where: { id },
         data: { status: 'COMPLETED' },
       });
 
@@ -252,6 +256,7 @@ router.post('/:id/complete', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'),
 // POST /api/sprints/:id/tickets — Add tickets to sprint
 router.post('/:id/tickets', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const { ticketIds } = req.body;
 
     if (!ticketIds || !Array.isArray(ticketIds) || ticketIds.length === 0) {
@@ -260,7 +265,7 @@ router.post('/:id/tickets', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), 
     }
 
     const sprint = await prisma.sprint.findUnique({
-      where: { id: req.params.id },
+      where: { id },
     });
 
     if (!sprint) {
@@ -274,7 +279,7 @@ router.post('/:id/tickets', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), 
     });
 
     const sprintTicketData = tickets.map(ticket => ({
-      sprintId: req.params.id,
+      sprintId: id,
       ticketId: ticket.id,
       statusAtStart: ticket.status,
     }));
@@ -303,10 +308,12 @@ router.post('/:id/tickets', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), 
 // DELETE /api/sprints/:id/tickets/:ticketId — Remove ticket from sprint
 router.delete('/:id/tickets/:ticketId', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
+    const ticketId = getString(req.params.ticketId);
     await prisma.sprintTicket.deleteMany({
       where: {
-        sprintId: req.params.id,
-        ticketId: req.params.ticketId,
+        sprintId: id,
+        ticketId,
       },
     });
 
@@ -320,10 +327,11 @@ router.delete('/:id/tickets/:ticketId', requireRole('ADMIN', 'MANAGER', 'PROJECT
 // PATCH /api/sprints/:id
 router.patch('/:id', requireRole('ADMIN', 'MANAGER', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const { name, goal, startDate, endDate } = req.body;
 
     const sprint = await prisma.sprint.update({
-      where: { id: req.params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(goal !== undefined && { goal }),

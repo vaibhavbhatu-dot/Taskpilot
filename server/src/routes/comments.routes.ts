@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -9,9 +10,10 @@ router.use(authenticate);
 // GET /api/comments/:ticketId — List comments for a ticket (threaded)
 router.get('/:ticketId', async (req: Request, res: Response) => {
   try {
+    const ticketId = getString(req.params.ticketId);
     const comments = await prisma.comment.findMany({
       where: {
-        ticketId: req.params.ticketId,
+        ticketId,
         parentId: null, // Only top-level comments
       },
       include: {
@@ -44,6 +46,7 @@ router.get('/:ticketId', async (req: Request, res: Response) => {
 // POST /api/comments/:ticketId
 router.post('/:ticketId', async (req: Request, res: Response) => {
   try {
+    const ticketId = getString(req.params.ticketId);
     const { content, parentId } = req.body;
 
     if (!content) {
@@ -53,7 +56,7 @@ router.post('/:ticketId', async (req: Request, res: Response) => {
 
     const comment = await prisma.comment.create({
       data: {
-        ticketId: req.params.ticketId,
+        ticketId,
         authorId: req.user!.userId,
         content,
         parentId: parentId || null,
@@ -66,7 +69,7 @@ router.post('/:ticketId', async (req: Request, res: Response) => {
 
     // Notify ticket assignee and creator about the comment
     const ticket = await prisma.ticket.findUnique({
-      where: { id: req.params.ticketId },
+      where: { id: ticketId },
       select: { assignedToId: true, createdById: true, ticketNumber: true, title: true },
     });
 
@@ -86,7 +89,7 @@ router.post('/:ticketId', async (req: Request, res: Response) => {
             type: 'TICKET_COMMENTED',
             title: 'New comment',
             message: `New comment on ${ticket.ticketNumber}: ${ticket.title}`,
-            link: `/tickets/${req.params.ticketId}`,
+            link: `/tickets/${ticketId}`,
           }))
         });
       }
@@ -102,8 +105,9 @@ router.post('/:ticketId', async (req: Request, res: Response) => {
 // PATCH /api/comments/:ticketId/:commentId
 router.patch('/:ticketId/:commentId', async (req: Request, res: Response) => {
   try {
+    const commentId = getString(req.params.commentId);
     const { content } = req.body;
-    const comment = await prisma.comment.findUnique({ where: { id: req.params.commentId } });
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
 
     if (!comment) {
       res.status(404).json({ error: 'Comment not found' });
@@ -116,7 +120,7 @@ router.patch('/:ticketId/:commentId', async (req: Request, res: Response) => {
     }
 
     const updated = await prisma.comment.update({
-      where: { id: req.params.commentId },
+      where: { id: commentId },
       data: { content },
       include: {
         author: { select: { id: true, fullName: true, avatar: true } },
@@ -133,7 +137,8 @@ router.patch('/:ticketId/:commentId', async (req: Request, res: Response) => {
 // DELETE /api/comments/:ticketId/:commentId
 router.delete('/:ticketId/:commentId', async (req: Request, res: Response) => {
   try {
-    const comment = await prisma.comment.findUnique({ where: { id: req.params.commentId } });
+    const commentId = getString(req.params.commentId);
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
 
     if (!comment) {
       res.status(404).json({ error: 'Comment not found' });
@@ -145,7 +150,7 @@ router.delete('/:ticketId/:commentId', async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.comment.delete({ where: { id: req.params.commentId } });
+    await prisma.comment.delete({ where: { id: commentId } });
     res.json({ message: 'Comment deleted' });
   } catch (error) {
     console.error('Delete comment error:', error);

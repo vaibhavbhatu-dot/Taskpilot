@@ -143,6 +143,7 @@ Role checks use `useAuthStore()` on the client and `rbac.middleware` on the serv
 | `/my-work` | Work Update | `pages/MyWork/index.tsx` | Protected |
 | `/tickets` | All Tickets | `pages/Tickets.tsx` | Protected |
 | `/tickets/:id` | Ticket Detail | `pages/TicketDetail.tsx` | Protected |
+| `/backlog` | Backlog | `pages/Backlog.tsx` | Protected |
 | `/board` | Kanban Board | `pages/Board.tsx` | Protected |
 | `/sprints/planning` | Sprint Planning | `pages/SprintPlanning.tsx` | Protected |
 | `/sprints/active` | Active Sprint | `pages/ActiveSprint.tsx` | Protected |
@@ -153,13 +154,18 @@ Role checks use `useAuthStore()` on the client and `rbac.middleware` on the serv
 | `/profile` | My Profile | `pages/Profile.tsx` | Protected |
 | `/user/:id` | User Profile | `pages/Profile.tsx` | Protected |
 | `/notifications` | Notifications | `pages/Notifications.tsx` | Protected |
+| `/support/my-tickets` | Support (split pane) | `pages/support/MyTickets.tsx` | Protected |
 | `/members` | Members | `pages/Members.tsx` | Admin only |
 | `/settings` | Admin Settings | `pages/AdminSettings.tsx` | Admin only |
 | `/activity` | Activity Log | `pages/admin/ActivityLog.tsx` | Admin only |
 | `/login` | Login | `pages/Login.tsx` | Public |
+| `/signup` | Signup | `pages/Signup.tsx` | Public |
+| `/verify-email` | Email OTP verify | `pages/VerifyEmail.tsx` | Public |
 | `/invite` | Profile Setup | `pages/ProfileSetup.tsx` | Public |
 | `/invite/:token` | Profile Setup | `pages/ProfileSetup.tsx` | Public |
-| `/style-guide` | Style Guide | `pages/StyleGuide.tsx` | Public (dev) |
+| `/onboarding/profile` | Onboarding step 3 | `pages/onboarding/Profile.tsx` | Auth, no layout |
+| `/onboarding/workspace` | Onboarding step 4 | `pages/onboarding/Workspace.tsx` | Auth, no layout |
+| `/style-guide` | Style Guide | `style-guide/` | Public (dev) |
 | `*` | 404 | `pages/NotFound.tsx` | — |
 
 ---
@@ -339,3 +345,151 @@ open http://localhost:5173/style-guide
 - [ ] Dark mode tested (toggle via browser devtools or `/style-guide`)
 - [ ] `npx tsc --noEmit` passes
 - [ ] `npm run build` passes
+
+---
+
+## Current Status
+
+**Last updated:** June 2026
+
+Active development. Core product is feature-complete for internal use. Support system shipped. Next milestone is the Master Admin Panel (separate app) and production deployment.
+
+---
+
+## Completed Features
+
+- **Design system** — 27 components, style guide at `/style-guide`
+- **Phase 1–6** — Setup → Tokens → Components → Product components → Docs → Integration
+- **Signup + email verification** — OTP flow, Resend in prod / console log in dev
+- **Onboarding flow** — 4 steps: signup → verify email → profile → workspace
+- **Product tour + onboarding checklist** — guided first-run experience
+- **Multi-tenancy** — Organization model, `organizationId` on all models, full data isolation at query level
+- **Ticket workflow** — 11 statuses (BACKLOG → LIVE), Kanban board with drag-and-drop, sprint planning, active sprint, reports
+- **Support ticket system**
+  - Gmail-style split pane at `/support/my-tickets` (list + thread, no separate detail page)
+  - Submit tickets from the `?` help button in TopBar (slide-in panel)
+  - Support button in TopBar → navigates directly to `/support/my-tickets`
+  - 5 automated emails (dev: console log, prod: Resend API)
+    1. `sendTicketConfirmation` — on ticket create → user
+    2. `sendAdminNewTicketAlert` — on ticket create → support inbox
+    3. `sendAdminReplyNotification` — on admin reply → user
+    4. `sendTicketResolvedEmail` — on status → RESOLVED → user (with reopen link)
+    5. `sendAutoCloseWarning` — 2-day warning before auto-close
+  - CRON job (`node-cron`) — warns at day 5, auto-closes resolved tickets at day 7
+  - Admin routes (`/api/admin/support/*`) reserved for Master Admin Panel only
+
+---
+
+## Pending / Next Steps
+
+1. **Master Admin Panel** (separate app, separate port, separate codebase)
+   - `SUPER_ADMIN` role
+   - See all organisations and users
+   - Manage all support tickets across all orgs
+   - Platform-wide stats and analytics
+
+2. **Production deployment**
+   - Frontend: Vercel
+   - Backend: Railway
+   - Database: Supabase (PostgreSQL)
+   - File storage: Cloudflare R2
+   - Email: Resend (`RESEND_API_KEY` required)
+   - Domain + SSL
+
+3. ⚠️ **Automated database backups** — daily to Cloudflare R2, email alert on failure
+
+---
+
+## Architecture Notes
+
+| Layer | Detail |
+|---|---|
+| Frontend | Vite + React 18 + TypeScript |
+| Backend | Node.js + Express + Prisma ORM |
+| Database | PostgreSQL — 12 tables |
+| Auth | JWT access token (15 min) + refresh token (httpOnly cookie, 7 days) |
+| Multi-tenancy | `organizationId` on every model, filtered on every query |
+| Design system import | `import { Button, Card } from '@/design-system'` |
+| Support emails | `NODE_ENV !== 'production'` → console log; production → Resend API |
+| CRON | `node-cron` started in `server.ts` on boot — daily 09:00 |
+
+New user flow: `/signup` → `/verify-email` → `/onboarding/profile` → `/onboarding/workspace` → `/dashboard`
+
+---
+
+## Key Routes
+
+```
+New user flow:
+/signup → /verify-email → /onboarding/profile → /onboarding/workspace → /dashboard
+
+Support:
+/support/my-tickets        Gmail-style split pane (list + thread)
+/api/admin/support/*       Reserved — Master Admin Panel only
+
+Dev:
+/style-guide               Component library browser
+```
+
+---
+
+## Environment Variables Needed for Production
+
+```
+# Client
+VITE_API_URL
+
+# Database
+DATABASE_URL
+SUPABASE_URL
+SUPABASE_ANON_KEY
+
+# Auth
+JWT_ACCESS_SECRET
+JWT_REFRESH_SECRET
+
+# Email (Resend)
+RESEND_API_KEY
+EMAIL_FROM
+SUPPORT_EMAIL
+ADMIN_EMAIL
+
+# URLs
+APP_URL
+
+# File storage (Cloudflare R2)
+R2_ACCOUNT_ID
+R2_ACCESS_KEY_ID
+R2_SECRET_ACCESS_KEY
+R2_BUCKET_NAME
+
+# AI triage (Anthropic)
+ANTHROPIC_API_KEY=
+
+# Runtime
+NODE_ENV=production
+```
+
+---
+
+## AI Triage Feature (Planned)
+
+**Status:** Ready to build — using mock responses for localhost, real Anthropic API in production.
+
+### How it works
+
+1. User submits a support ticket
+2. AI analyses the ticket content and classifies it: `minor` / `major` / `critical`
+3. **Minor** → auto-reply drafted and sent to the user
+4. **Critical** → diagnosis summary sent to Master Admin inbox
+5. AI is read + suggest only — it cannot write to the database or change code
+
+### Implementation plan
+
+| Mode | Behaviour |
+|---|---|
+| `NODE_ENV !== 'production'` (mock) | Returns hardcoded fake classification and reply — no API call, no cost |
+| Production | Calls Anthropic API with `ANTHROPIC_API_KEY` using Claude Sonnet 4.6 |
+
+- Belongs in the **Master Admin Panel** work (same phase)
+- Estimated cost when live: ~$0.006 per ticket (Claude Sonnet 4.6 pricing)

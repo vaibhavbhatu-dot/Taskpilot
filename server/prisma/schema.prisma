@@ -79,6 +79,28 @@ enum NotificationType {
   OVERDUE
 }
 
+enum SupportCategory {
+  BUG
+  FEATURE
+  ACCOUNT
+  BILLING
+  OTHER
+}
+
+enum SupportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 // ─── MODELS ──────────────────────────────────────────────────────────
 
 model Organization {
@@ -92,6 +114,7 @@ model Organization {
   projects Project[]
   teams    Team[]
   sprints  Sprint[]
+  supportTickets SupportTicket[]
 }
 
 model User {
@@ -128,6 +151,8 @@ model User {
   sentInvitations  Invitation[] @relation("InvitationSender")
   ticketAssignments TicketAssignee[] @relation("TicketAssigneeUser")
   uploadedAttachments Attachment[] @relation("AttachmentUploader")
+  supportTickets      SupportTicket[]
+  supportMessages     SupportMessage[]
 
   @@index([email])
   @@index([teamId])
@@ -363,4 +388,46 @@ model Attachment {
 
   @@index([ticketId])
   @@index([commentId])
+}
+
+model SupportTicket {
+  id                     String          @id @default(uuid())
+  ticketNumber           String          @unique
+  userId                 String
+  organizationId         String
+  category               SupportCategory
+  subject                String
+  description            String
+  attachmentUrl          String?
+  status                 SupportStatus   @default(OPEN)
+  priority               SupportPriority @default(MEDIUM)
+  expectedResolutionDate DateTime?
+  resolvedAt             DateTime?
+  autoCloseAt            DateTime?
+  metadata               Json?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id])
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  messages     SupportMessage[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model SupportMessage {
+  id            String   @id @default(uuid())
+  ticketId      String
+  authorId      String?
+  isAdminReply  Boolean  @default(false)
+  content       String
+  attachmentUrl String?
+  createdAt     DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User?         @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
 }

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRole } from '../middleware/rbac.middleware';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -41,8 +42,9 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/projects/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const project = await prisma.project.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         lead: { select: { id: true, fullName: true, email: true, avatar: true } },
         _count: { select: { tickets: true, sprints: true } },
@@ -103,10 +105,11 @@ router.post('/', requireRole('ADMIN', 'PROJECT_MANAGER'), async (req: Request, r
 // PATCH /api/projects/:id
 router.patch('/:id', requireRole('ADMIN', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const { name, leadId, status } = req.body;
 
     const project = await prisma.project.update({
-      where: { id: req.params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(leadId !== undefined && { leadId }),
@@ -127,7 +130,8 @@ router.patch('/:id', requireRole('ADMIN', 'PROJECT_MANAGER'), async (req: Reques
 // DELETE /api/projects/:id — Admin only
 router.delete('/:id', requireRole('ADMIN'), async (req: Request, res: Response) => {
   try {
-    await prisma.project.delete({ where: { id: req.params.id } });
+    const id = getString(req.params.id);
+    await prisma.project.delete({ where: { id } });
     res.json({ message: 'Project deleted' });
   } catch (error) {
     console.error('Delete project error:', error);

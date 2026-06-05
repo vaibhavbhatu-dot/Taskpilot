@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireAdmin } from '../middleware/rbac.middleware';
+import { getString } from '../utils/query';
 
 const router = Router();
 
@@ -97,8 +98,9 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/users/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const user = await prisma.user.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       select: {
         id: true,
         email: true,
@@ -136,17 +138,18 @@ router.get('/:id', async (req: Request, res: Response) => {
 // PATCH /api/users/:id
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const { fullName, designation, avatar, teamId, managerId, status } = req.body;
     const currentUser = req.user!;
 
     // Only admin or self can update
-    if (currentUser.role !== 'ADMIN' && currentUser.userId !== req.params.id) {
+    if (currentUser.role !== 'ADMIN' && currentUser.userId !== id) {
       res.status(403).json({ error: 'Insufficient permissions' });
       return;
     }
 
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id },
       data: {
         ...(fullName && { fullName }),
         ...(designation !== undefined && { designation }),
@@ -179,13 +182,14 @@ router.patch('/:id', async (req: Request, res: Response) => {
 // DELETE /api/users/:id — Admin only, soft-delete (sets status INACTIVE, clears team)
 router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
+    const id = getString(req.params.id);
     const currentUser = req.user!;
-    if (currentUser.userId === req.params.id) {
+    if (currentUser.userId === id) {
       res.status(400).json({ error: 'You cannot remove yourself' });
       return;
     }
     await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id },
       data: { status: 'INACTIVE', teamId: null, managerId: null },
     });
     res.json({ success: true });
@@ -199,7 +203,7 @@ router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
 router.patch('/:id/role', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { role } = req.body;
-    const targetUserId = req.params.id;
+    const targetUserId = getString(req.params.id);
 
     if (!role) {
       res.status(400).json({ error: 'Role is required' });

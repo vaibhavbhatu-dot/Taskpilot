@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { getString } from '../utils/query';
 
 const uploadDir = path.resolve(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -452,14 +453,14 @@ router.post('/:id/attachments', upload.single('file'), async (req: Request, res:
       res.status(400).json({ error: 'No file uploaded' });
       return;
     }
-    const ticketId = req.params.id;
+    const ticketId = getString(req.params.id);
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
     if (!ticket) {
       fs.unlinkSync(req.file.path);
       res.status(404).json({ error: 'Ticket not found' });
       return;
     }
-    const commentId = (req.body?.commentId || req.query?.commentId) as string | undefined;
+    const commentId = getString(req.body?.commentId || req.query?.commentId) || undefined;
     const attachment = await prisma.attachment.create({
       data: {
         ticketId,
@@ -483,14 +484,15 @@ router.post('/:id/attachments', upload.single('file'), async (req: Request, res:
 // DELETE /api/tickets/:id/attachments/:attachmentId
 router.delete('/:id/attachments/:attachmentId', async (req: Request, res: Response) => {
   try {
-    const attachment = await prisma.attachment.findUnique({ where: { id: req.params.attachmentId } });
+    const attachmentId = getString(req.params.attachmentId);
+    const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
     if (!attachment) {
       res.status(404).json({ error: 'Attachment not found' });
       return;
     }
     const filePath = path.join(uploadDir, attachment.filename);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    await prisma.attachment.delete({ where: { id: req.params.attachmentId } });
+    await prisma.attachment.delete({ where: { id: attachmentId } });
     res.json({ message: 'Attachment deleted' });
   } catch (error) {
     console.error('Delete attachment error:', error);

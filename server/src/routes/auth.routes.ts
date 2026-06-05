@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import { getString } from '../utils/query';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../utils/prisma';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, TokenPayload } from '../utils/jwt';
@@ -122,7 +123,7 @@ router.post('/logout', (_req: Request, res: Response) => {
 // GET /api/auth/invite/:token — Verify invitation token
 router.get('/invite/:token', async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
+    const token = getString(req.params.token);
 
     const invitation = await prisma.invitation.findUnique({
       where: { token },

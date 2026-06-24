@@ -43,7 +43,9 @@ app.use(cors({
       'http://localhost:5178',
     ];
     // Allow requests with no origin (e.g. mobile apps, curl)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow any Netlify domain (production site + deploy previews like
+    // agent-xxxx--taskpilotdemo.netlify.app) so the hosted SPA can reach the API.
+    if (!origin || allowedOrigins.includes(origin) || /\.netlify\.app$/.test(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

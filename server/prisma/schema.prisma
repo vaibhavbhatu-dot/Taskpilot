@@ -422,16 +422,84 @@ model SupportTicket {
 }
 
 model SupportMessage {
-  id            String   @id @default(uuid())
-  ticketId      String
-  authorId      String?
-  isAdminReply  Boolean  @default(false)
-  content       String
-  attachmentUrl String?
-  createdAt     DateTime @default(now())
+  id              String   @id @default(uuid())
+  ticketId        String
+  authorId        String?
+  isAdminReply    Boolean  @default(false)
+  isInternalNote  Boolean  @default(false)
+  content         String
+  attachmentUrl   String?
+  createdAt       DateTime @default(now())
 
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   author User?         @relation(fields: [authorId], references: [id])
 
   @@index([ticketId])
+}
+
+// ─── Master Admin Panel ───────────────────────────────────────────────────────
+
+model MasterAdmin {
+  id           String          @id @default(cuid())
+  email        String          @unique
+  name         String
+  passwordHash String
+  role         MasterAdminRole
+  status       AdminStatus     @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  targetType String?
+  targetId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}
+
+model ImpersonationSession {
+  id           String    @id @default(cuid())
+  adminId      String
+  targetUserId String
+  reason       String
+  token        String    @unique
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  endedBy      String?
+  ipAddress    String?
+}
+
+model FeatureFlag {
+  id           String               @id @default(cuid())
+  key          String               @unique
+  description  String
+  defaultValue Boolean              @default(false)
+  updatedAt    DateTime             @updatedAt
+  orgOverrides FeatureFlagOverride[]
+}
+
+model FeatureFlagOverride {
+  id             String      @id @default(cuid())
+  featureFlagId  String
+  organizationId String
+  value          Boolean
+  featureFlag    FeatureFlag @relation(fields: [featureFlagId], references: [id])
+}
+
+enum MasterAdminRole {
+  SUPER_ADMIN
+  SUPPORT_ADMIN
+  TECH_ADMIN
+  MARKETING_ADMIN
+  FINANCE_ADMIN
+}
+
+enum AdminStatus {
+  ACTIVE
+  SUSPENDED
 }

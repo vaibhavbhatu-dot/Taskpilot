@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Paperclip, X } from 'lucide-react';
+import { CheckCircle2, Paperclip, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Modal,
@@ -26,19 +26,36 @@ const CATEGORIES = [
   { value: 'OTHER',   label: 'Other' },
 ];
 
+const IMAGE_EXTS = /\.(jpg|jpeg|png|gif)$/i;
+const MAX_BYTES  = 10 * 1024 * 1024;
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 export function SubmitTicketModal({ open, onClose }: Props) {
   const navigate = useNavigate();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef  = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({ category: '', subject: '', description: '' });
-  const [fileName, setFileName]       = useState<string | null>(null);
-  const [errors, setErrors]           = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted]     = useState<string | null>(null);
+  const [form, setForm]                     = useState({ category: '', subject: '', description: '' });
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [errors, setErrors]                 = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting]     = useState(false);
+  const [submitted, setSubmitted]           = useState<string | null>(null);
+
+  // Revoke object URL when preview changes or component unmounts
+  useEffect(() => {
+    return () => { if (attachmentPreview) URL.revokeObjectURL(attachmentPreview); };
+  }, [attachmentPreview]);
 
   function reset() {
     setForm({ category: '', subject: '', description: '' });
-    setFileName(null);
+    if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
     setErrors({});
     setIsSubmitting(false);
     setSubmitted(null);
@@ -49,6 +66,28 @@ export function SubmitTicketModal({ open, onClose }: Props) {
       reset();
       onClose();
     }
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    if (file.size > MAX_BYTES) {
+      toast.error('File too large', { description: 'Maximum attachment size is 10MB.' });
+      return;
+    }
+
+    if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+    setAttachmentFile(file);
+    setAttachmentPreview(IMAGE_EXTS.test(file.name) ? URL.createObjectURL(file) : null);
+  }
+
+  function removeAttachment() {
+    if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
   }
 
   function validate() {
@@ -67,12 +106,25 @@ export function SubmitTicketModal({ open, onClose }: Props) {
 
     setIsSubmitting(true);
     try {
+      let attachmentUrl: string | null = null;
+
+      if (attachmentFile) {
+        try {
+          const res = await supportApi.uploadAttachment(attachmentFile);
+          attachmentUrl = res.data.url;
+        } catch {
+          toast.error('Failed to upload attachment', { description: 'Please try again or remove the attachment.' });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const metadata = {
         browser:   navigator.userAgent,
         page:      window.location.pathname,
         timestamp: new Date().toISOString(),
       };
-      const res = await supportApi.createTicket({ ...form, metadata });
+      const res = await supportApi.createTicket({ ...form, attachmentUrl, metadata });
       setSubmitted(res.data.ticketNumber);
     } catch {
       toast.error('Failed to submit ticket', { description: 'Please try again.' });
@@ -170,21 +222,28 @@ export function SubmitTicketModal({ open, onClose }: Props) {
 
           {/* Attachment */}
           <div>
-            <p className="text-sm font-medium text-foreground mb-1.5">Attachment <span className="text-muted-foreground font-normal">(optional)</span></p>
+            <p className="text-sm font-medium text-foreground mb-1.5">
+              Attachment <span className="text-muted-foreground font-normal">(optional)</span>
+            </p>
             <input
               ref={fileRef}
               type="file"
-              accept="image/*,.pdf"
+              accept="image/*,.pdf,.doc,.docx,.txt"
               className="hidden"
-              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+              onChange={handleFileSelect}
             />
-            {fileName ? (
+            {attachmentFile ? (
               <div className="flex items-center gap-2 p-2.5 bg-muted rounded-lg border border-border text-sm">
-                <Paperclip className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="flex-1 truncate text-foreground">{fileName}</span>
+                {attachmentPreview ? (
+                  <img src={attachmentPreview} alt="" className="h-8 w-8 object-cover rounded flex-shrink-0" />
+                ) : (
+                  <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className="flex-1 truncate text-foreground">{attachmentFile.name}</span>
+                <span className="text-xs text-muted-foreground flex-shrink-0">{formatBytes(attachmentFile.size)}</span>
                 <button
                   type="button"
-                  onClick={() => { setFileName(null); if (fileRef.current) fileRef.current.value = ''; }}
+                  onClick={removeAttachment}
                   className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -197,7 +256,7 @@ export function SubmitTicketModal({ open, onClose }: Props) {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-muted/50 text-sm text-muted-foreground transition-colors"
               >
                 <Paperclip className="w-4 h-4" />
-                Attach file (image or PDF, max 5MB)
+                Attach file (image, PDF, doc or txt — max 10MB)
               </button>
             )}
           </div>

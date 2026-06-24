@@ -6,6 +6,13 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding TaskPilot database with realistic demo data...');
 
+  // ─── Organisation ─────────────────────────────────────
+  const org = await prisma.organization.upsert({
+    where:  { domain: 'taskpilot.com' },
+    update: {},
+    create: { name: 'TaskPilot', domain: 'taskpilot.com' },
+  });
+
   const adminPwd = await bcrypt.hash('admin123', 12);
   const demoPwd = await bcrypt.hash('demo123', 12);
 
@@ -133,13 +140,15 @@ async function main() {
     create: { email: 'ravi@taskpilot.com', password: demoPwd, fullName: 'Ravi Kumar', designation: 'Junior Developer', role: 'MEMBER', status: 'ACTIVE', managerId: vikram.id },
   });
 
+  // Assign all users to the org
+  await prisma.user.updateMany({ data: { organizationId: org.id } });
   console.log('✅ 20 users created');
 
   // ─── Teams ────────────────────────────────────────────
-  const frontendTeam = await prisma.team.upsert({ where: { name: 'Frontend Team' }, update: {}, create: { name: 'Frontend Team', leadId: vikram.id } });
-  const backendTeam = await prisma.team.upsert({ where: { name: 'Backend Team' }, update: {}, create: { name: 'Backend Team', leadId: priya.id } });
-  const qaTeam = await prisma.team.upsert({ where: { name: 'QA Team' }, update: {}, create: { name: 'QA Team', leadId: rohan.id } });
-  const designTeam = await prisma.team.upsert({ where: { name: 'Design Team' }, update: {}, create: { name: 'Design Team', leadId: ananya.id } });
+  const frontendTeam = await prisma.team.upsert({ where: { organizationId_name: { organizationId: org.id, name: 'Frontend Team' } }, update: {}, create: { name: 'Frontend Team', leadId: vikram.id, organizationId: org.id } });
+  const backendTeam  = await prisma.team.upsert({ where: { organizationId_name: { organizationId: org.id, name: 'Backend Team'  } }, update: {}, create: { name: 'Backend Team',  leadId: priya.id,  organizationId: org.id } });
+  const qaTeam       = await prisma.team.upsert({ where: { organizationId_name: { organizationId: org.id, name: 'QA Team'       } }, update: {}, create: { name: 'QA Team',       leadId: rohan.id,  organizationId: org.id } });
+  const designTeam   = await prisma.team.upsert({ where: { organizationId_name: { organizationId: org.id, name: 'Design Team'   } }, update: {}, create: { name: 'Design Team',   leadId: ananya.id, organizationId: org.id } });
 
   const teamAssignments: Array<{ id: string; teamId: string }> = [
     { id: vikram.id, teamId: frontendTeam.id }, { id: rahul.id, teamId: frontendTeam.id },
@@ -159,9 +168,9 @@ async function main() {
   console.log('✅ 4 teams created and members assigned');
 
   // ─── Projects ─────────────────────────────────────────
-  const cpProject = await prisma.project.upsert({ where: { key: 'CP' }, update: {}, create: { name: 'Customer Portal', key: 'CP', leadId: karthik.id, status: 'ACTIVE' } });
-  const appProject = await prisma.project.upsert({ where: { key: 'APP' }, update: {}, create: { name: 'Mobile App', key: 'APP', leadId: meera.id, status: 'ACTIVE' } });
-  const dashProject = await prisma.project.upsert({ where: { key: 'DASH' }, update: {}, create: { name: 'Internal Dashboard', key: 'DASH', leadId: arjun.id, status: 'ACTIVE' } });
+  const cpProject   = await prisma.project.upsert({ where: { organizationId_key: { organizationId: org.id, key: 'CP'   } }, update: {}, create: { name: 'Customer Portal',    key: 'CP',   leadId: karthik.id, status: 'ACTIVE', organizationId: org.id } });
+  const appProject  = await prisma.project.upsert({ where: { organizationId_key: { organizationId: org.id, key: 'APP'  } }, update: {}, create: { name: 'Mobile App',         key: 'APP',  leadId: meera.id,   status: 'ACTIVE', organizationId: org.id } });
+  const dashProject = await prisma.project.upsert({ where: { organizationId_key: { organizationId: org.id, key: 'DASH' } }, update: {}, create: { name: 'Internal Dashboard', key: 'DASH', leadId: arjun.id,   status: 'ACTIVE', organizationId: org.id } });
 
   console.log('✅ 3 projects created');
 
@@ -250,7 +259,7 @@ async function main() {
 
   for (const def of ticketDefs) {
     const ticket = await prisma.ticket.upsert({
-      where: { ticketNumber: def.num },
+      where: { projectId_ticketNumber: { projectId: def.project.id, ticketNumber: def.num } },
       update: {},
       create: {
         ticketNumber: def.num,
@@ -282,10 +291,10 @@ async function main() {
   console.log(`✅ ${assigneeData.length} ticket assignee records created`);
 
   // ─── Sprints ──────────────────────────────────────────
-  const sprint12 = await prisma.sprint.create({ data: { name: 'Sprint 12', projectId: cpProject.id, startDate: d(42), endDate: d(28), goal: 'Authentication overhaul and user search', status: 'COMPLETED', createdById: karthik.id } }).catch(() => null);
-  const sprint13 = await prisma.sprint.create({ data: { name: 'Sprint 13', projectId: cpProject.id, startDate: d(28), endDate: d(14), goal: 'Dashboard improvements and notification system', status: 'COMPLETED', createdById: karthik.id } }).catch(() => null);
-  const sprint14 = await prisma.sprint.create({ data: { name: 'Sprint 14', projectId: cpProject.id, startDate: d(7), endDate: df(7), goal: 'Ship 2FA, responsive improvements and burndown fix', status: 'ACTIVE', createdById: karthik.id } }).catch(() => null);
-  const sprint15 = await prisma.sprint.create({ data: { name: 'Sprint 15', projectId: cpProject.id, startDate: df(7), endDate: df(21), goal: 'Bulk actions, dark mode and E2E tests', status: 'PLANNED', createdById: karthik.id } }).catch(() => null);
+  const sprint12 = await prisma.sprint.create({ data: { name: 'Sprint 12', projectId: cpProject.id, organizationId: org.id, startDate: d(42), endDate: d(28), goal: 'Authentication overhaul and user search', status: 'COMPLETED', createdById: karthik.id } }).catch(() => null);
+  const sprint13 = await prisma.sprint.create({ data: { name: 'Sprint 13', projectId: cpProject.id, organizationId: org.id, startDate: d(28), endDate: d(14), goal: 'Dashboard improvements and notification system', status: 'COMPLETED', createdById: karthik.id } }).catch(() => null);
+  const sprint14 = await prisma.sprint.create({ data: { name: 'Sprint 14', projectId: cpProject.id, organizationId: org.id, startDate: d(7), endDate: df(7), goal: 'Ship 2FA, responsive improvements and burndown fix', status: 'ACTIVE', createdById: karthik.id } }).catch(() => null);
+  const sprint15 = await prisma.sprint.create({ data: { name: 'Sprint 15', projectId: cpProject.id, organizationId: org.id, startDate: df(7), endDate: df(21), goal: 'Bulk actions, dark mode and E2E tests', status: 'PLANNED', createdById: karthik.id } }).catch(() => null);
 
   const sprintTicketMap = [
     { sprint: sprint12, nums: ['CP-1', 'CP-2', 'CP-3', 'CP-4', 'CP-5'] },

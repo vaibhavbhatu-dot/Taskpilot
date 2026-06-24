@@ -23,6 +23,7 @@ import myWorkRoutes from './routes/mywork.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import supportRoutes from './routes/support.routes';
 import adminSupportRoutes from './routes/admin.support.routes';
+import masterAdminRoutes  from './routes/master-admin/index';
 
 dotenv.config();
 
@@ -37,6 +38,9 @@ app.use(cors({
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:5177',
+      'http://localhost:5178',
     ];
     // Allow requests with no origin (e.g. mobile apps, curl)
     if (!origin || allowedOrigins.includes(origin)) {
@@ -68,6 +72,7 @@ app.use('/api/my-work', myWorkRoutes);
 app.use('/api/onboarding', authenticate, onboardingRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/admin/support', adminSupportRoutes);
+app.use('/api/master-admin', masterAdminRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

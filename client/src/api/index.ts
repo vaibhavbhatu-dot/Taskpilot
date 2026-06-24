@@ -218,6 +218,16 @@ export const supportApi = {
 
   replyToTicket: (id: string, data: { content: string; attachmentUrl?: string }) =>
     api.post(`/support/tickets/${id}/reply`, data),
+
+  uploadAttachment: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<{ url: string; originalName: string; size: number }>(
+      '/support/upload',
+      form,
+      { headers: { 'Content-Type': undefined } },
+    );
+  },
 };
 
 // ─── Admin Support ───────────────────────────────────────

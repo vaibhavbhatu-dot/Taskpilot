@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, MessageSquare, Send, LifeBuoy } from 'lucide-react';
+import { Plus, MessageSquare, Send, LifeBuoy, Paperclip, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Textarea, formatDate, cn } from '@/design-system';
 import { supportApi } from '../../api';
@@ -29,6 +29,7 @@ interface SupportMessage {
 
 interface TicketDetail extends SupportTicket {
   description: string;
+  attachmentUrl: string | null;
   expectedResolutionDate: string | null;
   resolvedAt: string | null;
   messages: SupportMessage[];
@@ -59,6 +60,32 @@ function categoryBadge(category: string) {
   return <Badge variant={cfg.variant} size="sm">{cfg.label}</Badge>;
 }
 
+const IMAGE_EXTS = /\.(jpg|jpeg|png|gif)$/i;
+
+function AttachmentDisplay({ url }: { url: string }) {
+  const filename = url.split('/').pop() ?? 'attachment';
+  if (IMAGE_EXTS.test(url)) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="block mt-2">
+        <img src={url} alt={filename} className="max-w-[200px] rounded-lg border border-[#E2E8F0] cursor-pointer hover:opacity-90 transition-opacity" />
+      </a>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 mt-2 text-xs text-[#2563EB] hover:underline">
+      <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
+      {filename}
+    </a>
+  );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 const FILTER_LABELS: Record<string, string> = {
   OPEN:        'Open',
   IN_PROGRESS: 'In Progress',
@@ -68,15 +95,18 @@ const FILTER_LABELS: Record<string, string> = {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export function MyTicketsPage() {
-  const [tickets, setTickets]       = useState<SupportTicket[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [ticket, setTicket]         = useState<TicketDetail | null>(null);
-  const [messages, setMessages]     = useState<SupportMessage[]>([]);
-  const [filter, setFilter]         = useState('OPEN');
-  const [replyText, setReplyText]   = useState('');
-  const [isReplying, setIsReplying] = useState(false);
-  const [showForm, setShowForm]     = useState(false);
-  const messagesEndRef              = useRef<HTMLDivElement>(null);
+  const [tickets, setTickets]               = useState<SupportTicket[]>([]);
+  const [selectedId, setSelectedId]         = useState<string | null>(null);
+  const [ticket, setTicket]                 = useState<TicketDetail | null>(null);
+  const [messages, setMessages]             = useState<SupportMessage[]>([]);
+  const [filter, setFilter]                 = useState('OPEN');
+  const [replyText, setReplyText]           = useState('');
+  const [isReplying, setIsReplying]         = useState(false);
+  const [showForm, setShowForm]             = useState(false);
+  const [attachment, setAttachment]         = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const messagesEndRef                      = useRef<HTMLDivElement>(null);
+  const fileInputRef                        = useRef<HTMLInputElement>(null);
 
   const filteredTickets = tickets.filter((t) => t.status === filter);
 
@@ -113,23 +143,59 @@ export function MyTicketsPage() {
       .catch(() => toast.error('Failed to load ticket'));
   }, [selectedId]);
 
+  // Revoke preview object URL when attachment changes
+  useEffect(() => {
+    return () => { if (attachmentPreview) URL.revokeObjectURL(attachmentPreview); };
+  }, [attachmentPreview]);
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachment(file);
+    setAttachmentPreview(IMAGE_EXTS.test(file.name) ? URL.createObjectURL(file) : null);
+    e.target.value = '';
+  }
+
+  function removeAttachment() {
+    if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+    setAttachment(null);
+    setAttachmentPreview(null);
+  }
+
   async function handleReply() {
     if (!selectedId || !replyText.trim()) return;
     const text = replyText.trim();
     setIsReplying(true);
+
+    let attachmentUrl: string | undefined;
+
+    if (attachment) {
+      try {
+        const res = await supportApi.uploadAttachment(attachment);
+        attachmentUrl = res.data.url;
+      } catch {
+        toast.error('Failed to upload attachment');
+        setIsReplying(false);
+        return;
+      }
+    }
+
     // Optimistic insert
     const optimistic: SupportMessage = {
       id: `_tmp_${Date.now()}`,
       content: text,
       isAdminReply: false,
-      attachmentUrl: null,
+      attachmentUrl: attachmentUrl ?? null,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
     setReplyText('');
+    setAttachment(null);
+    setAttachmentPreview(null);
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
     try {
-      await supportApi.replyToTicket(selectedId, { content: text });
+      await supportApi.replyToTicket(selectedId, { content: text, attachmentUrl });
       const { data } = await supportApi.getTicket(selectedId);
       const d = data as TicketDetail;
       setMessages(d.messages || []);
@@ -278,6 +344,7 @@ export function MyTicketsPage() {
                     <p className="text-sm text-[#0F172A] whitespace-pre-wrap">
                       {ticket.description}
                     </p>
+                    {ticket.attachmentUrl && <AttachmentDisplay url={ticket.attachmentUrl} />}
                   </div>
                 </div>
               </div>
@@ -295,6 +362,7 @@ export function MyTicketsPage() {
                       </p>
                       <div className="bg-white border border-[#E2E8F0] rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                         <p className="text-sm text-[#0F172A] whitespace-pre-wrap">{msg.content}</p>
+                        {msg.attachmentUrl && <AttachmentDisplay url={msg.attachmentUrl} />}
                       </div>
                     </div>
                   </div>
@@ -306,6 +374,7 @@ export function MyTicketsPage() {
                       </p>
                       <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl rounded-tr-sm px-4 py-3">
                         <p className="text-sm text-[#0F172A] whitespace-pre-wrap">{msg.content}</p>
+                        {msg.attachmentUrl && <AttachmentDisplay url={msg.attachmentUrl} />}
                       </div>
                     </div>
                   </div>
@@ -322,7 +391,7 @@ export function MyTicketsPage() {
               </div>
             ) : (
               <div className="px-6 py-4 border-t border-[#E2E8F0] bg-white flex-shrink-0">
-                <div className="flex gap-3 items-end">
+                <div className="flex gap-2 items-end">
                   <Textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
@@ -333,6 +402,26 @@ export function MyTicketsPage() {
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleReply();
                     }}
                   />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+                    onChange={handleFileSelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach file"
+                    className={cn(
+                      'h-9 w-9 flex items-center justify-center rounded-lg border transition-colors flex-shrink-0',
+                      attachment
+                        ? 'border-[#2563EB] bg-[#EFF6FF] text-[#2563EB]'
+                        : 'border-[#E2E8F0] text-[#94A3B8] hover:bg-[#F8FAFC] hover:text-[#0F172A]',
+                    )}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
                   <Button
                     variant="default"
                     size="sm"
@@ -344,6 +433,26 @@ export function MyTicketsPage() {
                     Send
                   </Button>
                 </div>
+
+                {/* Attachment pill */}
+                {attachment && (
+                  <div className="flex items-center gap-2 mt-2 px-2.5 py-1.5 bg-[#F1F5F9] rounded-lg">
+                    {attachmentPreview ? (
+                      <img src={attachmentPreview} alt="" className="h-8 w-8 object-cover rounded flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-[#64748B] flex-shrink-0" />
+                    )}
+                    <span className="flex-1 text-xs text-[#0F172A] truncate">{attachment.name}</span>
+                    <span className="text-xs text-[#94A3B8] flex-shrink-0">{formatBytes(attachment.size)}</span>
+                    <button
+                      onClick={removeAttachment}
+                      className="text-[#94A3B8] hover:text-red-500 transition-colors flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-xs text-[#94A3B8] mt-1.5">Cmd+Enter to send</p>
               </div>
             )}

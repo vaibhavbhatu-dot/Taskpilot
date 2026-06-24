@@ -3,11 +3,36 @@ import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { getString } from '../utils/query';
 import { generateSupportTicketNumber } from '../utils/ticketNumber';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import {
   sendTicketConfirmation,
   sendAdminNewTicketAlert,
   sendAdminReplyNotification,
 } from '../emails/support-emails';
+
+const uploadDir = path.resolve(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${path.extname(file.originalname)}`);
+  },
+});
+
+const ALLOWED_EXTS = /^(jpg|jpeg|png|gif|pdf|doc|docx|txt|zip)$/;
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    ALLOWED_EXTS.test(ext) ? cb(null, true) : cb(new Error(`File type .${ext} is not allowed`));
+  },
+});
 
 const router = Router();
 
@@ -182,6 +207,23 @@ router.post('/tickets/:id/reply', authenticate, async (req: Request, res: Respon
   } catch (error) {
     console.error('Reply to support ticket error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/support/upload
+router.post('/upload', authenticate, upload.single('file'), (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+    res.json({
+      url:          `/uploads/${req.file.filename}`,
+      originalName: req.file.originalname,
+      size:         req.file.size,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Upload failed' });
   }
 });
 

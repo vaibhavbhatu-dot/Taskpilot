@@ -8,6 +8,12 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken, TokenPay
 
 const router = Router();
 
+// Cross-site cookies (frontend on a different domain than the API, e.g. Netlify
+// frontend + Railway backend) are only sent by the browser when the cookie is
+// SameSite=None and Secure. In local dev (same-site localhost over http) we keep
+// SameSite=Lax, since None+Secure would be rejected on a non-HTTPS origin.
+const isProd = process.env.NODE_ENV === 'production';
+
 // POST /api/auth/login
 router.post('/login', async (req: Request, res: Response) => {
   try {
@@ -44,8 +50,8 @@ router.post('/login', async (req: Request, res: Response) => {
     // Set refresh token in httpOnly cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -103,8 +109,8 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -116,7 +122,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
 // POST /api/auth/logout
 router.post('/logout', (_req: Request, res: Response) => {
-  res.clearCookie('refreshToken');
+  res.clearCookie('refreshToken', { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' });
   res.json({ message: 'Logged out successfully' });
 });
 
@@ -244,8 +250,8 @@ router.post('/setup', async (req: Request, res: Response) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -490,8 +496,8 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
